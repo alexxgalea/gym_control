@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, Upload } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { ApiError, adminApi, type Employee, type EnrollLink } from "@/api/client";
+import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport } from "@/api/client";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ export function Employees() {
   const queryClient = useQueryClient();
   const employees = useQuery({ queryKey: EMPLOYEES_KEY, queryFn: adminApi.employees.list });
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [issued, setIssued] = useState<EnrollLink | null>(null);
   const [revoking, setRevoking] = useState<Employee | null>(null);
 
@@ -49,6 +50,9 @@ export function Employees() {
           <Button variant="outline" asChild>
             {/* ecran încă pe HTML (se migrează în #22): navigare completă, în afara router-ului */}
             <a href="/admin/sessions/new">Sesiune manuală nouă</a>
+          </Button>
+          <Button variant="outline" onClick={() => setImporting(true)}>
+            <Upload className="size-4" aria-hidden /> Importă CSV
           </Button>
           <Button onClick={() => setAdding(true)}>
             <Plus className="size-4" aria-hidden /> Adaugă Angajat
@@ -124,6 +128,7 @@ export function Employees() {
           await refresh();
         }}
       />
+      <ImportCsvDialog open={importing} onClose={() => setImporting(false)} onImported={refresh} />
       <EnrollLinkDialog link={issued} onClose={() => setIssued(null)} />
       <Dialog open={revoking !== null} onOpenChange={(open) => !open && setRevoking(null)}>
         <DialogContent role="alertdialog">
@@ -258,6 +263,92 @@ function EnrollLinkDialog({ link, onClose }: { link: EnrollLink | null; onClose:
             <Copy className="size-4" aria-hidden /> Copiază linkul
           </Button>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+function ImportCsvDialog({ open, onClose, onImported }: { open: boolean; onClose: () => void; onImported: () => void }) {
+  const toast = useToast();
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<ImportReport | null>(null);
+  const importCsv = useMutation({
+    mutationFn: adminApi.employees.importCsv,
+    onSuccess: (result) => {
+      setReport(result);
+      toast(`${plural(result.created, "Angajat importat", "Angajați importați")}`);
+      onImported();
+    },
+    onError: (e) => setError(errorText(e)),
+  });
+
+  const close = () => {
+    setFile(null);
+    setError(null);
+    setReport(null);
+    onClose();
+  };
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setReport(null);
+    if (!file) {
+      setError("Alege un fișier CSV.");
+      return;
+    }
+    importCsv.mutate(file);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && close()}>
+      <DialogContent>
+        <DialogTitle>Import Angajați din CSV</DialogTitle>
+        <DialogDescription>
+          Fișier cu antetul „nume,email” pe primul rând, separat prin virgulă sau punct și virgulă. Rândurile valide se
+          importă; cele invalide sunt listate cu numărul rândului.
+        </DialogDescription>
+        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+          {error && (
+            <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="employees-csv">Fișier CSV</Label>
+            <Input
+              id="employees-csv"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          {report && (
+            <div className="flex flex-col gap-2 text-sm">
+              <p className="font-medium">{plural(report.created, "Angajat importat", "Angajați importați")}</p>
+              {report.errors.length > 0 && (
+                <>
+                  <p className="text-destructive">{plural(report.errors.length, "rând respins", "rânduri respinse")}:</p>
+                  <ul className="max-h-48 list-disc overflow-auto pl-5 text-destructive">
+                    {report.errors.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={close}>
+              Închide
+            </Button>
+            <Button type="submit" disabled={importCsv.isPending}>
+              Importă
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

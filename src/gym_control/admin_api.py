@@ -5,7 +5,7 @@ O cerere fără sesiune primește 401; SPA-ul duce atunci la login."""
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -134,6 +134,48 @@ def create_employee(
     db.commit()
     row = db.execute("SELECT id, name, email FROM employees WHERE id = ?", (employee_id,)).fetchone()
     return EmployeeOut(id=row["id"], name=row["name"], email=row["email"], enrolled=False)
+
+
+class ImportReport(BaseModel):
+    created: int
+    errors: list[str]
+
+
+@router.post(
+    "/employees/import", response_model=ImportReport,
+    responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}},
+)
+async def import_employees(
+    file: UploadFile, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    try:
+        rows = list(employees.parse_csv(await file.read()))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from None
+    result = employees.ImportResult()
+    for line, cells in rows:
+        if len(cells) != 2:
+            result.errors.append(f"Rândul {line}: se așteaptă două coloane (nume, email).")
+            continue
+        try:
+            employee_id = employees.add(db, now, cells[0], cells[1])
+        except employees.InvalidEmployee as exc:
+            result.errors.append(f"Rândul {line}: {exc}.")
+            continue
+        result.created += 1
+        journal.write_admin_action(
+            db, now, admin, "employee.import",
+            f"Angajat importat din CSV: {' '.join(cells[0].split())}", employee_id=employee_id,
+        )
+    journal.write_admin_action(
+        db, now, admin, "employees.import_csv",
+        f"Import CSV: {result.created} importați, {len(result.errors)} respinse",
+        detail={"created": result.created, "errors": result.errors},
+    )
+    db.commit()
+    return ImportReport(created=result.created, errors=result.errors)
 
 
 def _employee_or_404(db: sqlite3.Connection, employee_id: int):
