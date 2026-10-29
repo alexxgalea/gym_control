@@ -61,4 +61,33 @@ describe("Activare Ecran de la ușă (/door/activate/:token)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Conectează-te la Wi-Fi-ul Sălii.");
     expect(goToDoor).not.toHaveBeenCalled();
   });
+
+  it("în afara rețelei Sălii linkul rămâne valabil: butonul rămâne pentru o nouă încercare", async () => {
+    server.use(
+      http.get("/api/employee/door/activate/tok", () => HttpResponse.json({})),
+      http.post("/api/employee/door/activate/tok", () =>
+        HttpResponse.json({ detail: "Conectează-te la Wi-Fi-ul Sălii.", reason: "not_in_hall_network" }, { status: 403 }),
+      ),
+    );
+    renderEmployee("/door/activate/tok");
+
+    await userEvent.click(await screen.findByRole("button", { name: BUTTON }));
+    await screen.findByRole("alert");
+
+    expect(screen.getByRole("button", { name: BUTTON })).toBeEnabled();
+  });
+
+  it("linkul consumat sau înlocuit între deschidere și apăsare: mesaj clar, fără buton", async () => {
+    server.use(
+      http.get("/api/employee/door/activate/tok", () => HttpResponse.json({})),
+      http.post("/api/employee/door/activate/tok", linkError),
+    );
+    renderEmployee("/door/activate/tok");
+
+    await userEvent.click(await screen.findByRole("button", { name: BUTTON }));
+
+    expect(await screen.findByText(/Cere Adminului un link nou/)).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(goToDoor).not.toHaveBeenCalled();
+  });
 });
