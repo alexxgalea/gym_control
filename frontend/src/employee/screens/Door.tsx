@@ -28,13 +28,12 @@ function isBlocked(error: unknown): error is EmployeeApiError & { reason: Blocke
 }
 
 /** Codul curent de la server, reîmprospătat periodic. `stale`: reîmprospătarea nu mai reușește. */
-function useDoorCode(enabled: boolean) {
+function useDoorCode() {
   const [code, setCode] = useState<DoorCode | null>(null);
   const [stale, setStale] = useState(false);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
     let alive = true;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -62,7 +61,7 @@ function useDoorCode(enabled: boolean) {
           if (isBlocked(error)) {
             clearTimeout(staleTimer);
             setBlocked(error.reason);
-            return; // se rezolvă doar deschizând linkul de configurare: nu mai insistăm
+            return; // se rezolvă doar printr-o nouă Activare din aplicație: nu mai insistăm
           }
           if (!haveCode) setStale(true); // niciun cod de arătat: nu lăsăm un ecran gol fără explicație
           pollTimer = setTimeout(poll, RETRY_MS);
@@ -77,7 +76,7 @@ function useDoorCode(enabled: boolean) {
       clearTimeout(pollTimer);
       clearTimeout(staleTimer);
     };
-  }, [enabled]);
+  }, []);
 
   return { code, stale, blocked };
 }
@@ -105,24 +104,22 @@ function Explanation({ title, children }: { title: string; children: ReactNode }
 
 const RING_RADIUS = 104;
 
-/** `/door` și `/door?k=<token>`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui. */
-export function Door({ setupToken }: { setupToken: string | null }) {
-  const configuredWith = setupToken; // serverul redirecționează `?k=` doar când tokenul e corect
-  const { code, stale, blocked } = useDoorCode(configuredWith === null);
+/** `/door`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui; doar pentru telefonul activat. */
+export function Door() {
+  const { code, stale, blocked } = useDoorCode();
 
-  if (configuredWith !== null || blocked === "door_token_invalid") {
+  if (blocked === "door_token_invalid") {
     return (
-      <Explanation title="Link de configurare greșit">
-        Linkul de configurare nu este corect sau nu mai e valabil. Cere Adminului linkul exact și deschide-l din nou pe
-        acest telefon.
+      <Explanation title="Acest telefon nu mai este Ecranul de la ușă">
+        Acest telefon a fost înlocuit sau scos din uz. Cere Adminului un link nou de activare, dacă e cazul.
       </Explanation>
     );
   }
   if (blocked === "door_not_configured") {
     return (
-      <Explanation title="Telefon neconfigurat">
-        Acest telefon nu este configurat ca Ecran de la ușă. Cere Adminului linkul de configurare și deschide-l o
-        singură dată pe acest telefon.
+      <Explanation title="Telefon neactivat">
+        Acest telefon nu este activat ca Ecran de la ușă. Cere Adminului să activeze Ecranul de la ușă din aplicație și
+        deschide linkul primit pe acest telefon.
       </Explanation>
     );
   }

@@ -23,14 +23,14 @@ const incident = {
   created_by: "admin", closed_at: null, closed_by: null, timezone: TZ,
 };
 
-function mockApi(data: { people?: unknown[]; anomalies?: unknown[]; incidents?: unknown[] } = {}, listDelay = 0) {
+function mockApi(data: { people?: unknown[]; anomalies?: unknown[]; incidents?: unknown[]; doorActive?: boolean } = {}, listDelay = 0) {
   let anomalies = [...(data.anomalies ?? [])] as { id: number }[];
   const calls: string[] = [];
   server.use(
     http.get("/api/admin/me", () => HttpResponse.json({ username: "admin" })),
     http.get("/api/admin/in-hall", async () => {
       if (listDelay) await delay(listDelay);
-      return HttpResponse.json({ people: data.people ?? [], timezone: TZ });
+      return HttpResponse.json({ people: data.people ?? [], timezone: TZ, door_screen_active: data.doorActive ?? true });
     }),
     http.get("/api/admin/anomalies", () => HttpResponse.json(anomalies)),
     http.get("/api/admin/incidents", () => HttpResponse.json(data.incidents ?? [])),
@@ -134,5 +134,21 @@ describe("pagina de gestiune (Acasă)", () => {
     people = [ana];
     vi.advanceTimersByTime(30_000);
     expect(await (await tile("Acum în Sală")).findByText("Ana Pop")).toBeInTheDocument();
+  });
+
+  it("avertizează cu legătură către Ecranul de la ușă cât timp nu e activat niciunul", async () => {
+    mockApi({ doorActive: false });
+    renderApp("/");
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Niciun Ecran de la ușă/);
+    expect(within(alert).getByRole("link", { name: /Ecranul de la ușă/ })).toHaveAttribute("href", "/door-screen");
+  });
+
+  it("nu avertizează când Ecranul de la ușă e activat", async () => {
+    mockApi({ doorActive: true });
+    renderApp("/");
+    await screen.findByRole("heading", { name: "Acasă" });
+    await tile("Acum în Sală");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

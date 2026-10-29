@@ -38,6 +38,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/door-screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Door Screen Status */
+        get: operations["door_screen_status_api_admin_door_screen_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Retire Door Screen
+         * @description Scoate din uz Ecranul de la ușă fără înlocuire (telefon pierdut sau furat).
+         */
+        delete: operations["retire_door_screen_api_admin_door_screen_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/door-screen/activation-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Door Activation Link */
+        post: operations["create_door_activation_link_api_admin_door_screen_activation_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/employees": {
         parameters: {
             query?: never;
@@ -347,6 +385,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employee/door/activate/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Activation Link
+         * @description Confirmarea Activării (nu consumă linkul). Nu cere rețeaua Sălii.
+         */
+        get: operations["read_activation_link_api_employee_door_activate__token__get"];
+        put?: never;
+        /** Activate */
+        post: operations["activate_api_employee_door_activate__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employee/door/qr": {
         parameters: {
             query?: never;
@@ -508,6 +567,17 @@ export interface components {
             /** Time Zone */
             time_zone: string;
         };
+        /** DoorActivationLink */
+        DoorActivationLink: {
+            /** Hours */
+            hours: number;
+            /** Link */
+            link: string;
+            /** Qr Svg */
+            qr_svg: string;
+        };
+        /** DoorActivationOut */
+        DoorActivationOut: Record<string, never>;
         /** DoorCode */
         DoorCode: {
             /** Period Seconds */
@@ -518,6 +588,18 @@ export interface components {
             svg: string;
             /** Url */
             url: string;
+        };
+        /**
+         * DoorScreenStatus
+         * @description Starea Ecranului de la ușă; `activated_at` e în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`).
+         */
+        DoorScreenStatus: {
+            /** Activated At */
+            activated_at: string | null;
+            /** Active */
+            active: boolean;
+            /** Timezone */
+            timezone: string;
         };
         /** EmployeeIn */
         EmployeeIn: {
@@ -605,6 +687,8 @@ export interface components {
         };
         /** InHallOut */
         InHallOut: {
+            /** Door Screen Active */
+            door_screen_active: boolean;
             /** People */
             people: components["schemas"]["InHallPerson"][];
             /** Timezone */
@@ -980,6 +1064,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    door_screen_status_api_admin_door_screen_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoorScreenStatus"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    retire_door_screen_api_admin_door_screen_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_door_activation_link_api_admin_door_screen_activation_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoorActivationLink"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1878,6 +2056,89 @@ export interface operations {
             };
         };
     };
+    read_activation_link_api_employee_door_activate__token__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoorActivationOut"];
+                };
+            };
+            /** @description link_invalid */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activate_api_employee_door_activate__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoorActivationOut"];
+                };
+            };
+            /** @description not_in_hall_network */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description link_invalid */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     door_qr_api_employee_door_qr_get: {
         parameters: {
             query?: never;
@@ -1896,7 +2157,7 @@ export interface operations {
                     "application/json": components["schemas"]["DoorCode"];
                 };
             };
-            /** @description Telefon neconfigurat (`door_not_configured`) sau token greșit (`door_token_invalid`) */
+            /** @description Telefon neactivat (`door_not_configured`) sau înlocuit (`door_token_invalid`) */
             403: {
                 headers: {
                     [name: string]: unknown;

@@ -92,32 +92,26 @@ describe("Ecranul de la ușă (/door)", () => {
     expect(screen.queryByRole("img", { name: /cod qr/i })).not.toBeInTheDocument();
   });
 
-  it("telefon neconfigurat: pagină explicativă, nu mesaj brut", async () => {
+  it("telefon neactivat: pagină explicativă, nu mesaj brut", async () => {
     server.use(failing(403, "door_not_configured"));
     renderEmployee("/door");
     await tick(0);
 
-    expect(screen.getByRole("heading", { name: "Telefon neconfigurat" })).toBeInTheDocument();
-    expect(screen.getByText(/linkul de configurare/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Telefon neactivat" })).toBeInTheDocument();
+    expect(screen.getByText(/Cere Adminului să activeze/i)).toBeInTheDocument();
     expect(screen.queryByRole("timer")).not.toBeInTheDocument();
   });
 
-  it("token greșit în cookie: pagină explicativă", async () => {
+  it("telefon înlocuit de o nouă Activare: pagină explicativă", async () => {
     server.use(failing(403, "door_token_invalid"));
     renderEmployee("/door");
     await tick(0);
 
-    expect(screen.getByRole("heading", { name: "Link de configurare greșit" })).toBeInTheDocument();
-  });
-
-  it("link de configurare cu token greșit (/door?k=...): pagină explicativă, fără cerere către server", async () => {
-    let asked = false;
-    server.use(qr(() => ((asked = true), HttpResponse.json(code(1)))));
-    renderEmployee("/door?k=gresit");
-    await tick(0);
-
-    expect(screen.getByRole("heading", { name: "Link de configurare greșit" })).toBeInTheDocument();
-    expect(asked).toBe(false);
+    expect(screen.getByRole("heading", { name: "Acest telefon nu mai este Ecranul de la ușă" })).toBeInTheDocument();
+    // la fel de adevărat dacă telefonul a fost înlocuit sau scos din uz de Admin
+    expect(screen.getByText(/înlocuit sau scos din uz/)).toBeInTheDocument();
+    expect(screen.getByText(/cere adminului un link nou/i)).toBeInTheDocument();
+    expect(screen.queryByText(/alt telefon/)).not.toBeInTheDocument();
   });
 
   it("are logoul GymCtrl", async () => {

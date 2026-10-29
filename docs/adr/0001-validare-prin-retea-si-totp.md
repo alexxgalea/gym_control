@@ -9,4 +9,4 @@ Intrarea și Ieșirea se validează prin QR TOTP afișat la ușă și prin IP-ul
 
 ## Consequences
 
-Un Angajat aflat pe Wi-Fi-ul firmei, dar în afara Sălii, ar putea face Intrare dacă primește un QR valid în 30–60 s. Riscul e redus de tokenul de kiosk pe pagina `/door` și de expirarea rapidă, dar nu eliminat.
+Un Angajat aflat pe Wi-Fi-ul firmei, dar în afara Sălii, ar putea face Intrare dacă primește un QR valid în 30–60 s. Riscul e redus de faptul că QR-ul se vede doar pe Ecranul de la ușă activat și de expirarea rapidă, dar nu eliminat. (Tokenul de kiosk din mediu a fost înlocuit de Activare Ecran de la ușă, vezi [ADR-0004](0004-ecranul-de-la-usa-se-activeaza-din-aplicatie.md).)

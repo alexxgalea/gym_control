@@ -5,7 +5,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from gym_control import auth, presence
+from gym_control import auth, door, presence
 from gym_control.admin_common import UNAUTHORIZED
 from gym_control.auth import Admin, require_admin_api
 from gym_control.clocktime import local_iso
@@ -26,6 +26,7 @@ class InHallPerson(BaseModel):
 class InHallOut(BaseModel):
     people: list[InHallPerson]
     timezone: str
+    door_screen_active: bool
 
 
 @router.get("/in-hall", response_model=InHallOut, responses=UNAUTHORIZED)
@@ -41,4 +42,5 @@ def in_hall(request: Request, admin: Admin = Depends(require_admin_api), db: sql
             for p in presence.inside_today(db, now, tz)
         ],
         timezone=tz,
+        door_screen_active=door.active_since(db) is not None,
     )
