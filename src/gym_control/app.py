@@ -1,18 +1,18 @@
 import ipaddress
-import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
+from gym_control import admin, auth, db
 from gym_control.settings import Settings
+from gym_control.templates import templates as _templates
 
 Clock = Callable[[], datetime]
-
-_templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 
 def utc_now() -> datetime:
@@ -25,7 +25,14 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app = FastAPI(title="Gym Control")
     app.state.settings = settings
     app.state.clock = clock
-    app.state.db = sqlite3.connect(settings.database, check_same_thread=False)
+    app.state.db = db.connect(settings.database)
+    app.state.db_lock = threading.RLock()
+    auth.ensure_bootstrap_admin(
+        app.state.db, clock(),
+        settings.bootstrap_admin_username, settings.bootstrap_admin_password,
+    )
+    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
+    app.include_router(admin.router)
 
     @app.get("/status", response_class=HTMLResponse)
     def status(request: Request):

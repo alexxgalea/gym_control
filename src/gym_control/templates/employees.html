@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Angajați{% endblock %}
+{% block content %}
+<h1>Angajați</h1>
+<table class="table stackable">
+  <thead><tr><th>Nume</th><th>Email</th></tr></thead>
+  <tbody>
+  {% for e in employees %}
+    <tr><td data-label="Nume">{{ e.name }}</td><td data-label="Email">{{ e.email }}</td></tr>
+  {% else %}
+    <tr><td colspan="2">Niciun Angajat încă.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

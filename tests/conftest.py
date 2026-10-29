@@ -16,6 +16,8 @@ from gym_control.settings import Settings
 
 HALL_IP = "192.168.10.25"
 OUTSIDE_IP = "10.0.0.5"
+ADMIN_USER = "admin"
+ADMIN_PASSWORD = "parola-de-test-1"
 
 
 class FakeClock:
@@ -44,6 +46,17 @@ class Harness:
         """Client HTTP cu IP-ul sursă dat (implicit: în subrețeaua Sălii)."""
         return self._client_factory(ip)
 
+    def admin_client(self, ip: str = HALL_IP) -> TestClient:
+        """Client deja autentificat ca Admin-ul de bootstrap (ADMIN_USER)."""
+        c = self.client(ip)
+        r = c.post(
+            "/admin/login",
+            data={"username": ADMIN_USER, "password": ADMIN_PASSWORD},
+            follow_redirects=False,
+        )
+        assert r.status_code == 303, r.text
+        return c
+
 
 @pytest.fixture
 def clock() -> FakeClock:
@@ -56,7 +69,12 @@ def make_harness(clock):
     clients: list[TestClient] = []
 
     def _make(**overrides) -> Harness:
-        settings = Settings(database=":memory:", **overrides)
+        defaults = dict(
+            database=":memory:",
+            bootstrap_admin_username=ADMIN_USER,
+            bootstrap_admin_password=ADMIN_PASSWORD,
+        )
+        settings = Settings(**{**defaults, **overrides})
         app = create_app(settings=settings, clock=clock)
 
         def factory(ip: str) -> TestClient:

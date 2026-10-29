@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Gym Control{% endblock %} · Gym Control</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <strong class="brand">Gym Control</strong>
+  {% if admin %}
+  <nav class="nav">
+    <a href="/admin/employees" {% if nav == "employees" %}aria-current="page"{% endif %}>Angajați</a>
+    <a href="/admin/jurnal" {% if nav == "journal" %}aria-current="page"{% endif %}>Jurnal</a>
+  </nav>
+  <form method="post" action="/admin/logout" class="logout">
+    <span class="who">{{ admin.username }}</span>
+    <button type="submit" class="btn btn-secondary">Ieșire cont</button>
+  </form>
+  {% endif %}
+</header>
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

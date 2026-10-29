@@ -12,6 +12,9 @@ class Settings:
     opening_time: time = time(6, 0)
     closing_time: time = time(22, 0)
     retention_months: int = 12
+    # Primul Admin: creat la pornire dacă nu există (vezi README).
+    bootstrap_admin_username: str = ""
+    bootstrap_admin_password: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -22,4 +25,6 @@ class Settings:
             opening_time=time.fromisoformat(env.get("GYM_OPENING_TIME", "06:00")),
             closing_time=time.fromisoformat(env.get("GYM_CLOSING_TIME", "22:00")),
             retention_months=int(env.get("GYM_RETENTION_MONTHS", "12")),
+            bootstrap_admin_username=env.get("GYM_ADMIN_USER", ""),
+            bootstrap_admin_password=env.get("GYM_ADMIN_PASSWORD", ""),
         )
