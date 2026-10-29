@@ -111,6 +111,29 @@
         "title": "Body_import_employees_api_admin_employees_import_post",
         "type": "object"
       },
+      "ConnectionStatus": {
+        "properties": {
+          "in_hall": {
+            "title": "In Hall",
+            "type": "boolean"
+          },
+          "server_time": {
+            "title": "Server Time",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "in_hall",
+          "server_time",
+          "time_zone"
+        ],
+        "title": "ConnectionStatus",
+        "type": "object"
+      },
       "EmployeeIn": {
         "properties": {
           "email": {
@@ -1957,6 +1980,28 @@
         ]
       }
     },
+    "/api/employee/status": {
+      "get": {
+        "description": "Verificare conexiune: dacă cererea e în rețeaua Sălii și ora serverului. Nu cere rețeaua Sălii.",
+        "operationId": "connection_status_api_employee_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Connection Status",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
     "/door": {
       "get": {
         "operationId": "door_door_get",
@@ -2207,24 +2252,6 @@
           }
         },
         "summary": "Exit "
-      }
-    },
-    "/status": {
-      "get": {
-        "operationId": "status_status_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Status"
       }
     }
   }

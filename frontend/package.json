@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-entries.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "gen:api": "cd .. && uv run python scripts/export_openapi.py > frontend/openapi.json && cd frontend && openapi-typescript openapi.json -o src/api/schema.d.ts",

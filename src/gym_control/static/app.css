@@ -39,7 +39,7 @@ button { font: inherit; }
 .btn-big { display: block; width: 100%; min-height: 3.5rem; font-size: 1.2rem; }
 
 /* Paginile Angajatului (/me, /enroll) și kioskul (/door, /status): coloană îngustă, ținte mari. */
-.container:has(.state, .qr), body.status-page { max-width: 34rem; }
+.container:has(.state, .qr) { max-width: 34rem; }
 .card { box-shadow: 0 1px 2px oklch(0 0 0 / .06); }
 .state-line { font-size: 1.35rem; }
 .btn-big { border-radius: .6rem; font-size: 1.25rem; }
@@ -54,4 +54,3 @@ button { font: inherit; }
   .container:has(.qr) { max-width: 40rem; }
   .qr { max-width: 32rem; }
 }
-body.status-page { margin: 0 auto; padding: 1rem; }
