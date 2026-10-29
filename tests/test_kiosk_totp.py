@@ -43,24 +43,24 @@ def test_qr_points_to_employee_page_with_totp(harness):
     assert "/me?t=" in url
 
 
-def test_employee_page_from_qr_keeps_totp_in_hidden_field(harness):
-    phone = harness.enrolled_client("Ana Pop")
-    totp = harness.current_totp()
-    page = phone.get(f"/me?t={totp}").text
-    assert f'name="totp" value="{totp}"' in page
+def test_employee_page_from_qr_is_served_without_identity_check(make_harness, tmp_path):
+    (tmp_path / "index.html").write_text("<title>admin</title>")
+    (tmp_path / "employee.html").write_text("<title>angajat</title>")
+    h = make_harness(frontend_dist=str(tmp_path))
+    assert h.client().get(f"/me?t={h.current_totp()}").status_code == 200
 
 
 def test_entry_without_totp_is_rejected_with_clear_message(harness):
     phone = harness.enrolled_client("Ana Pop")
-    r = phone.post("/me/entry")
+    r = phone.post("/api/employee/entry")
     assert r.status_code == 403
-    assert "Scanează QR-ul de la ușă" in r.text
-    assert "în afara Sălii" in phone.get("/me").text
+    assert "Scanează" in r.json()["detail"]
+    assert phone.get("/api/employee/me").json()["inside_since"] is None
 
 
 def test_wrong_totp_is_rejected(harness):
     phone = harness.enrolled_client("Ana Pop")
-    r = phone.post("/me/entry", data={"totp": "00000000"})
+    r = phone.post("/api/employee/entry", json={"totp": "00000000"})
     assert r.status_code == 403
     assert "Scanează QR-ul de la ușă" in r.text
 
@@ -69,7 +69,7 @@ def test_expired_totp_is_rejected(harness):
     phone = harness.enrolled_client("Ana Pop")
     totp = harness.current_totp()
     harness.clock.advance(seconds=65)
-    r = phone.post("/me/entry", data={"totp": totp})
+    r = phone.post("/api/employee/entry", json={"totp": totp})
     assert r.status_code == 403
     assert "expirat" in r.text
 
@@ -78,29 +78,29 @@ def test_previous_window_totp_is_accepted(harness):
     phone = harness.enrolled_client("Ana Pop")
     totp = harness.current_totp()
     harness.clock.advance(seconds=30)
-    assert phone.post("/me/entry", data={"totp": totp}).status_code == 200
+    assert phone.post("/api/employee/entry", json={"totp": totp}).status_code == 200
 
 
 def test_two_employees_can_use_same_qr_in_same_window(harness):
     ana = harness.enrolled_client("Ana Pop")
     ion = harness.enrolled_client("Ion Vasile")
     totp = harness.current_totp()
-    assert ana.post("/me/entry", data={"totp": totp}).status_code == 200
-    assert ion.post("/me/entry", data={"totp": totp}).status_code == 200
+    assert ana.post("/api/employee/entry", json={"totp": totp}).status_code == 200
+    assert ion.post("/api/employee/entry", json={"totp": totp}).status_code == 200
 
 
 def test_same_employee_can_reuse_totp_for_exit(harness):
     phone = harness.enrolled_client("Ana Pop")
     totp = harness.current_totp()
-    phone.post("/me/entry", data={"totp": totp})
-    assert phone.post("/me/exit", data={"totp": totp}).status_code == 200
+    phone.post("/api/employee/entry", json={"totp": totp})
+    assert phone.post("/api/employee/exit", json={"totp": totp}).status_code == 200
 
 
 def test_client_sent_timestamp_is_ignored(harness):
     phone = harness.enrolled_client("Ana Pop")
     totp = harness.current_totp()
     harness.clock.advance(minutes=5)
-    r = phone.post("/me/entry", data={"totp": totp, "timestamp": "2026-01-05T08:17:00Z",
+    r = phone.post("/api/employee/entry", json={"totp": totp, "timestamp": "2026-01-05T08:17:00Z",
                                        "ts": "1767601020", "t": totp},
                    headers={"Date": "Mon, 05 Jan 2026 08:17:00 GMT"})
     assert r.status_code == 403
@@ -114,14 +114,14 @@ def test_totp_depends_on_server_secret(make_harness):
 
 def test_entry_records_qr_totp_method_in_journal(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data={"totp": harness.current_totp()})
+    phone.post("/api/employee/entry", json={"totp": harness.current_totp()})
     page = harness.admin_client().get("/api/admin/journal").text
     assert "Cod QR" in page
 
 
 def test_non_ascii_totp_is_refused_not_a_server_error(harness):
     phone = harness.enrolled_client("Ana Pop")
-    r = phone.post("/me/entry", data={"totp": "é"})
+    r = phone.post("/api/employee/entry", json={"totp": "é"})
     assert r.status_code == 403
     assert "greșit" in r.text
 

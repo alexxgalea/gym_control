@@ -46,10 +46,10 @@ def test_changing_subnet_applies_immediately(harness):
     admin = harness.admin_client()
     assert admin.put(URL, json={**VALID, "hall_subnet": "10.0.0.0/24"}).status_code == 200
     # telefonul din vechea subrețea este acum respins, cel din noua subrețea acceptat
-    assert phone.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 403
+    assert phone.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 403
     phone_new = harness.client(OUTSIDE_IP)
     phone_new.cookies.update(phone.cookies)
-    assert phone_new.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone_new.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 200
     assert harness.client(OUTSIDE_IP).get("/api/employee/status").json()["in_hall"] is True
 
 

@@ -32,9 +32,9 @@ def test_anomalies_api_requires_admin_and_is_empty_without_anomalies(harness):
 
 def test_entry_over_old_open_session_is_accepted_and_old_session_flagged(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(days=1)
-    r = phone.post("/me/entry", data=totp(harness))
+    r = phone.post("/api/employee/entry", json=totp(harness))
     assert r.status_code == 200
     assert "Intrare înregistrată la 10:12" in r.text
     rows = _anomalies(harness)
@@ -45,38 +45,38 @@ def test_entry_over_old_open_session_is_accepted_and_old_session_flagged(harness
 
 def test_old_session_is_not_closed_and_exit_closes_the_new_one(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(days=1)
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(hours=1)
-    assert phone.post("/me/exit", data=totp(harness)).status_code == 200
-    assert "în afara Sălii" in phone.get("/me").text
-    assert phone.post("/me/exit", data=totp(harness)).status_code == 409
+    assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 200
+    assert phone.get("/api/employee/me").json()["inside_since"] is None
+    assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 409
     assert "Ieșire lipsă" in _anomalies(harness)
 
 
 def test_flagging_is_not_duplicated_across_repeated_entries(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(days=1)
-    phone.post("/me/entry", data=totp(harness))
-    phone.post("/me/exit", data=totp(harness))
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
+    phone.post("/api/employee/exit", json=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     assert _anomalies(harness).count("Ieșire lipsă") == 1
 
 
 def test_recent_open_session_still_rejects_entry(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(hours=2)
-    assert phone.post("/me/entry", data=totp(harness)).status_code == 409
+    assert phone.post("/api/employee/entry", json=totp(harness)).status_code == 409
     assert _anomalies(harness) == []
 
 
 def test_entry_outside_hours_is_accepted_and_flagged(harness):
     phone = harness.enrolled_client("Ana Pop")
     harness.clock.set(datetime(2026, 1, 5, 21, 30, tzinfo=timezone.utc))  # 23:30 local
-    r = phone.post("/me/entry", data=totp(harness))
+    r = phone.post("/api/employee/entry", json=totp(harness))
     assert r.status_code == 200
     assert "Intrare înregistrată la 23:30" in r.text
     [row] = _anomalies(harness)
@@ -88,10 +88,10 @@ def test_entry_outside_hours_is_accepted_and_flagged(harness):
 def test_entry_before_opening_is_flagged_and_within_hours_is_not(harness):
     phone = harness.enrolled_client("Ana Pop")
     harness.clock.set(datetime(2026, 1, 5, 3, 0, tzinfo=timezone.utc))  # 05:00 local
-    phone.post("/me/entry", data=totp(harness))
-    phone.post("/me/exit", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
+    phone.post("/api/employee/exit", json=totp(harness))
     harness.clock.set(datetime(2026, 1, 5, 8, 0, tzinfo=timezone.utc))  # 10:00 local
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     assert _anomalies(harness).count("în afara programului") == 1
 
 
@@ -100,29 +100,29 @@ def test_outside_hours_follows_runtime_settings(harness):
     r = admin.put("/api/admin/settings", json={
         "hall_subnet": "192.168.10.0/24", "opening_time": "12:00", "closing_time": "20:00"})
     assert r.status_code == 200
-    harness.enrolled_client("Ana Pop").post("/me/entry", data=totp(harness))  # 10:12 local, în afara programului
+    harness.enrolled_client("Ana Pop").post("/api/employee/entry", json=totp(harness))  # 10:12 local, în afara programului
     assert "în afara programului" in _anomalies(harness)
 
 
 def test_exit_on_old_open_session_is_rejected_and_flags_missing_exit(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(days=1)
-    r = phone.post("/me/exit", data=totp(harness))
+    r = phone.post("/api/employee/exit", json=totp(harness))
     assert r.status_code == 409
     assert "Nu ai o Intrare deschisă azi" in r.text
     assert "Adminul poate corecta" in r.text
     assert "Ieșire lipsă" in _anomalies(harness)
     # nu s-a inventat nicio oră de Ieșire: o a doua încercare e tot respinsă, iar Intrarea nouă merge
-    assert phone.post("/me/exit", data=totp(harness)).status_code == 409
-    assert phone.post("/me/entry", data=totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 409
+    assert phone.post("/api/employee/entry", json=totp(harness)).status_code == 200
     assert _anomalies(harness).count("Ieșire lipsă") == 1
 
 
 def _outside_hours_session(harness):
     phone = harness.enrolled_client("Ana Pop")
     harness.clock.set(datetime(2026, 1, 5, 21, 30, tzinfo=timezone.utc))  # 23:30 local
-    assert phone.post("/me/entry", data=totp(harness)).status_code == 200
+    assert phone.post("/api/employee/entry", json=totp(harness)).status_code == 200
     return phone
 
 
@@ -153,9 +153,9 @@ def test_dismissing_twice_or_unknown_is_404_with_message(harness):
 
 def test_only_outside_hours_anomalies_can_be_dismissed(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.advance(days=1)
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     admin = harness.admin_client()
     [row] = admin.get("/api/admin/anomalies").json()
     assert row["code"] == "missing_exit"
@@ -165,7 +165,7 @@ def test_only_outside_hours_anomalies_can_be_dismissed(harness):
 
 def test_open_at_closing_is_listed_and_cannot_be_dismissed(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=totp(harness))
+    phone.post("/api/employee/entry", json=totp(harness))
     harness.clock.set(datetime(2026, 1, 5, 20, 12, tzinfo=timezone.utc))  # 22:12 local
     harness.tick()
     admin = harness.admin_client()

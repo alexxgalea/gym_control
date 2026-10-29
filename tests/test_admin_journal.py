@@ -8,7 +8,7 @@ URL = "/api/admin/journal"
 
 
 def _event(harness, phone, kind):
-    assert phone.post(f"/me/{kind}", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post(f"/api/employee/{kind}", json={"totp": harness.current_totp()}).status_code == 200
 
 
 def _journal(client, query: str = "") -> dict:

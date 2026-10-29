@@ -75,28 +75,6 @@
         "title": "AnomalyOut",
         "type": "object"
       },
-      "Body_entry_me_entry_post": {
-        "properties": {
-          "totp": {
-            "default": "",
-            "title": "Totp",
-            "type": "string"
-          }
-        },
-        "title": "Body_entry_me_entry_post",
-        "type": "object"
-      },
-      "Body_exit__me_exit_post": {
-        "properties": {
-          "totp": {
-            "default": "",
-            "title": "Totp",
-            "type": "string"
-          }
-        },
-        "title": "Body_exit__me_exit_post",
-        "type": "object"
-      },
       "Body_import_employees_api_admin_employees_import_post": {
         "properties": {
           "file": {
@@ -217,6 +195,40 @@
           "detail"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EventRequest": {
+        "properties": {
+          "totp": {
+            "default": "",
+            "title": "Totp",
+            "type": "string"
+          }
+        },
+        "title": "EventRequest",
+        "type": "object"
+      },
+      "EventResult": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "at",
+          "time_zone"
+        ],
+        "title": "EventResult",
         "type": "object"
       },
       "FieldErrorResponse": {
@@ -532,6 +544,41 @@
           }
         },
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "MeState": {
+        "properties": {
+          "inside_since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inside Since"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "server_time": {
+            "title": "Server Time",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "inside_since",
+          "server_time",
+          "time_zone"
+        ],
+        "title": "MeState",
         "type": "object"
       },
       "NetworkSuggestion": {
@@ -2065,6 +2112,145 @@
         ]
       }
     },
+    "/api/employee/entry": {
+      "post": {
+        "operationId": "entry_api_employee_entry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          },
+          "403": {
+            "description": "Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`)"
+          },
+          "409": {
+            "description": "Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside`"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Entry",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
+    "/api/employee/exit": {
+      "post": {
+        "operationId": "exit__api_employee_exit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          },
+          "403": {
+            "description": "Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`)"
+          },
+          "409": {
+            "description": "Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside`"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exit ",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
+    "/api/employee/me": {
+      "get": {
+        "description": "Starea curentă a Angajatului: numele și Intrarea deschisă, dacă există.",
+        "operationId": "me_state_api_employee_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          }
+        },
+        "summary": "Me State",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
     "/api/employee/status": {
       "get": {
         "description": "Verificare conexiune: dacă cererea e în rețeaua Sălii și ora serverului. Nu cere rețeaua Sălii.",
@@ -2223,120 +2409,6 @@
           }
         },
         "summary": "Enroll"
-      }
-    },
-    "/me": {
-      "get": {
-        "operationId": "me_me_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "t",
-            "required": false,
-            "schema": {
-              "default": "",
-              "title": "T",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Me"
-      }
-    },
-    "/me/entry": {
-      "post": {
-        "operationId": "entry_me_entry_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_entry_me_entry_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Entry"
-      }
-    },
-    "/me/exit": {
-      "post": {
-        "operationId": "exit__me_exit_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_exit__me_exit_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Exit "
       }
     }
   }

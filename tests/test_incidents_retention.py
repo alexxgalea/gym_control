@@ -20,12 +20,12 @@ def _anomalies(harness) -> str:
 
 def _enter(harness, name="Ana Pop"):
     phone = harness.enrolled_client(name)
-    assert phone.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 200
     return phone
 
 
 def _exit(harness, phone):
-    assert phone.post("/me/exit", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/exit", json={"totp": harness.current_totp()}).status_code == 200
 
 
 def _mark(admin, start="2026-01-05T10:00", end="2026-01-05T11:30", note="Aparat spart"):

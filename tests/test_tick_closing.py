@@ -20,7 +20,7 @@ def _journal(harness) -> str:
 
 def _enter(harness, name="Ana Pop"):
     phone = harness.enrolled_client(name)
-    assert phone.post("/me/entry", data=totp(harness)).status_code == 200
+    assert phone.post("/api/employee/entry", json=totp(harness)).status_code == 200
     return phone
 
 
@@ -39,7 +39,7 @@ def test_tick_at_closing_flags_open_session_without_closing_it(harness):
     assert "Ana Pop" in page
     assert LABEL in page
     # încă deschisă: Ieșirea este posibilă, nu s-a inventat una
-    assert phone.post("/me/exit", data=totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 200
 
 
 def test_repeated_tick_does_not_duplicate_anomaly_or_journal(harness):
@@ -58,7 +58,7 @@ def test_repeated_tick_does_not_duplicate_anomaly_or_journal(harness):
 def test_closed_session_is_not_flagged(harness):
     phone = _enter(harness)
     harness.clock.advance(hours=1)
-    phone.post("/me/exit", data=totp(harness))
+    phone.post("/api/employee/exit", json=totp(harness))
     harness.clock.set(datetime(2026, 1, 5, 20, 5, tzinfo=timezone.utc))
     harness.tick()
     assert "Nu există Anomalii" in _page(harness)
@@ -67,7 +67,7 @@ def test_closed_session_is_not_flagged(harness):
 def test_old_session_flagged_missing_exit_is_also_flagged_at_closing(harness):
     phone = _enter(harness)
     harness.clock.advance(days=1)
-    phone.post("/me/entry", data=totp(harness))  # prima Sesiune devine „Ieșire lipsă”
+    phone.post("/api/employee/entry", json=totp(harness))  # prima Sesiune devine „Ieșire lipsă”
     harness.clock.set(datetime(2026, 1, 6, 20, 0, tzinfo=timezone.utc))
     harness.tick()
     assert _page(harness).count(LABEL) == 2
@@ -78,5 +78,5 @@ def test_normal_exit_resolves_open_at_closing(harness):
     harness.clock.set(datetime(2026, 1, 5, 20, 0, tzinfo=timezone.utc))
     harness.tick()
     assert LABEL in _page(harness)
-    assert phone.post("/me/exit", data=totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 200
     assert "Nu există Anomalii" in _page(harness)

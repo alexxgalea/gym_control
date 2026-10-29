@@ -41,6 +41,3 @@ def test_legacy_pages_still_answer_in_html(harness):
     r = harness.client(OUTSIDE_IP).post("/enroll/abc")
     assert r.status_code == 403
     assert "text/html" in r.headers["content-type"]
-    r = harness.client(HALL_IP).get("/me")
-    assert r.status_code == 401
-    assert "text/html" in r.headers["content-type"]
