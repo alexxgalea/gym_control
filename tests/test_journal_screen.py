@@ -11,7 +11,7 @@ def _rows(html: str) -> list[str]:
 
 
 def _event(harness, phone, kind):
-    assert phone.post(f"/me/{kind}").status_code == 200
+    assert phone.post(f"/me/{kind}", data={"totp": harness.current_totp()}).status_code == 200
 
 
 def test_row_shows_employee_moment_type_and_method(harness):
@@ -23,7 +23,7 @@ def test_row_shows_employee_moment_type_and_method(harness):
     assert "2026-01-05 10:12" in row          # ora locală
     assert "2026-01-05 08:12 UTC" in row      # UTC vizibil
     assert 'data-label="Tip">Intrare' in row
-    assert "Fără validare" in row             # metoda 'none'
+    assert "Cod QR" in row                 # metoda qr_totp
     assert 'data-label="Anomalii"' in row
 
 

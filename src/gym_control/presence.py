@@ -47,10 +47,9 @@ def is_old(session: OpenSession, now: datetime, tz: str) -> bool:
 
 
 def _journal_event(db, now, kind, employee, detail) -> int:
-    method = detail["method"]
     journal.write(
         db, now, kind=kind, action=kind,
-        summary=f"{'Intrare' if kind == 'entry' else 'Ieșire'}: {employee.name} ({method})",
+        summary=f"{'Intrare' if kind == 'entry' else 'Ieșire'}: {employee.name}",
         employee_id=employee.id, detail=detail,
     )
     return db.execute("SELECT last_insert_rowid()").fetchone()[0]
