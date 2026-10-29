@@ -49,7 +49,11 @@ export interface paths {
         get: operations["door_screen_status_api_admin_door_screen_get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Retire Door Screen
+         * @description Scoate din uz Ecranul de la ușă fără înlocuire (telefon pierdut sau furat).
+         */
+        delete: operations["retire_door_screen_api_admin_door_screen_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1084,6 +1088,42 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    retire_door_screen_api_admin_door_screen_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

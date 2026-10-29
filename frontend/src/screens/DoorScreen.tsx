@@ -4,6 +4,7 @@ import { useState } from "react";
 import { adminApi, type DoorActivationLink } from "@/api/client";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Button } from "@/design/button";
+import { ConfirmDialog } from "@/design/ConfirmDialog";
 import { ScreenHeader } from "@/design/ScreenHeader";
 import { Sheet } from "@/design/Sheet";
 import { Skeleton } from "@/design/Skeleton";
@@ -21,6 +22,16 @@ export function DoorScreen() {
   const issue = useMutation({
     mutationFn: adminApi.doorScreen.activationLink,
     onSuccess: setIssued,
+  });
+
+  const [retiring, setRetiring] = useState(false);
+  const retire = useMutation({
+    mutationFn: adminApi.doorScreen.retire,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: DOOR_SCREEN_KEY });
+      setRetiring(false);
+    },
+    onError: () => setRetiring(false),
   });
 
   const close = () => {
@@ -52,11 +63,29 @@ export function DoorScreen() {
             O nouă Activare scoate din uz telefonul de la ușă de până acum. Activarea cere rețeaua Sălii.
           </p>
           {issue.isError && <ErrorAlert>{errorText(issue.error)}</ErrorAlert>}
-          <Button onClick={() => issue.mutate()} disabled={issue.isPending}>
-            Activează
-          </Button>
+          {retire.isError && <ErrorAlert>{errorText(retire.error)}</ErrorAlert>}
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => issue.mutate()} disabled={issue.isPending}>
+              Activează
+            </Button>
+            {status.data.active && (
+              <Button variant="outline" onClick={() => setRetiring(true)}>
+                Scoate din uz
+              </Button>
+            )}
+          </div>
         </section>
       )}
+      <ConfirmDialog
+        open={retiring}
+        onOpenChange={setRetiring}
+        title="Scoți din uz Ecranul de la ușă?"
+        description="Telefonul de la ușă nu va mai afișa codul QR, iar aplicația rămâne fără Ecran de la ușă până la o nouă Activare. Folosește asta dacă telefonul e pierdut sau furat."
+        confirmLabel="Scoate din uz"
+        destructive
+        pending={retire.isPending}
+        onConfirm={() => retire.mutate()}
+      />
       <LinkSheet link={issued} onClose={close} />
     </div>
   );

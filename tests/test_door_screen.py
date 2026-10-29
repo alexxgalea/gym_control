@@ -255,6 +255,45 @@ def test_non_ascii_totp_is_refused_not_a_server_error(harness):
     assert "greșit" in r.text
 
 
+def test_new_link_cancels_the_previous_unused_link(harness):
+    old_link = harness.issue_door_link()
+    harness.issue_door_link()
+    assert harness.client().get("/api/employee" + old_link).status_code == 410
+    assert harness.client(HALL_IP).post("/api/employee" + old_link).status_code == 410
+
+
+def test_deactivation_requires_admin(harness):
+    assert harness.client().delete("/api/admin/door-screen").status_code == 401
+
+
+def test_deactivation_leaves_no_active_door_screen_and_the_phone_gets_no_qr(harness):
+    phone = harness.door_client()
+    admin = harness.admin_client()
+    assert admin.delete("/api/admin/door-screen").status_code == 204
+    assert admin.get("/api/admin/door-screen").json()["active"] is False
+    r = phone.get("/api/employee/door/qr")
+    assert r.status_code == 403
+    assert r.json()["reason"] == "door_token_invalid"
+
+
+def test_deactivation_is_in_the_journal_with_the_author(harness):
+    harness.door_client()
+    admin = harness.admin_client()
+    admin.delete("/api/admin/door-screen")
+    entries = admin.get("/api/admin/journal").json()["entries"]
+    retired = [e for e in entries if "Ecranul de la ușă scos din uz" in e["summary"]]
+    assert len(retired) == 1
+    assert retired[0]["kind_label"] == "Acțiune Admin"
+    assert retired[0]["author"] == "admin"
+
+
+def test_deactivation_without_an_active_door_screen_is_404_and_not_journaled(harness):
+    admin = harness.admin_client()
+    assert admin.delete("/api/admin/door-screen").status_code == 404
+    entries = admin.get("/api/admin/journal").json()["entries"]
+    assert not [e for e in entries if "scos din uz" in e["summary"]]
+
+
 def test_replaced_link_is_invalid_while_the_newer_one_works(harness):
     old = "/api/employee" + harness.issue_door_link()
     new = "/api/employee" + harness.issue_door_link()
