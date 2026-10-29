@@ -83,6 +83,16 @@ Primul job: la/după ora de închidere (setare la runtime, ora locală), fiecare
 curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcată „Ieșire lipsă” primește Anomalia
 `open_at_closing`, plus o linie în Jurnal. Sesiunea rămâne deschisă, fără Ieșire inventată; rulările repetate nu dublează.
 
+### Anomalii (decizii)
+
+- **Ieșire pe o Sesiune veche** (deschisă într-o zi locală anterioară): nu se închide cu ora curentă (ar inventa
+  o prezență peste noapte în Raport). Sesiunea e marcată `missing_exit`, Ieșirea e respinsă cu mesajul
+  „Nu ai o Intrare deschisă azi… Adminul poate corecta Sesiunea”, iar o Intrare nouă rămâne posibilă. Adminul o
+  corectează din ecranul Anomalii.
+- `open_at_closing` se rezolvă singură când o Ieșire normală închide Sesiunea (sau prin corectarea Adminului).
+- `outside_hours` e o marcă istorică a Intrării: rămâne în Raport și în Jurnal, dar Adminul o poate marca
+  „verificată” în ecranul Anomalii (rând în Jurnal cu autorul), ca să nu aglomereze lista de acțiuni.
+
 ## Incidente și retenție
 
 Ecranul Incidente (`/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
