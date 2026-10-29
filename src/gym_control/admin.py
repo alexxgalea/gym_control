@@ -2,10 +2,10 @@
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import auth, journal
+from gym_control import auth, employees, journal
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
@@ -58,7 +58,83 @@ def employees_page(
     admin: Admin = Depends(require_admin),
     db: sqlite3.Connection = Depends(get_db),
 ):
-    rows = db.execute("SELECT id, name, email FROM employees ORDER BY name, id").fetchall()
+    return _employees_response(request, admin, db)
+
+
+def _employees_response(request, admin, db, status_code=200, **extra):
+    context = {"admin": admin, "employees": employees.list_all(db), "nav": "employees", **extra}
+    return templates.TemplateResponse(request, "employees.html", context, status_code=status_code)
+
+
+@router.post("/employees")
+def create_employee(
+    request: Request,
+    name: str = Form(""),
+    email: str = Form(""),
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    try:
+        employee_id = employees.add(db, now, name, email)
+    except employees.InvalidEmployee as exc:
+        db.rollback()
+        return _employees_response(
+            request, admin, db, status_code=400,
+            form_error=str(exc).capitalize(), form={"name": name, "email": email},
+        )
+    journal.write_admin_action(
+        db, now, admin, "employee.create", f"Angajat creat: {' '.join(name.split())}",
+        employee_id=employee_id,
+    )
+    db.commit()
+    return RedirectResponse("/admin/employees", status_code=303)
+
+
+@router.post("/employees/import")
+async def import_employees(
+    request: Request,
+    file: UploadFile,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    raw = await file.read()
+    result = employees.ImportResult()
+    try:
+        rows = list(employees.parse_csv(raw))
+    except ValueError as exc:
+        return _employees_response(request, admin, db, status_code=400, import_fatal=str(exc))
+    for line, cells in rows:
+        if len(cells) != 2:
+            result.errors.append(f"Rândul {line}: se așteaptă două coloane (nume, email).")
+            continue
+        try:
+            employee_id = employees.add(db, now, cells[0], cells[1])
+        except employees.InvalidEmployee as exc:
+            result.errors.append(f"Rândul {line}: {exc}.")
+            continue
+        result.created += 1
+        journal.write_admin_action(
+            db, now, admin, "employee.import",
+            f"Angajat importat din CSV: {' '.join(cells[0].split())}",
+            employee_id=employee_id,
+        )
+    journal.write_admin_action(
+        db, now, admin, "employees.import_csv",
+        f"Import CSV: {result.created} importați, {len(result.errors)} respinse",
+        detail={"created": result.created, "errors": result.errors},
+    )
+    db.commit()
+    return _employees_response(request, admin, db, result=result)
+
+
+@router.get("/jurnal", response_class=HTMLResponse)
+def journal_page(
+    request: Request,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
     return templates.TemplateResponse(
-        request, "employees.html", {"admin": admin, "employees": rows, "nav": "employees"}
+        request, "journal.html", {"admin": admin, "entries": journal.recent(db), "nav": "journal"}
     )

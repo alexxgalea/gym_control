@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Jurnal{% endblock %}
+{% block content %}
+<h1>Jurnal</h1>
+<p class="muted">Orele sunt în UTC.</p>
+<table class="table stackable">
+  <thead><tr><th>Moment</th><th>Autor</th><th>Angajat</th><th>Descriere</th></tr></thead>
+  <tbody>
+  {% for j in entries %}
+    <tr>
+      <td data-label="Moment"><time>{{ j.at }}</time></td>
+      <td data-label="Autor">{{ j.author_name or "" }}</td>
+      <td data-label="Angajat">{{ j.employee_name or "" }}</td>
+      <td data-label="Descriere">{{ j.summary }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">Jurnalul este gol.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
