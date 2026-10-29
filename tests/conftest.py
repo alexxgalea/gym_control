@@ -57,11 +57,10 @@ class Harness:
         """Client deja autentificat ca Admin-ul de bootstrap (ADMIN_USER)."""
         c = self.client(ip)
         r = c.post(
-            "/admin/login",
-            data={"username": ADMIN_USER, "password": ADMIN_PASSWORD},
-            follow_redirects=False,
+            "/api/admin/login",
+            json={"username": ADMIN_USER, "password": ADMIN_PASSWORD},
         )
-        assert r.status_code == 303, r.text
+        assert r.status_code == 200, r.text
         return c
 
     def kiosk_client(self, ip: str = HALL_IP) -> TestClient:

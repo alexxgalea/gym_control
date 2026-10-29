@@ -13,7 +13,7 @@ Pagina de stare: `http://<laptop>:8000/status`. Serviciul repornește singur
 
 ## Primul Admin
 
-Ecranele Admin sunt la `/admin/login`. Contul se creează în unul din două moduri:
+Ecranele Admin sunt la `/admin/` (login la `/admin/login`). Contul se creează în unul din două moduri:
 
 - **Bootstrap din mediu**: setează `GYM_ADMIN_USER` și `GYM_ADMIN_PASSWORD`
   (de ex. într-un `.env` lângă `docker-compose.yml`); la pornire contul este creat
@@ -27,8 +27,31 @@ Parolele sunt păstrate cu hash Argon2. Sesiunea Adminului ține 12 ore.
 Protecții pe ecranele Admin:
 - **Limitarea încercărilor de login**: 5 eșecuri în 15 minute pentru aceeași pereche (IP, cont) blochează 15 minute
   loginul (mesaj „Prea multe încercări eșuate…”, HTTP 429). Starea e în memorie (se resetează la repornire).
-- **CSRF**: orice POST pe `/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
+- **CSRF**: orice POST pe `/admin/...` și `/api/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
   Fără tokeni în formulare. Cookie-ul Adminului este și `SameSite=Lax`. În teste, clienții trimit `Origin: http://testserver`.
+
+## Interfața Admin (SPA, `frontend/`)
+
+Ecranele Admin migrează într-un SPA React + Vite + TypeScript (ADR 0002), servit la `/admin/` și
+construit în Dockerfile (multi-stage; imaginea finală nu are Node). Ecranele nemigrate rămân HTML pe server.
+Login/logout/identitate sunt JSON: `POST /api/admin/login` (`{username, password}`), `POST /api/admin/logout`,
+`GET /api/admin/me`; fără sesiune răspunsul este 401.
+
+```
+cd frontend
+npm ci
+npm run dev          # Vite pe :5173/admin/, proxy /api către uvicorn pe :8000
+npm test             # Vitest + MSW (ecrane întregi, API simulat la granița HTTP)
+npm run typecheck
+npm run gen:api      # regenerează openapi.json + src/api/schema.d.ts din aplicația Python
+npm run check:api    # pică dacă tipurile generate nu sunt la zi (rulează și în CI)
+```
+
+Dezvoltare: pornește aplicația (`GYM_SCHEDULER=0 uv run uvicorn gym_control.app:app_from_env --factory`)
+și apoi `npm run dev`. Aplicația servește `frontend/dist` doar dacă `GYM_FRONTEND_DIST` indică un build.
+Ecran nou: endpoint-uri JSON cu modele Pydantic în `src/gym_control/admin_api.py` (sau modul nou cu prefix
+`/api/admin`), `npm run gen:api`, ecranul în `frontend/src/screens/` (înregistrat în `SCREENS` din `Shell.tsx` și
+în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON; apoi se șterg ruta Jinja, șablonul și testele HTML vechi.
 
 ## Import Angajați (CSV)
 
