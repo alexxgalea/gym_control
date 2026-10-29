@@ -132,6 +132,9 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 - Locația: `GYM_BACKUP_PATH` pe gazdă este montat în container ca `/backup` (`GYM_BACKUP_DIR` în aplicație).
   Alege o locație **separată de laptop**: un share de rețea montat pe gazdă (de ex. `/mnt/nas/sala`) sau un
   stick USB montat permanent. Implicit `./backups` (pe același laptop, doar pentru probă).
+- Fișierele de backup conțin secretul TOTP și hash-urile parolelor Adminilor: aplicația le creează cu permisiuni
+  `0600` și directorul (dacă îl creează ea) cu `0700`. Un director deja existent (share, USB) își păstrează
+  permisiunile: restricționează-le tu. Fișierele din rotație cu nume-dată invalidă sunt ignorate.
 - Fără `GYM_BACKUP_DIR` setat (rulare fără compose) backup-ul este oprit.
 - Verifică periodic că fișierele apar și că locația nu s-a demontat.
 

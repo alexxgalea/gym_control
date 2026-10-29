@@ -62,3 +62,20 @@ def test_failing_backup_does_not_break_tick(make_harness, tmp_path):
     blocker.write_text("x")
     h = make_harness(backup_dir=str(blocker / "dir"))
     h.tick()  # nu aruncă; eroarea e logată
+
+
+def test_malformed_date_backup_name_does_not_stop_rotation(make_harness, tmp_path):
+    h = make_harness(backup_dir=str(tmp_path))
+    for name in ("gym-control-2024-13-45.sqlite", "gym-control-2025-11-01.sqlite"):
+        (tmp_path / name).write_bytes(b"x")
+    h.tick()
+    assert _backups(tmp_path) == ["gym-control-2024-13-45.sqlite", "gym-control-2026-01-05.sqlite"]
+
+
+def test_backup_files_and_new_directory_are_private(make_harness, tmp_path):
+    target = tmp_path / "nou"
+    h = make_harness(backup_dir=str(target))
+    h.tick()
+    assert (target.stat().st_mode & 0o777) == 0o700
+    f = target / "gym-control-2026-01-05.sqlite"
+    assert (f.stat().st_mode & 0o777) == 0o600

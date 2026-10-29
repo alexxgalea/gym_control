@@ -28,9 +28,10 @@ def daily_backup(app, now: datetime) -> None:
     today = local_day(now, settings.timezone)
     target = directory / f"gym-control-{today.isoformat()}.sqlite"
     if not target.exists():
-        directory.mkdir(parents=True, exist_ok=True)
+        directory.mkdir(mode=0o700, parents=True, exist_ok=True)  # conține secretul TOTP și hash-urile Adminilor
         tmp = directory / f".{target.name}.tmp"
         tmp.unlink(missing_ok=True)
+        os.close(os.open(tmp, os.O_CREAT | os.O_WRONLY | os.O_EXCL, 0o600))  # fișierul e privat de la început
         dest = sqlite3.connect(tmp)
         try:
             with app.state.db_lock:
@@ -46,6 +47,12 @@ def _rotate(directory: Path, today: date, keep_days: int) -> None:
     cutoff = today - timedelta(days=keep_days)
     for p in directory.iterdir():
         m = _PATTERN.match(p.name)
-        if m and date.fromisoformat(m.group(1)) < cutoff:
+        if not m:
+            continue
+        try:
+            old = date.fromisoformat(m.group(1)) < cutoff
+        except ValueError:  # ex. 2024-13-45: nume care seamănă a backup, dar nu e dată; se ignoră
+            continue
+        if old:
             p.unlink()
             log.info("Backup vechi șters: %s", p)
