@@ -78,35 +78,24 @@ def test_issuing_new_link_voids_previous_unused_link(harness):
 def test_revocation_invalidates_device(harness):
     eid = harness.create_employee("Ana Pop")
     phone = harness.enroll(harness.issue_enroll_link(eid))
-    r = harness.admin_client().post(f"/admin/employees/{eid}/revoke", follow_redirects=False)
-    assert r.status_code == 303
+    r = harness.admin_client().post(f"/api/admin/employees/{eid}/revoke")
+    assert r.status_code == 204
     assert phone.get("/me").status_code == 401
 
 
 def test_enrol_screens_require_admin(harness):
     eid = harness.create_employee("Ana Pop")
     c = harness.client()
-    for path in (f"/admin/employees/{eid}/enroll-link", f"/admin/employees/{eid}/revoke"):
-        r = c.post(path, follow_redirects=False)
-        assert r.status_code == 303 and r.headers["location"] == "/admin/login"
-
-
-def test_admin_sees_enrolment_state_in_a_stackable_table(harness):
-    harness.create_employee("Ana Pop")
-    eid = harness.create_employee("Ion Vasile")
-    harness.enroll(harness.issue_enroll_link(eid))
-    page = harness.admin_client().get("/admin/employees").text
-    assert 'class="table stackable"' in page
-    assert 'data-label="Dispozitiv"' in page
-    assert "Înrolat" in page and "Neînrolat" in page
+    for path in (f"/api/admin/employees/{eid}/enroll-link", f"/api/admin/employees/{eid}/revoke"):
+        assert c.post(path).status_code == 401
 
 
 def test_admin_enrolment_actions_are_in_journal_with_author(harness):
     eid = harness.create_employee("Ana Pop")
     admin = harness.admin_client()
     harness.enroll(harness.issue_enroll_link(eid, admin))
-    admin.post(f"/admin/employees/{eid}/revoke")
-    page = admin.get("/admin/jurnal").text
+    admin.post(f"/api/admin/employees/{eid}/revoke")
+    page = admin.get("/api/admin/journal").text
     assert "Link de înrolare generat pentru Ana Pop" in page
     assert "Dispozitiv revocat pentru Ana Pop" in page
     assert "Dispozitiv înrolat" in page

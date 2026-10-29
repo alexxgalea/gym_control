@@ -57,11 +57,10 @@ class Harness:
         """Client deja autentificat ca Admin-ul de bootstrap (ADMIN_USER)."""
         c = self.client(ip)
         r = c.post(
-            "/admin/login",
-            data={"username": ADMIN_USER, "password": ADMIN_PASSWORD},
-            follow_redirects=False,
+            "/api/admin/login",
+            json={"username": ADMIN_USER, "password": ADMIN_PASSWORD},
         )
-        assert r.status_code == 303, r.text
+        assert r.status_code == 200, r.text
         return c
 
     def kiosk_client(self, ip: str = HALL_IP) -> TestClient:
@@ -84,23 +83,16 @@ class Harness:
     def create_employee(self, name: str, email: str | None = None) -> int:
         """Creează un Angajat ca Admin și întoarce id-ul lui (citit din ecranul Angajați)."""
         email = email or f"{name.lower().replace(' ', '.')}@firma.ro"
-        admin = self.admin_client()
-        r = admin.post("/admin/employees", data={"name": name, "email": email},
-                       follow_redirects=False)
-        assert r.status_code == 303, r.text
-        page = admin.get("/admin/employees").text
-        m = re.search(rf'data-employee-id="(\d+)"[^>]*data-email="{re.escape(email.lower())}"', page)
-        assert m, page
-        return int(m.group(1))
+        r = self.admin_client().post("/api/admin/employees", json={"name": name, "email": email})
+        assert r.status_code == 201, r.text
+        return r.json()["id"]
 
     def issue_enroll_link(self, employee_id: int, admin: TestClient | None = None) -> str:
         """Admin generează linkul de înrolare; întoarce calea (`/enroll/<token>`)."""
         admin = admin or self.admin_client()
-        r = admin.post(f"/admin/employees/{employee_id}/enroll-link")
+        r = admin.post(f"/api/admin/employees/{employee_id}/enroll-link")
         assert r.status_code == 200, r.text
-        m = re.search(r"/enroll/[\w-]+", r.text)
-        assert m, r.text
-        return m.group(0)
+        return "/enroll/" + r.json()["link"].rsplit("/enroll/", 1)[1]
 
     def enroll(self, link: str, ip: str = HALL_IP) -> TestClient:
         """Deschide linkul pe un client nou (telefonul Angajatului) și confirmă înrolarea."""

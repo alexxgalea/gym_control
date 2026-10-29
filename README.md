@@ -13,7 +13,7 @@ Pagina de stare: `http://<laptop>:8000/status`. Serviciul repornește singur
 
 ## Primul Admin
 
-Ecranele Admin sunt la `/admin/login`. Contul se creează în unul din două moduri:
+Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`). Contul se creează în unul din două moduri:
 
 - **Bootstrap din mediu**: setează `GYM_ADMIN_USER` și `GYM_ADMIN_PASSWORD`
   (de ex. într-un `.env` lângă `docker-compose.yml`); la pornire contul este creat
@@ -27,14 +27,63 @@ Parolele sunt păstrate cu hash Argon2. Sesiunea Adminului ține 12 ore.
 Protecții pe ecranele Admin:
 - **Limitarea încercărilor de login**: 5 eșecuri în 15 minute pentru aceeași pereche (IP, cont) blochează 15 minute
   loginul (mesaj „Prea multe încercări eșuate…”, HTTP 429). Starea e în memorie (se resetează la repornire).
-- **CSRF**: orice POST pe `/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
+- **CSRF**: orice POST pe `/admin/...` și `/api/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
   Fără tokeni în formulare. Cookie-ul Adminului este și `SameSite=Lax`. În teste, clienții trimit `Origin: http://testserver`.
 
-## Import Angajați (CSV)
+## Interfața Admin (SPA, `frontend/`)
 
-Ecranul Angajați acceptă un CSV cu antetul `nume,email` (și `;` ca separator).
-Rândurile valide se importă; cele invalide sunt listate cu numărul rândului.
-Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
+Toate ecranele Admin sunt un SPA React 19 + Vite + TypeScript (ADR 0002), servit la `/admin/` și construit în
+Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Paginile Angajatului și ale kioskului
+(`/me`, `/enroll/<token>`, `/door`, `/status`) rămân HTML pe server (`templates/`, `static/app.css`).
+Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
+în imaginea Docker este setat deja.
+
+Ecrane: Angajați (adăugare, link de înrolare, revocare cu confirmare, import CSV), Jurnal (filtre în adresă:
+`?employee=&from=&to=&kind=&page=`), Anomalii, Incidente, Rapoarte (ecran, CSV, variantă tipărită la
+`/admin/reports/print`), Setări, plus dialogurile Sesiune manuală (adăugare, corectare). Fiecare acțiune a Adminului
+intră în Jurnal cu autorul.
+
+API-ul este JSON sub `/api/admin/...`, cu modele Pydantic de răspuns (în `admin_api.py`, `admin_settings_api.py`,
+`journal_api.py`, `report_api.py`, `manual_sessions.py`). Fără sesiune răspunsul este 401, iar SPA-ul duce la login.
+Erorile de validare sunt 400 `{detail, field}` (mesajele în română vin de la server). Schema este documentată de
+FastAPI la `/docs`.
+
+### Dezvoltare
+
+Node 22 și npm sunt necesare doar pentru frontend. Cu două terminale:
+
+```
+GYM_SCHEDULER=0 GYM_ADMIN_USER=admin GYM_ADMIN_PASSWORD=parola-de-test uv run uvicorn gym_control.app:app_from_env --factory
+cd frontend && npm ci && npm run dev
+```
+
+Deschide `http://localhost:5173/admin/`: serverul Vite face proxy pentru `/api` către uvicorn pe `:8000`
+(browserul vede o singură origine, deci verificarea `Origin` a POST-urilor trece).
+
+### Build și verificări
+
+Rulează din `frontend/`:
+
+```
+npm test             # Vitest + MSW: ecrane întregi, API simulat la granița HTTP
+npm run typecheck    # tsc strict
+npm run build        # tsc + vite build -> frontend/dist
+npm run gen:api      # regenerează openapi.json + src/api/schema.d.ts din aplicația Python
+npm run check:api    # pică dacă openapi.json / tipurile generate nu sunt la zi
+```
+
+Tipurile TS sunt generate din schema OpenAPI a aplicației (`scripts/export_openapi.py`); după orice schimbare de
+câmp în API rulează `npm run gen:api` și comite rezultatul. CI (`.github/workflows/ci.yml`) rulează `uv run pytest`
+și, în `frontend/`, `npm ci`, `check:api`, `typecheck`, `test`, `build`.
+
+Ecran nou: endpoint-uri JSON cu modele Pydantic, `npm run gen:api`, ecranul în `frontend/src/screens/`
+(înregistrat în `SCREENS` din `Shell.tsx` și în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON.
+
+### Import Angajați (CSV)
+
+`POST /api/admin/employees/import` (`multipart`, câmpul `file`) întoarce `{created, errors}`. Antetul `nume,email`
+(separator `,` sau `;`, BOM acceptat); rândurile valide se importă, cele invalide apar ca `"Rândul N: ..."`; un antet
+greșit dă 400 `{detail}`. Parsarea este în `employees.parse_csv`.
 
 ## Teste
 
@@ -58,10 +107,10 @@ personal și confirmă; telefonul primește un cookie de lungă durată. Un sing
 re-înrolarea sau „Revocă” invalidează telefonul vechi. Fără înrolare, `/me` afișează
 mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana Pop")`.
 
-## Intrare/Ieșire (pas intermediar)
+## Intrare/Ieșire
 
 Angajatul înrolat deschide `/me`: vede starea („în Sală din 10:12” / „în afara Sălii”) și doar butonul valid.
-Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`). Încă fără QR/validare de rețea.
+Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`).
 
 ## Kiosk la ușă (QR TOTP)
 
@@ -101,7 +150,7 @@ curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcat�
 
 ## Incidente și retenție
 
-Ecranul Incidente (`/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
+Ecranul Incidente (SPA la `/admin/incidents`, API `/api/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
 mai târziu; ambele acțiuni apar în Jurnal cu autorul. Jobul de retenție (`retention.purge_job`, rulat de `tick`)
 șterge Sesiunile (cu Anomaliile lor) și rândurile din Jurnal (de orice fel) mai vechi de perioada de retenție
 (Setări, implicit 12 luni; `GYM_RETENTION_MONTHS` ca valoare inițială). Nu se șterg Angajații și conturile Admin.
@@ -187,7 +236,7 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 
 ## Verificări manuale (neacoperite de teste automate)
 
-- Randare responsivă: deschide `/me` și ecranele Admin pe un telefon real și verifică lizibilitatea.
+- Randare responsivă: deschide `/me` pe un telefon real și verifică lizibilitatea.
 - Pagina kiosk în browser real: `/door` afișează QR-ul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat.
 - Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
 - Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.

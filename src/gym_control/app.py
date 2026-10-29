@@ -9,7 +9,8 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, auth, db, door, enrollment, manual_sessions, network, presence, report_screens, scheduler, totp
+from gym_control import admin_api, auth, db, door, enrollment, journal_api, manual_sessions, network, presence, report_api, scheduler, spa, totp
+from gym_control import admin_settings_api
 from gym_control import db as db_module
 from gym_control.settings import Settings
 from gym_control.templates import templates as _templates
@@ -52,8 +53,10 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
         settings.bootstrap_admin_username, settings.bootstrap_admin_password,
     )
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
-    app.include_router(admin.router)
-    app.include_router(report_screens.router)
+    app.include_router(admin_api.router)
+    app.include_router(admin_settings_api.router)
+    app.include_router(journal_api.router)
+    app.include_router(report_api.router)
     app.include_router(manual_sessions.router)
     app.include_router(enrollment.router)
     app.include_router(presence.router)
@@ -69,6 +72,9 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
             "status.html",
             {"now": clock().isoformat(), "in_hall": network.in_hall(request, db)},
         )
+
+    # Catch-all-ul SPA se înregistrează ultimul: rutele HTML ale Angajatului și kioskului au prioritate.
+    spa.mount(app, settings.frontend_dist)
 
     return app
 

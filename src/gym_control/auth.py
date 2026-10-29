@@ -74,8 +74,7 @@ def close_session(db: sqlite3.Connection, token: str) -> None:
     db.commit()
 
 
-def require_admin(request: Request, db: sqlite3.Connection = Depends(get_db)) -> Admin:
-    """Dependență pentru orice ecran Admin; fără sesiune valabilă redirecționează la login."""
+def _session_admin(request: Request, db: sqlite3.Connection) -> Admin | None:
     token = request.cookies.get(COOKIE)
     now = request.app.state.clock()
     if token:
@@ -86,7 +85,15 @@ def require_admin(request: Request, db: sqlite3.Connection = Depends(get_db)) ->
         ).fetchone()
         if row:
             return Admin(row["id"], row["username"])
-    raise HTTPException(status_code=303, headers={"Location": "/admin/login"})
+    return None
+
+
+def require_admin_api(request: Request, db: sqlite3.Connection = Depends(get_db)) -> Admin:
+    """Dependență pentru endpoint-urile JSON ale Adminului; fără sesiune valabilă răspunde 401."""
+    admin = _session_admin(request, db)
+    if admin is None:
+        raise HTTPException(status_code=401, detail="Sesiune lipsă sau expirată.")
+    return admin
 
 
 def require_same_origin(request: Request) -> None:

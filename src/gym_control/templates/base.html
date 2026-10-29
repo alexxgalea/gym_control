@@ -9,20 +9,6 @@
 <body>
 <header class="topbar">
   <strong class="brand">Gym Control</strong>
-  {% if admin %}
-  <nav class="nav">
-    <a href="/admin/employees" {% if nav == "employees" %}aria-current="page"{% endif %}>Angajați</a>
-    <a href="/admin/jurnal" {% if nav == "journal" %}aria-current="page"{% endif %}>Jurnal</a>
-    <a href="/admin/anomalies" {% if nav == "anomalies" %}aria-current="page"{% endif %}>Anomalii</a>
-    <a href="/admin/incidents" {% if nav == "incidents" %}aria-current="page"{% endif %}>Incidente</a>
-    <a href="/admin/reports" {% if nav == "reports" %}aria-current="page"{% endif %}>Rapoarte</a>
-    <a href="/admin/settings" {% if nav == "settings" %}aria-current="page"{% endif %}>Setări</a>
-  </nav>
-  <form method="post" action="/admin/logout" class="logout">
-    <span class="who">{{ admin.username }}</span>
-    <button type="submit" class="btn btn-secondary">Ieșire cont</button>
-  </form>
-  {% endif %}
 </header>
 <main class="container">
   {% block content %}{% endblock %}

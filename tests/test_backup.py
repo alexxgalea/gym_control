@@ -1,8 +1,6 @@
 """Backup zilnic (#14): fișier SQLite restaurabil, rotație 30 de zile, idempotent pe zi."""
 
-import os
 import sqlite3
-from datetime import timedelta
 
 
 def _backups(d):

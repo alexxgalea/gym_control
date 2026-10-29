@@ -3,7 +3,6 @@
 Ceas de start: 2026-01-05 08:12 UTC (10:12 local, iarna UTC+2). Perioada implicită: 12 luni.
 """
 
-import re
 from datetime import datetime, timezone
 
 PURGE = "Retenție"
@@ -11,11 +10,12 @@ FAR = datetime(2027, 2, 5, 12, 0, tzinfo=timezone.utc)  # > 12 luni după ceasul
 
 
 def _journal(harness) -> str:
-    return harness.admin_client().get("/admin/jurnal").text
+    return harness.admin_client().get("/api/admin/journal").text
 
 
 def _anomalies(harness) -> str:
-    return harness.admin_client().get("/admin/anomalies").text
+    rows = harness.admin_client().get("/api/admin/anomalies").json()
+    return "\n".join(f"{a['employee_name']} | {a['label']}" for a in rows) or "Nu există Anomalii"
 
 
 def _enter(harness, name="Ana Pop"):
@@ -29,59 +29,85 @@ def _exit(harness, phone):
 
 
 def _mark(admin, start="2026-01-05T10:00", end="2026-01-05T11:30", note="Aparat spart"):
-    return admin.post("/admin/incidents", data={"start": start, "end": end, "note": note},
-                      follow_redirects=False)
+    return admin.post("/api/admin/incidents", json={"start": start, "end": end, "note": note})
 
 
-def _incident_id(admin) -> str:
-    return re.search(r'data-incident-id="(\d+)"', admin.get("/admin/incidents").text).group(1)
+def _incident_id(admin) -> int:
+    return admin.get("/api/admin/incidents").json()[0]["id"]
 
 
-# --- ecranul Incidente -----------------------------------------------------------------
+# --- API-ul Incidente ------------------------------------------------------------------
 
-def test_incidents_screen_requires_admin(harness):
-    r = harness.client().get("/admin/incidents", follow_redirects=False)
-    assert r.status_code in (303, 401)
+def test_incidents_api_requires_admin(harness):
+    assert harness.client().get("/api/admin/incidents").status_code == 401
+    assert harness.client().post("/api/admin/incidents", json={}).status_code in (401, 403)
+    assert harness.client().post("/api/admin/incidents/1/close").status_code in (401, 403)
 
 
-def test_admin_marks_incident_and_it_is_listed_open_and_journaled_with_author(harness):
+def test_admin_marks_incident_and_it_is_listed_open_in_local_time_and_journaled_with_author(harness):
     admin = harness.admin_client()
-    assert _mark(admin).status_code == 303
-    page = admin.get("/admin/incidents").text
-    assert "Aparat spart" in page
-    assert "2026-01-05 10:00" in page and "2026-01-05 11:30" in page
-    assert "Deschis" in page
-    assert 'href="/admin/incidents"' in page
+    r = _mark(admin)
+    assert r.status_code == 201
+    created = r.json()
+    rows = admin.get("/api/admin/incidents").json()
+    assert rows == [created]
+    assert created["note"] == "Aparat spart"
+    assert created["start"] == "2026-01-05 10:00" and created["end"] == "2026-01-05 11:30"
+    assert created["status"] == "open" and created["created_by"] == "admin"
+    assert created["closed_at"] is None and created["closed_by"] is None
     journal = _journal(harness)
     assert "Incident marcat" in journal and "admin" in journal
 
 
 def test_incident_note_is_optional(harness):
-    assert _mark(harness.admin_client(), note="").status_code == 303
+    assert _mark(harness.admin_client(), note="").status_code == 201
 
 
-def test_invalid_incident_interval_is_rejected(harness):
+def test_invalid_incident_interval_is_rejected_with_the_field_to_show_it_next_to(harness):
     admin = harness.admin_client()
-    assert _mark(admin, start="2026-01-05T12:00", end="2026-01-05T10:00").status_code == 400
-    assert _mark(admin, start="nu-e-data", end="2026-01-05T10:00").status_code == 400
-    assert "Nu există Incidente" in admin.get("/admin/incidents").text
+    r = _mark(admin, start="2026-01-05T12:00", end="2026-01-05T10:00")
+    assert r.status_code == 400
+    assert r.json() == {"detail": "Începutul trebuie să fie înainte de sfârșit.", "field": "start"}
+    r = _mark(admin, start="nu-e-data", end="2026-01-05T10:00")
+    assert r.status_code == 400 and r.json()["field"] == "start" and "invalide" in r.json()["detail"]
+    r = _mark(admin, start="2026-01-05T10:00", end="")
+    assert r.status_code == 400 and r.json()["field"] == "end" and "Sfârșitul" in r.json()["detail"]
+    r = _mark(admin, start="", end="2026-01-05T10:00")
+    assert r.status_code == 400 and r.json()["field"] == "start"
+    r = _mark(admin, note="x" * 501)
+    assert r.status_code == 400 and r.json()["field"] == "note" and "prea lungă" in r.json()["detail"]
+    assert admin.get("/api/admin/incidents").json() == []
 
 
 def test_admin_closes_incident_and_it_is_journaled_with_author(harness):
     admin = harness.admin_client()
     _mark(admin)
-    r = admin.post(f"/admin/incidents/{_incident_id(admin)}/close", follow_redirects=False)
-    assert r.status_code == 303
-    page = admin.get("/admin/incidents").text
-    assert "Închis" in page and "Deschis" not in page
+    r = admin.post(f"/api/admin/incidents/{_incident_id(admin)}/close")
+    assert r.status_code == 200
+    [row] = admin.get("/api/admin/incidents").json()
+    assert row["status"] == "closed" and row["closed_by"] == "admin" and row["closed_at"] == "2026-01-05 10:12"
+    assert r.json() == row
     assert "Incident închis" in _journal(harness)
 
 
-def test_incidents_screen_is_mobile_friendly(harness):
+def test_closing_unknown_or_already_closed_incident_is_404(harness):
     admin = harness.admin_client()
+    r = admin.post("/api/admin/incidents/999/close")
+    assert r.status_code == 404 and r.json()["detail"] == "Incident inexistent sau deja închis"
     _mark(admin)
-    page = admin.get("/admin/incidents").text
-    assert 'name="viewport"' in page and "stackable" in page and 'data-label="Interval"' in page
+    incident_id = _incident_id(admin)
+    assert admin.post(f"/api/admin/incidents/{incident_id}/close").status_code == 200
+    assert admin.post(f"/api/admin/incidents/{incident_id}/close").status_code == 404
+
+
+def test_open_incidents_are_listed_before_closed_ones_newest_first(harness):
+    admin = harness.admin_client()
+    _mark(admin, start="2026-01-01T10:00", end="2026-01-01T11:00", note="vechi")
+    _mark(admin, start="2026-01-03T10:00", end="2026-01-03T11:00", note="închis")
+    _mark(admin, start="2026-01-02T10:00", end="2026-01-02T11:00", note="deschis")
+    closed = [r for r in admin.get("/api/admin/incidents").json() if r["note"] == "închis"][0]
+    admin.post(f"/api/admin/incidents/{closed['id']}/close")
+    assert [r["note"] for r in admin.get("/api/admin/incidents").json()] == ["deschis", "vechi", "închis"]
 
 
 # --- retenția --------------------------------------------------------------------------
@@ -123,7 +149,7 @@ def test_accounts_survive_retention(harness):
     _enter(harness)
     harness.clock.set(FAR)
     harness.tick()
-    assert "Ana Pop" in harness.admin_client().get("/admin/employees").text
+    assert [e["name"] for e in harness.admin_client().get("/api/admin/employees").json()] == ["Ana Pop"]
 
 
 def test_session_straddling_the_cutoff_is_kept_with_its_journal_rows(harness):
@@ -163,7 +189,7 @@ def test_closed_incident_data_reenters_normal_retention(harness):
     harness.tick()
     assert "Intrare: Ana Pop" in _journal(harness)
     admin = harness.admin_client()  # sesiunea Adminului a expirat între timp
-    admin.post(f"/admin/incidents/{_incident_id(admin)}/close")
+    admin.post(f"/api/admin/incidents/{_incident_id(admin)}/close")
     harness.tick()
     assert "Intrare: Ana Pop" not in _journal(harness)
 
@@ -181,24 +207,23 @@ def test_session_overlapping_open_incident_is_kept(harness):
 # --- perioada configurabilă ------------------------------------------------------------
 
 def _save(admin, months):
-    return admin.post("/admin/settings", follow_redirects=False, data={
+    return admin.put("/api/admin/settings", json={
         "hall_subnet": "192.168.10.0/24", "opening_time": "06:00", "closing_time": "22:00",
         "retention_months": months})
 
 
 def test_settings_show_default_retention(harness):
-    page = harness.admin_client().get("/admin/settings").text
-    assert 'name="retention_months"' in page and 'value="12"' in page
+    assert harness.admin_client().get("/api/admin/settings").json()["retention_months"] == 12
 
 
 def test_longer_retention_keeps_data_and_shorter_deletes(harness):
     _enter(harness)
     admin = harness.admin_client()
-    assert _save(admin, "24").status_code == 303
+    assert _save(admin, "24").status_code == 200
     harness.clock.set(FAR)  # ~13 luni
     harness.tick()
     assert "Intrare: Ana Pop" in _journal(harness)
-    assert _save(harness.admin_client(), "6").status_code == 303
+    assert _save(harness.admin_client(), "6").status_code == 200
     harness.tick()
     assert "Intrare: Ana Pop" not in _journal(harness)
 
@@ -213,7 +238,7 @@ def test_invalid_retention_is_rejected(harness):
     admin = harness.admin_client()
     for bad in ("0", "-3", "abc", "1.5"):
         assert _save(admin, bad).status_code == 400, bad
-    assert 'value="12"' in admin.get("/admin/settings").text
+    assert admin.get("/api/admin/settings").json()["retention_months"] == 12
 
 
 def test_retention_from_environment_configuration(make_harness):

@@ -1,53 +1,75 @@
+"""Autentificarea Adminului prin API-ul JSON: login, identitate, logout, sesiune, SPA servit la /admin/."""
+
 from tests.conftest import ADMIN_PASSWORD, ADMIN_USER
 
 
-def test_admin_screen_without_login_is_refused(harness):
-    r = harness.client().get("/admin/employees", follow_redirects=False)
-    assert r.status_code == 303
-    assert r.headers["location"] == "/admin/login"
+def _login(client, username=ADMIN_USER, password=ADMIN_PASSWORD):
+    return client.post("/api/admin/login", json={"username": username, "password": password})
 
 
-def test_admin_screen_with_bogus_cookie_is_refused(harness):
+def test_login_with_correct_credentials_returns_the_account(harness):
+    c = harness.client()
+    r = _login(c)
+    assert r.status_code == 200
+    assert r.json() == {"username": ADMIN_USER}
+    assert "HttpOnly" in r.headers["set-cookie"] and "SameSite=lax" in r.headers["set-cookie"]
+
+
+def test_me_returns_the_logged_in_account(harness):
+    assert harness.admin_client().get("/api/admin/me").json() == {"username": ADMIN_USER}
+
+
+def test_me_without_session_is_401_json(harness):
+    r = harness.client().get("/api/admin/me")
+    assert r.status_code == 401
+    assert r.json()["detail"]
+
+
+def test_me_with_bogus_cookie_is_401(harness):
     c = harness.client()
     c.cookies.set("gc_admin", "nu-e-o-sesiune")
-    assert c.get("/admin/employees", follow_redirects=False).status_code == 303
+    assert c.get("/api/admin/me").status_code == 401
 
 
-def test_login_with_wrong_password_is_rejected(harness):
+def test_login_with_wrong_password_is_401_with_message(harness):
     c = harness.client()
-    r = c.post("/admin/login", data={"username": ADMIN_USER, "password": "gresit"})
+    r = _login(c, password="gresit")
     assert r.status_code == 401
-    assert "Cont sau parolă greșite" in r.text
-    assert c.get("/admin/employees", follow_redirects=False).status_code == 303
+    assert r.json() == {"detail": "Cont sau parolă greșite."}
+    assert c.get("/api/admin/me").status_code == 401
 
 
-def test_login_with_unknown_account_is_rejected(harness):
-    r = harness.client().post(
-        "/admin/login", data={"username": "altcineva", "password": ADMIN_PASSWORD}
-    )
-    assert r.status_code == 401
+def test_login_with_unknown_account_is_401(harness):
+    assert _login(harness.client(), username="altcineva").status_code == 401
 
 
-def test_login_grants_access_and_logout_removes_it(harness):
+def test_logout_closes_the_session(harness):
     c = harness.admin_client()
-    assert c.get("/admin/employees").status_code == 200
-    r = c.post("/admin/logout", follow_redirects=False)
-    assert r.status_code == 303
-    assert c.get("/admin/employees", follow_redirects=False).status_code == 303
+    r = c.post("/api/admin/logout")
+    assert r.status_code == 204
+    assert c.get("/api/admin/me").status_code == 401
 
 
 def test_session_expires_with_the_clock(harness):
     c = harness.admin_client()
     harness.clock.advance(hours=13)
-    assert c.get("/admin/employees", follow_redirects=False).status_code == 303
+    assert c.get("/api/admin/me").status_code == 401
 
 
-def test_login_page_is_reachable_and_mobile_friendly(harness):
-    r = harness.client().get("/admin/login")
-    assert r.status_code == 200
-    assert 'name="viewport"' in r.text
+def test_journal_api_requires_login(harness):
+    assert harness.client().get("/api/admin/journal").status_code == 401
 
 
-def test_password_is_not_echoed_in_pages(harness):
-    c = harness.admin_client()
-    assert ADMIN_PASSWORD not in c.get("/admin/employees").text
+def test_session_from_json_login_opens_journal_api(harness):
+    assert harness.admin_client().get("/api/admin/journal").status_code == 200
+
+
+def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path):
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<html>SPA</html>")
+    (tmp_path / "assets" / "app.js").write_text("console.log(1)")
+    c = make_harness(frontend_dist=str(tmp_path)).client()
+    assert c.get("/admin/").text == "<html>SPA</html>"
+    assert c.get("/admin/login").text == "<html>SPA</html>"
+    assert c.get("/admin/assets/app.js").text == "console.log(1)"
+    assert c.get("/admin/assets/lipsa.js").status_code == 404

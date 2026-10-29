@@ -27,6 +27,11 @@ DISCLAIMER = (
     "nu o dovadă a vinovăției."
 )
 OPEN_TEXT = "deschisă"
+SCOPE_TEXT = (
+    "Ora locală. Include toate Sesiunile care se suprapun intervalului, inclusiv cele care încep "
+    "înainte sau se termină după el. Sesiunile deschise sunt considerate prezente până la ora de "
+    "închidere a zilei Intrării."
+)
 MANUAL_LABEL = "Sesiune manuală"
 CSV_HEADER = ["Angajat", "Intrare", "Ieșire", "Eticheta", "Metoda de validare"]
 METHOD_LABELS = {**journal.METHOD_LABELS, "manual": "manuală"}
