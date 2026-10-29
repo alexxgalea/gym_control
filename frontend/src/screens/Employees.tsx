@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Upload } from "lucide-react";
+import { Check, Copy, Plus, Upload, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport } from "@/api/client";
 import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/design/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/design/ConfirmDialog";
+import { EmptyState } from "@/design/EmptyState";
+import { ScreenHeader } from "@/design/ScreenHeader";
+import { Sheet } from "@/design/Sheet";
+import { Skeleton } from "@/design/Skeleton";
+import { StatusBadge } from "@/design/StatusBadge";
 import { AddSessionDialog } from "@/screens/ManualSession";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,19 +26,26 @@ export function Employees() {
   const [importing, setImporting] = useState(false);
   const [addingSession, setAddingSession] = useState(false);
   const [issued, setIssued] = useState<EnrollLink | null>(null);
+  const [replacing, setReplacing] = useState<Employee | null>(null);
   const [revoking, setRevoking] = useState<Employee | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: EMPLOYEES_KEY });
-  const generate = useMutation({
+  const activate = useMutation({
     mutationFn: (employee: Employee) => adminApi.employees.enrollLink(employee.id),
-    onSuccess: (link) => setIssued(link),
-    onError: (error) => toast(errorText(error), "error"),
+    onSuccess: (link) => {
+      setReplacing(null);
+      setIssued(link);
+    },
+    onError: (error) => {
+      setReplacing(null);
+      toast(errorText(error), "error");
+    },
   });
   const revoke = useMutation({
     mutationFn: (employee: Employee) => adminApi.employees.revoke(employee.id),
     onSuccess: async () => {
       setRevoking(null);
-      toast("Dispozitiv revocat");
+      toast("Telefon scos din uz");
       await refresh();
     },
     onError: (error) => {
@@ -44,110 +56,94 @@ export function Employees() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">
-          Angajați{employees.data ? ` (${employees.data.length})` : ""}
-        </h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setAddingSession(true)}>
-            Sesiune manuală nouă
-          </Button>
-          <Button variant="outline" onClick={() => setImporting(true)}>
-            <Upload className="size-4" aria-hidden /> Importă CSV
-          </Button>
-          <Button onClick={() => setAdding(true)}>
-            <Plus className="size-4" aria-hidden /> Adaugă Angajat
-          </Button>
-        </div>
-      </div>
+      <ScreenHeader
+        title="Angajați"
+        description="Aici adaugi Angajații și le activezi telefonul, ca să poată face Intrare și Ieșire."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setAddingSession(true)}>
+              Sesiune manuală nouă
+            </Button>
+            <Button variant="outline" onClick={() => setImporting(true)}>
+              <Upload className="size-4" aria-hidden /> Importă listă din Excel
+            </Button>
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="size-4" aria-hidden /> Adaugă un Angajat nou
+            </Button>
+          </>
+        }
+      />
 
-      {employees.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {isShownError(employees.error) && (
-        <ErrorAlert>
-          {employees.error.detail}
-        </ErrorAlert>
-      )}
-      {employees.data && (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Nume</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Dispozitiv</th>
-                <th className="px-4 py-3 text-right font-medium">Acțiuni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.data.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                    Niciun Angajat încă.
-                  </td>
-                </tr>
-              )}
-              {employees.data.map((employee) => (
-                <tr key={employee.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium">{employee.name}</td>
-                  <td className="px-4 py-3">{employee.email}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={
-                        employee.enrolled
-                          ? "rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
-                          : "rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
-                      }
-                    >
-                      {employee.enrolled ? "Înrolat" : "Neînrolat"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" disabled={generate.isPending} onClick={() => generate.mutate(employee)}>
-                        {employee.enrolled ? "Re-înrolează" : "Generează link"}
-                      </Button>
-                      {employee.enrolled && (
-                        <Button size="sm" variant="outline" onClick={() => setRevoking(employee)}>
-                          Revocă
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {employees.isPending && <Skeleton />}
+      {isShownError(employees.error) && <ErrorAlert>{employees.error.detail}</ErrorAlert>}
+      {employees.data?.length === 0 && <EmptyState icon={Users} text="Niciun Angajat încă." />}
+      {employees.data && employees.data.length > 0 && (
+        <ul className="overflow-hidden rounded-2xl border border-border bg-card">
+          {employees.data.map((employee) => (
+            <li
+              key={employee.id}
+              className="flex flex-col gap-3 border-t border-border p-4 first:border-t-0 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-semibold">{employee.name}</p>
+                <p className="truncate text-sm text-muted-foreground">{employee.email}</p>
+                <div className="mt-1.5">
+                  <StatusBadge tone={employee.enrolled ? "success" : "neutral"}>
+                    {employee.enrolled ? "Telefon activat" : "Telefon neactivat"}
+                  </StatusBadge>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={activate.isPending}
+                  onClick={() => (employee.enrolled ? setReplacing(employee) : activate.mutate(employee))}
+                >
+                  {employee.enrolled ? "Activează alt telefon" : "Activează telefonul"}
+                </Button>
+                {employee.enrolled && (
+                  <Button size="sm" variant="destructive" onClick={() => setRevoking(employee)}>
+                    Scoate telefonul din uz
+                  </Button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
-      <AddEmployeeDialog
+      <AddEmployeeSheet
         open={adding}
         onClose={() => setAdding(false)}
-        onAdded={async () => {
+        onAdded={async (employee) => {
           setAdding(false);
-          toast("Angajat adăugat");
           await refresh();
+          activate.mutate(employee); // fluxul continuă direct cu Activare telefon
         }}
       />
       <AddSessionDialog open={addingSession} onClose={() => setAddingSession(false)} />
-      <ImportCsvDialog open={importing} onClose={() => setImporting(false)} onImported={refresh} />
-      <EnrollLinkDialog link={issued} onClose={() => setIssued(null)} />
-      <Dialog open={revoking !== null} onOpenChange={(open) => !open && setRevoking(null)}>
-        <DialogContent role="alertdialog">
-          <DialogTitle>Revoci dispozitivul?</DialogTitle>
-          <DialogDescription>
-            Telefonul lui {revoking?.name} nu va mai putea face Intrare sau Ieșire până la o nouă înrolare.
-          </DialogDescription>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setRevoking(null)}>
-              Anulează
-            </Button>
-            <Button disabled={revoke.isPending} onClick={() => revoking && revoke.mutate(revoking)}>
-              Revocă dispozitivul
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ImportSheet open={importing} onClose={() => setImporting(false)} onImported={refresh} />
+      <ActivationSheet link={issued} onClose={() => setIssued(null)} />
+      <ConfirmDialog
+        open={replacing !== null}
+        onOpenChange={(open) => !open && setReplacing(null)}
+        title="Activezi alt telefon?"
+        description={`Telefonul activat acum de ${replacing?.name} nu va mai funcționa după ce activezi altul.`}
+        confirmLabel="Activează alt telefon"
+        pending={activate.isPending}
+        onConfirm={() => replacing && activate.mutate(replacing)}
+      />
+      <ConfirmDialog
+        open={revoking !== null}
+        onOpenChange={(open) => !open && setRevoking(null)}
+        title="Scoți telefonul din uz?"
+        description={`Telefonul lui ${revoking?.name} nu va mai putea face Intrare sau Ieșire până la o nouă Activare telefon.`}
+        confirmLabel="Scoate telefonul din uz"
+        destructive
+        pending={revoke.isPending}
+        onConfirm={() => revoking && revoke.mutate(revoking)}
+      />
     </div>
   );
 }
@@ -160,17 +156,25 @@ function FieldError({ id, message }: { id: string; message?: string }) {
   ) : null;
 }
 
-function AddEmployeeDialog({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: () => void }) {
+function AddEmployeeSheet({
+  open,
+  onClose,
+  onAdded,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdded: (employee: Employee) => void;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; form?: string }>({});
   const create = useMutation({
     mutationFn: adminApi.employees.create,
-    onSuccess: () => {
+    onSuccess: (employee) => {
       setName("");
       setEmail("");
       setErrors({});
-      onAdded();
+      onAdded(employee);
     },
     onError: (error) => {
       if (error instanceof ApiError && (error.field === "name" || error.field === "email")) {
@@ -188,92 +192,96 @@ function AddEmployeeDialog({ open, onClose, onAdded }: { open: boolean; onClose:
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        <DialogTitle>Angajat nou</DialogTitle>
-        <DialogDescription>Adaugă un Angajat; linkul de înrolare îl generezi apoi din listă.</DialogDescription>
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          {errors.form && (
-            <ErrorAlert>
-              {errors.form}
-            </ErrorAlert>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="employee-name">Nume</Label>
-            <Input
-              id="employee-name"
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              aria-invalid={errors.name ? true : undefined}
-              aria-describedby={errors.name ? "employee-name-error" : undefined}
-            />
-            <FieldError id="employee-name-error" message={errors.name} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="employee-email">Email</Label>
-            <Input
-              id="employee-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={errors.email ? true : undefined}
-              aria-describedby={errors.email ? "employee-email-error" : undefined}
-            />
-            <FieldError id="employee-email-error" message={errors.email} />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Anulează
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              Adaugă
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      title="Angajat nou"
+      description="După salvare, activezi direct telefonul Angajatului."
+    >
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {errors.form && <ErrorAlert>{errors.form}</ErrorAlert>}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="employee-name">Nume</Label>
+          <Input
+            id="employee-name"
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            aria-invalid={errors.name ? true : undefined}
+            aria-describedby={errors.name ? "employee-name-error" : undefined}
+          />
+          <FieldError id="employee-name-error" message={errors.name} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="employee-email">Email</Label>
+          <Input
+            id="employee-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? "employee-email-error" : undefined}
+          />
+          <FieldError id="employee-email-error" message={errors.email} />
+        </div>
+        <Button type="submit" disabled={create.isPending}>
+          Salvează și activează telefonul
+        </Button>
+      </form>
+    </Sheet>
   );
 }
 
-function EnrollLinkDialog({ link, onClose }: { link: EnrollLink | null; onClose: () => void }) {
-  const toast = useToast();
+function ActivationSheet({ link, onClose }: { link: EnrollLink | null; onClose: () => void }) {
+  const [copied, setCopied] = useState<"ok" | "failed" | null>(null);
+  const close = () => {
+    setCopied(null);
+    onClose();
+  };
   const copy = async () => {
     if (!link) return;
     try {
       await navigator.clipboard.writeText(link.link);
-      onClose(); // toast-ul stă în afara dialogului modal, deci dialogul se închide întâi
-      toast("Link copiat");
+      setCopied("ok");
     } catch {
-      toast("Nu s-a putut copia; selectează linkul și copiază-l manual.", "error");
+      setCopied("failed");
     }
   };
   return (
-    <Dialog open={link !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogTitle>Link de înrolare pentru {link?.name}</DialogTitle>
-        <DialogDescription>
-          Trimite-l Angajatului; se deschide pe telefonul lui, o singură dată, în {link?.hours} de ore. Nu va mai fi
-          afișat.
-        </DialogDescription>
-        <code className="rounded-md border border-border bg-muted p-3 text-sm break-all select-all">{link?.link}</code>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Închide
+    <Sheet
+      open={link !== null}
+      onOpenChange={(open) => !open && close()}
+      title={`Activare telefon pentru ${link?.name ?? ""}`}
+      description="Angajatul scanează codul QR cu telefonul lui."
+    >
+      {link && (
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={`data:image/svg+xml;utf8,${encodeURIComponent(link.qr_svg)}`}
+            alt={`Cod QR de activare pentru ${link.name}`}
+            className="size-64 max-w-full rounded-2xl bg-white p-3"
+          />
+          <p className="text-center text-sm text-muted-foreground">
+            Linkul expiră în {link.hours} de ore și merge o singură dată
+          </p>
+          <Button variant="outline" onClick={copy}>
+            {copied === "ok" ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}{" "}
+            Copiază linkul
           </Button>
-          <Button onClick={copy}>
-            <Copy className="size-4" aria-hidden /> Copiază linkul
-          </Button>
+          {copied === "ok" && <p role="status">Link copiat</p>}
+          {copied === "failed" && (
+            <ErrorAlert>Nu s-a putut copia linkul. Cere un link nou și încearcă din nou.</ErrorAlert>
+          )}
+          <Button onClick={close}>Gata</Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </Sheet>
   );
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-function ImportCsvDialog({ open, onClose, onImported }: { open: boolean; onClose: () => void; onImported: () => void }) {
-  const toast = useToast();
+function ImportSheet({ open, onClose, onImported }: { open: boolean; onClose: () => void; onImported: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
@@ -281,7 +289,6 @@ function ImportCsvDialog({ open, onClose, onImported }: { open: boolean; onClose
     mutationFn: adminApi.employees.importCsv,
     onSuccess: (result) => {
       setReport(result);
-      toast(`${plural(result.created, "Angajat importat", "Angajați importați")}`);
       onImported();
     },
     onError: (e) => setError(errorText(e)),
@@ -298,60 +305,51 @@ function ImportCsvDialog({ open, onClose, onImported }: { open: boolean; onClose
     setError(null);
     setReport(null);
     if (!file) {
-      setError("Alege un fișier CSV.");
+      setError("Alege un fișier cu lista.");
       return;
     }
     importCsv.mutate(file);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && close()}>
-      <DialogContent>
-        <DialogTitle>Import Angajați din CSV</DialogTitle>
-        <DialogDescription>
-          Fișier cu antetul „nume,email” pe primul rând, separat prin virgulă sau punct și virgulă. Rândurile valide se
-          importă; cele invalide sunt listate cu numărul rândului.
-        </DialogDescription>
-        <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-          {error && (
-            <ErrorAlert>
-              {error}
-            </ErrorAlert>
-          )}
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="employees-csv">Fișier CSV</Label>
-            <Input
-              id="employees-csv"
-              type="file"
-              accept=".csv,text/csv"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && close()}
+      title="Importă listă din Excel"
+      description="Lista are două coloane: nume și email. Pe primul rând scrie „nume” și „email”, apoi câte un Angajat pe rând. Salvează fișierul din Excel ca CSV."
+    >
+      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+        {error && <ErrorAlert>{error}</ErrorAlert>}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="employees-csv">Fișierul cu lista</Label>
+          <Input
+            id="employees-csv"
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </div>
+        {report && (
+          <div className="flex flex-col gap-2 text-sm">
+            <p role="status" className="font-medium">
+              {plural(report.created, "Angajat importat", "Angajați importați")}
+            </p>
+            {report.errors.length > 0 && (
+              <>
+                <p className="text-destructive">{plural(report.errors.length, "rând respins", "rânduri respinse")}:</p>
+                <ul className="max-h-48 list-disc overflow-auto pl-5 text-destructive">
+                  {report.errors.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
-          {report && (
-            <div className="flex flex-col gap-2 text-sm">
-              <p className="font-medium">{plural(report.created, "Angajat importat", "Angajați importați")}</p>
-              {report.errors.length > 0 && (
-                <>
-                  <p className="text-destructive">{plural(report.errors.length, "rând respins", "rânduri respinse")}:</p>
-                  <ul className="max-h-48 list-disc overflow-auto pl-5 text-destructive">
-                    {report.errors.map((message) => (
-                      <li key={message}>{message}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={close}>
-              Închide
-            </Button>
-            <Button type="submit" disabled={importCsv.isPending}>
-              Importă
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+        <Button type="submit" disabled={importCsv.isPending}>
+          Importă Angajații
+        </Button>
+      </form>
+    </Sheet>
   );
 }

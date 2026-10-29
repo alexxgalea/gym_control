@@ -9,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel
 
-from gym_control import anomalies, auth, clocktime, employees, enrollment, incidents, journal, network
+from gym_control import anomalies, auth, clocktime, door, employees, enrollment, incidents, journal, network
 from gym_control.admin_common import UNAUTHORIZED, ErrorResponse, FieldErrorResponse, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
@@ -89,6 +89,7 @@ class EmployeeIn(BaseModel):
 class EnrollLink(BaseModel):
     name: str
     link: str
+    qr_svg: str
     hours: int
 
 
@@ -188,9 +189,11 @@ def create_enroll_link(
         f"Link de înrolare generat pentru {employee['name']}", employee_id=employee_id,
     )
     db.commit()
+    link = str(request.base_url).rstrip("/") + f"/enroll/{token}"
     return EnrollLink(
         name=employee["name"],
-        link=str(request.base_url).rstrip("/") + f"/enroll/{token}",
+        link=link,
+        qr_svg=door.qr_svg(link),
         hours=int(enrollment.LINK_TTL.total_seconds() // 3600),
     )
 

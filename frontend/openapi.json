@@ -163,11 +163,16 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "qr_svg": {
+            "title": "Qr Svg",
+            "type": "string"
           }
         },
         "required": [
           "name",
           "link",
+          "qr_svg",
           "hours"
         ],
         "title": "EnrollLink",

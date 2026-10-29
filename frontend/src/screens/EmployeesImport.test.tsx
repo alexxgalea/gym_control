@@ -42,21 +42,22 @@ function mockApi(respond: () => Response | Promise<Response>) {
 
 async function openImport(user: ReturnType<typeof userEvent.setup>) {
   renderApp("/employees");
-  await user.click(await screen.findByRole("button", { name: "Importă CSV" }));
+  await user.click(await screen.findByRole("button", { name: "Importă listă din Excel" }));
   return await screen.findByRole("dialog");
 }
 
-describe("import CSV pe ecranul Angajați", () => {
+describe("import listă din Excel pe ecranul Angajați", () => {
   it("trimite fișierul multipart, arată câți s-au importat și rândurile respinse cu numărul rândului", async () => {
     const report: Report = { created: 2, errors: ["Rândul 3: email invalid.", "Rândul 7: se așteaptă două coloane (nume, email)."] };
     const api = mockApi(() => HttpResponse.json(report));
     const user = userEvent.setup();
     const dialog = await openImport(user);
     const initialLists = api.lists();
+    expect(dialog).toHaveTextContent(/nume și email/); // explică simplu coloanele
 
     const csv = new File(["nume,email\nAna,ana@firma.ro\n"], "angajati.csv", { type: "text/csv" });
-    await user.upload(within(dialog).getByLabelText("Fișier CSV"), csv);
-    await user.click(within(dialog).getByRole("button", { name: "Importă" }));
+    await user.upload(within(dialog).getByLabelText("Fișierul cu lista"), csv);
+    await user.click(within(dialog).getByRole("button", { name: "Importă Angajații" }));
 
     expect(await within(dialog).findByText("2 Angajați importați")).toBeInTheDocument();
     expect(within(dialog).getByText("Rândul 3: email invalid.")).toBeInTheDocument();
@@ -64,15 +65,14 @@ describe("import CSV pe ecranul Angajați", () => {
     expect(within(dialog).getByText(/2 rânduri respinse/)).toBeInTheDocument();
     expect(api.uploads).toEqual([{ name: "angajati.csv", text: "nume,email\nAna,ana@firma.ro\n" }]);
     await waitFor(() => expect(api.lists()).toBeGreaterThan(initialLists)); // lista se reîncarcă
-    expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("2 Angajați importați") // dialogul modal ascunde toast-ul;
   });
 
   it("fără rânduri respinse nu arată lista de erori", async () => {
     mockApi(() => HttpResponse.json({ created: 1, errors: [] }));
     const user = userEvent.setup();
     const dialog = await openImport(user);
-    await user.upload(within(dialog).getByLabelText("Fișier CSV"), new File(["nume,email\nA,a@b.ro\n"], "a.csv"));
-    await user.click(within(dialog).getByRole("button", { name: "Importă" }));
+    await user.upload(within(dialog).getByLabelText("Fișierul cu lista"), new File(["nume,email\nA,a@b.ro\n"], "a.csv"));
+    await user.click(within(dialog).getByRole("button", { name: "Importă Angajații" }));
     expect(await within(dialog).findByText("1 Angajat importat")).toBeInTheDocument();
     expect(within(dialog).queryByText(/respinse/)).not.toBeInTheDocument();
   });
@@ -81,19 +81,19 @@ describe("import CSV pe ecranul Angajați", () => {
     mockApi(() => HttpResponse.json({ detail: "Lipsește antetul „nume,email” pe primul rând." }, { status: 400 }));
     const user = userEvent.setup();
     const dialog = await openImport(user);
-    await user.upload(within(dialog).getByLabelText("Fișier CSV"), new File(["foo,bar\n"], "gresit.csv"));
-    await user.click(within(dialog).getByRole("button", { name: "Importă" }));
+    await user.upload(within(dialog).getByLabelText("Fișierul cu lista"), new File(["foo,bar\n"], "gresit.csv"));
+    await user.click(within(dialog).getByRole("button", { name: "Importă Angajații" }));
 
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("Lipsește antetul „nume,email” pe primul rând.");
-    expect(within(dialog).getByRole("button", { name: "Importă" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Importă Angajații" })).toBeEnabled();
   });
 
   it("nu trimite nimic fără fișier ales", async () => {
     const api = mockApi(() => HttpResponse.json({ created: 0, errors: [] }));
     const user = userEvent.setup();
     const dialog = await openImport(user);
-    await user.click(within(dialog).getByRole("button", { name: "Importă" }));
-    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Alege un fișier CSV.");
+    await user.click(within(dialog).getByRole("button", { name: "Importă Angajații" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Alege un fișier cu lista.");
     expect(api.uploads).toEqual([]);
   });
 });

@@ -518,6 +518,8 @@ export interface components {
             link: string;
             /** Name */
             name: string;
+            /** Qr Svg */
+            qr_svg: string;
         };
         /** ErrorResponse */
         ErrorResponse: {
