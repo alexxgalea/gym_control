@@ -8,6 +8,7 @@ export type ConnectionStatus = components["schemas"]["ConnectionStatus"];
 export type MeState = components["schemas"]["MeState"];
 export type EventResult = components["schemas"]["EventResult"];
 
+export type DoorCode = components["schemas"]["DoorCode"];
 export type Enrollment = components["schemas"]["EnrollmentOut"];
 
 export const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
@@ -47,6 +48,7 @@ export const employeeApi = {
   me: () => get<MeState>("/api/employee/me"),
   entry: (totp: string) => post<EventResult>("/api/employee/entry", { totp }),
   exit: (totp: string) => post<EventResult>("/api/employee/exit", { totp }),
+  doorCode: () => get<DoorCode>("/api/employee/door/qr"),
   status: () => get<ConnectionStatus>("/api/employee/status"),
   enrollmentLink: (token: string) => get<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),
   activatePhone: (token: string) => post<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),

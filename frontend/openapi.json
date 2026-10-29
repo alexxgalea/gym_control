@@ -112,6 +112,34 @@
         "title": "ConnectionStatus",
         "type": "object"
       },
+      "DoorCode": {
+        "properties": {
+          "period_seconds": {
+            "title": "Period Seconds",
+            "type": "integer"
+          },
+          "remaining_seconds": {
+            "title": "Remaining Seconds",
+            "type": "integer"
+          },
+          "svg": {
+            "title": "Svg",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "svg",
+          "url",
+          "period_seconds",
+          "remaining_seconds"
+        ],
+        "title": "DoorCode",
+        "type": "object"
+      },
       "EmployeeIn": {
         "properties": {
           "email": {
@@ -2206,6 +2234,30 @@
         ]
       }
     },
+    "/api/employee/door/qr": {
+      "get": {
+        "operationId": "door_qr_api_employee_door_qr_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorCode"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Telefon neconfigurat (`door_not_configured`) sau token greșit (`door_token_invalid`)"
+          }
+        },
+        "summary": "Door Qr",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
     "/api/employee/enroll/{token}": {
       "get": {
         "description": "Numele Angajatului din link (nu consumă linkul). Nu cere rețeaua Sălii.",
@@ -2451,70 +2503,6 @@
         "tags": [
           "employee"
         ]
-      }
-    },
-    "/door": {
-      "get": {
-        "operationId": "door_door_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "k",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "K"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Door"
-      }
-    },
-    "/door/qr": {
-      "get": {
-        "operationId": "door_qr_door_qr_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Door Qr"
       }
     }
   }

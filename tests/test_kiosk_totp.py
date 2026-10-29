@@ -7,35 +7,76 @@ def _door_totp(h):
     return h.current_totp()
 
 
-def test_door_without_kiosk_token_is_refused(harness):
-    assert harness.client().get("/door").status_code == 403
+def _entry(make_harness, tmp_path, **overrides):
+    (tmp_path / "index.html").write_text("<title>admin</title>")
+    (tmp_path / "employee.html").write_text("<title>angajat</title>")
+    return make_harness(frontend_dist=str(tmp_path), **overrides)
 
 
-def test_door_with_wrong_token_is_refused(harness):
-    assert harness.client().get("/door?k=gresit").status_code == 403
-
-
-def test_door_with_token_shows_inline_svg_qr_and_remembers_token(harness):
-    c = harness.client()
-    r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=True)
+def test_door_page_serves_the_employee_entry_point(make_harness, tmp_path):
+    r = _entry(make_harness, tmp_path).client().get("/door")
     assert r.status_code == 200
-    assert "<svg" in r.text
-    # tokenul rămâne în cookie: a doua cerere nu mai are nevoie de ?k=
-    assert c.get("/door").status_code == 200
+    assert "angajat" in r.text  # pagina explicativă a unui telefon neconfigurat vine tot din interfață, nu JSON
+
+
+def test_door_with_token_sets_cookie_then_redirects_to_door(make_harness, tmp_path):
+    h = _entry(make_harness, tmp_path)
+    c = h.client()
+    r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "/door"
+    assert "gym_kiosk" in r.headers["set-cookie"]
+    # tokenul rămâne în cookie: codul se cere fără ?k=
+    assert c.get("/api/employee/door/qr").status_code == 200
+
+
+def test_door_with_wrong_token_gets_an_explanatory_page_not_json(make_harness, tmp_path):
+    r = _entry(make_harness, tmp_path).client().get("/door?k=gresit")
+    assert r.status_code == 403
+    assert "text/html" in r.headers["content-type"]
+    assert "angajat" in r.text
+
+
+def test_door_token_setup_works_without_a_built_frontend(harness):
+    r = harness.client().get(f"/door?k={KIOSK_TOKEN}", follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_door_qr_without_kiosk_token_is_not_configured(harness):
+    r = harness.client().get("/api/employee/door/qr")
+    assert r.status_code == 403
+    assert r.json()["reason"] == "door_not_configured"
+    assert r.json()["detail"]
+
+
+def test_door_qr_with_wrong_cookie_is_invalid_token(harness):
+    c = harness.client()
+    c.cookies.set("gym_kiosk", "gresit")
+    r = c.get("/api/employee/door/qr")
+    assert r.status_code == 403
+    assert r.json()["reason"] == "door_token_invalid"
+
+
+def test_door_is_not_configured_when_server_has_no_kiosk_token(make_harness):
+    c = make_harness(kiosk_token="").client()
+    c.cookies.set("gym_kiosk", "orice")
+    assert c.get("/api/employee/door/qr").json()["reason"] == "door_not_configured"
+
+
+def test_door_qr_returns_svg_period_and_seconds_remaining(harness):
+    # ceasul de test e 08:12:00 UTC: fereastra de 30 s abia a început
+    body = harness.kiosk_client().get("/api/employee/door/qr").json()
+    assert body["svg"].startswith("<svg")
+    assert body["period_seconds"] == 30
+    assert body["remaining_seconds"] == 30
+    harness.clock.advance(seconds=12)
+    assert harness.kiosk_client().get("/api/employee/door/qr").json()["remaining_seconds"] == 18
 
 
 def test_qr_changes_every_30_seconds_without_intervention(harness):
     first = harness.door_url()
     harness.clock.advance(seconds=30)
     assert harness.door_url() != first
-
-
-def test_qr_fragment_endpoint_for_auto_renew_is_protected(harness):
-    assert harness.client().get("/door/qr").status_code == 403
-    k = harness.kiosk_client()
-    before = k.get("/door/qr").text
-    harness.clock.advance(seconds=30)
-    assert k.get("/door/qr").text != before
 
 
 def test_qr_points_to_employee_page_with_totp(harness):
@@ -126,10 +167,10 @@ def test_non_ascii_totp_is_refused_not_a_server_error(harness):
     assert "greșit" in r.text
 
 
-def test_non_ascii_kiosk_token_in_url_is_refused(harness):
-    assert harness.client().get("/door?k=é").status_code == 403
+def test_non_ascii_kiosk_token_in_url_is_refused(make_harness, tmp_path):
+    assert _entry(make_harness, tmp_path).client().get("/door?k=é").status_code == 403
 
 
 def test_non_ascii_kiosk_cookie_is_refused(harness):
-    r = harness.client().get("/door", headers={"Cookie": "gym_kiosk=é".encode("utf-8")})
+    r = harness.client().get("/api/employee/door/qr", headers={"Cookie": "gym_kiosk=é".encode("utf-8")})
     assert r.status_code == 403

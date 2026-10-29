@@ -34,8 +34,8 @@ Protecții pe ecranele Admin:
 
 Toate ecranele Admin sunt un SPA React 19 + Vite + TypeScript (ADR 0002), servit la `/admin/` și construit în
 Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Build-ul are două puncte de intrare (ADR 0003): Admin și
-Angajat; `/status` (Verificare conexiune) e deja pe punctul de intrare Angajat, iar paginile Angajatului și ale kioskului
-(`/me`, `/enroll/<token>`, `/door`) rămân HTML pe server (`templates/`, `static/app.css`) până la tichetele lor.
+Angajat; `/status` (Verificare conexiune), `/me`, `/enroll/<token>` și `/door` (Ecranul de la ușă) sunt pe punctul de
+intrare Angajat. Telefonul de la ușă e vechi: build-ul Vite țintește Chrome 64 / Safari 11 (vezi ADR 0003, „Ținta de build”).
 Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
 în imaginea Docker este setat deja.
 
@@ -116,8 +116,10 @@ Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Euro
 ## Kiosk la ușă (QR TOTP)
 
 Pe telefonul de la ușă deschide o singură dată `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se
-păstrează în cookie, iar `/door` afișează un QR care se reînnoiește singur la 30 s (SVG generat pe server, fără CDN).
-Fără token valid `/door` este refuzat (și rămâne refuzat dacă `GYM_KIOSK_TOKEN` nu e setat).
+păstrează în cookie, apoi te redirecționează la `/door`, care afișează un QR mare, negru pe alb, cu un inel-cronometru
+(SVG generat pe server, fără CDN; codul vine din `GET /api/employee/door/qr`). Un telefon neconfigurat sau un token greșit
+primesc o pagină explicativă (nu JSON; `GYM_KIOSK_TOKEN` nesetat = telefon neconfigurat). Dacă reîmprospătarea
+eșuează mai mult de 30 s, inelul se oprește și apare „Codul nu se mai actualizează. Verifică Wi-Fi-ul telefonului.”
 
 - `GYM_KIOSK_TOKEN`: tokenul kiosk (secret lung, ales de Admin).
 - `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
@@ -238,6 +240,6 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 ## Verificări manuale (neacoperite de teste automate)
 
 - Randare responsivă: deschide `/me` pe un telefon real și verifică lizibilitatea.
-- Pagina kiosk în browser real: `/door` afișează QR-ul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat.
+- Pagina kiosk pe telefonul real de la ușă (browserul lui e vechi): `/door` afișează QR-ul și inelul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat. Oprește Wi-Fi-ul telefonului ~40 s și verifică avertismentul, apoi repornește-l. Dacă pagina rămâne albă, notează versiunea din `chrome://version` și coboară ținta de build.
 - Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
 - Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.
