@@ -56,6 +56,10 @@ _Avoid_: Raport de pontaj
 Legarea unui singur telefon de un Angajat, printr-un link de unică folosință; doar de pe telefonul activat se pot face Intrare și Ieșire. O nouă Activare scoate din uz telefonul anterior.
 _Avoid_: Înrolare, dispozitiv
 
+**Activare Ecran de la ușă**:
+Legarea unui singur telefon de ușa Sălii, făcută de un Admin printr-un link de unică folosință; doar telefonul activat afișează codul QR. O nouă Activare scoate din uz telefonul anterior.
+_Avoid_: Configurare kiosk, token de kiosk
+
 **Ecranul de la ușă**:
 Telefonul fix de lângă ușa Sălii care afișează codul QR scanat pentru Intrare și Ieșire.
 _Avoid_: Kiosk, terminal
