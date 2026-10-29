@@ -4,13 +4,22 @@ Fișierele statice ale ambelor (`assets/`) se servesc de sub `/admin/`, din acel
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 
 
-# Adresele publice servite de punctul de intrare Angajat. `/door` rămâne pe pagina
-# veche până la tichetul său; fiecare tichet își adaugă adresa aici.
+# Adresele publice servite de punctul de intrare Angajat. `/door` are ruta lui în `door.py` (configurarea
+# `?k=`), care servește tot punctul de intrare Angajat prin `employee_entry`.
 EMPLOYEE_PAGES = ("/status", "/me", "/enroll/{token}")
+
+
+def employee_entry(request: Request, status_code: int = 200) -> FileResponse:
+    """Punctul de intrare Angajat (`employee.html`), cu codul HTTP cerut; 404 dacă build-ul lipsește."""
+    dist = request.app.state.settings.frontend_dist
+    page = Path(dist).resolve() / "employee.html" if dist else None
+    if page is None or not page.is_file():
+        raise HTTPException(status_code=404)
+    return FileResponse(page, status_code=status_code)
 
 
 def mount(app: FastAPI, dist: str) -> None:

@@ -16,6 +16,8 @@ CODE_INVALID = "code_invalid"  # include și codul expirat
 NO_OPEN_ENTRY = "no_open_entry"
 ALREADY_INSIDE = "already_inside"
 LINK_INVALID = "link_invalid"
+DOOR_NOT_CONFIGURED = "door_not_configured"
+DOOR_TOKEN_INVALID = "door_token_invalid"
 
 
 def is_employee_api(request: Request) -> bool:

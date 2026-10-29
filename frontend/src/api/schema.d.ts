@@ -347,6 +347,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employee/door/qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Door Qr */
+        get: operations["door_qr_api_employee_door_qr_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/employee/enroll/{token}": {
         parameters: {
             query?: never;
@@ -442,40 +459,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/door": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Door */
-        get: operations["door_door_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/door/qr": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Door Qr */
-        get: operations["door_qr_door_qr_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -524,6 +507,17 @@ export interface components {
             server_time: string;
             /** Time Zone */
             time_zone: string;
+        };
+        /** DoorCode */
+        DoorCode: {
+            /** Period Seconds */
+            period_seconds: number;
+            /** Remaining Seconds */
+            remaining_seconds: number;
+            /** Svg */
+            svg: string;
+            /** Url */
+            url: string;
         };
         /** EmployeeIn */
         EmployeeIn: {
@@ -1884,6 +1878,33 @@ export interface operations {
             };
         };
     };
+    door_qr_api_employee_door_qr_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoorCode"];
+                };
+            };
+            /** @description Telefon neconfigurat (`door_not_configured`) sau token greșit (`door_token_invalid`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     read_link_api_employee_enroll__token__get: {
         parameters: {
             query?: never;
@@ -2118,57 +2139,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionStatus"];
-                };
-            };
-        };
-    };
-    door_door_get: {
-        parameters: {
-            query?: {
-                k?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    door_qr_door_qr_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
                 };
             };
         };
