@@ -683,6 +683,8 @@ export interface components {
         };
         /** InHallOut */
         InHallOut: {
+            /** Door Screen Active */
+            door_screen_active: boolean;
             /** People */
             people: components["schemas"]["InHallPerson"][];
             /** Timezone */

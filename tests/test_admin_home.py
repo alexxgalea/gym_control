@@ -14,7 +14,14 @@ def test_in_hall_requires_admin(harness):
 def test_in_hall_is_empty_without_open_sessions(harness):
     r = harness.admin_client().get("/api/admin/in-hall")
     assert r.status_code == 200
-    assert r.json() == {"timezone": "Europe/Bucharest", "people": []}
+    assert r.json() == {"timezone": "Europe/Bucharest", "people": [], "door_screen_active": False}
+
+
+def test_in_hall_reports_door_screen_active_once_activated(harness):
+    admin = harness.admin_client()
+    assert admin.get("/api/admin/in-hall").json()["door_screen_active"] is False
+    harness.door_client()
+    assert admin.get("/api/admin/in-hall").json()["door_screen_active"] is True
 
 
 def test_in_hall_lists_open_sessions_of_today_with_entry_and_minutes(harness):

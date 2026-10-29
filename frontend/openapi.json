@@ -392,6 +392,10 @@
       },
       "InHallOut": {
         "properties": {
+          "door_screen_active": {
+            "title": "Door Screen Active",
+            "type": "boolean"
+          },
           "people": {
             "items": {
               "$ref": "#/components/schemas/InHallPerson"
@@ -406,7 +410,8 @@
         },
         "required": [
           "people",
-          "timezone"
+          "timezone",
+          "door_screen_active"
         ],
         "title": "InHallOut",
         "type": "object"
