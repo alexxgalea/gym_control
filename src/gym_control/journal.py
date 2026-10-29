@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
+from gym_control import anomalies as anomaly_codes
 from gym_control.auth import Admin
 
 
@@ -67,7 +68,7 @@ PAGE_SIZE = 50
 
 KIND_LABELS = {"entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
                "manual_session": "Sesiune manuală",
-               "retention": "Retenție"}
+               "retention": "Retenție", "anomaly": "Anomalie", "enrollment": "Înrolare"}
 METHOD_LABELS = {"none": "Fără validare", "qr_totp": "Cod QR", "manual": "Introdus manual"}
 
 
@@ -114,7 +115,7 @@ def _anomaly_text(item) -> str:
             if item.get(key):
                 return str(item[key])
         return json.dumps(item, ensure_ascii=False)
-    return str(item)
+    return anomaly_codes.LABELS.get(str(item), str(item))
 
 
 def _entry(row: sqlite3.Row) -> Entry:

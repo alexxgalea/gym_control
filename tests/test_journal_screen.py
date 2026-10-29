@@ -146,3 +146,16 @@ def test_anomalies_and_methods_in_detail_are_rendered(harness):
     assert "Introdus manual" in r2
     r3 = next(r for r in rows if "Intrare veche" in r)
     assert "Cod QR" not in r3 and "Fără validare" not in r3  # lipsă tolerată
+
+
+def test_anomaly_codes_and_kinds_use_romanian_labels(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    harness.clock.set(datetime(2026, 1, 5, 21, 30, tzinfo=timezone.utc))  # 23:30 local, în afara programului
+    _event(harness, phone, "entry")
+    harness.clock.advance(days=1)
+    _event(harness, phone, "entry")  # Sesiunea veche devine `missing_exit`
+    page = harness.admin_client().get("/admin/jurnal").text
+    assert "outside_hours" not in page and "missing_exit" not in page
+    assert "Intrare în afara programului" in page
+    assert any('data-label="Tip">Anomalie' in r and "Ieșire lipsă" in r for r in _rows(page))
+    assert any('data-label="Tip">Înrolare' in r for r in _rows(page))

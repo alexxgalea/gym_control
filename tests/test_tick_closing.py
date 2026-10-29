@@ -45,12 +45,12 @@ def test_repeated_tick_does_not_duplicate_anomaly_or_journal(harness):
     _enter(harness)
     harness.clock.set(datetime(2026, 1, 5, 20, 0, tzinfo=timezone.utc))
     harness.tick()
-    journal_once = _journal(harness).count("open_at_closing")
+    journal_once = _journal(harness).count(LABEL)
     assert journal_once >= 1
     harness.clock.advance(minutes=1)
     harness.tick()
     harness.tick()
-    assert _journal(harness).count("open_at_closing") == journal_once
+    assert _journal(harness).count(LABEL) == journal_once
     assert _page(harness).count(LABEL) == 1
 
 
