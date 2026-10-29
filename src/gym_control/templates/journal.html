@@ -2,20 +2,54 @@
 {% block title %}Jurnal{% endblock %}
 {% block content %}
 <h1>Jurnal</h1>
-<p class="muted">Orele sunt stocate în UTC; între paranteze, ora locală.</p>
+<form method="get" action="/admin/jurnal" class="card filters">
+  <div>
+    <label for="f-employee">Angajat</label>
+    <select id="f-employee" name="employee">
+      <option value="">Toți Angajații</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}" {% if e.id == employee_id %}selected{% endif %}>{{ e.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-from">De la (inclusiv)</label>
+    <input id="f-from" type="date" name="from" value="{{ date_from }}">
+  </div>
+  <div>
+    <label for="f-to">Până la (inclusiv)</label>
+    <input id="f-to" type="date" name="to" value="{{ date_to }}">
+  </div>
+  <div class="filters-actions">
+    <button type="submit" class="btn">Filtrează</button>
+    <a class="btn btn-secondary" href="/admin/jurnal">Resetează</a>
+  </div>
+</form>
+<p class="muted">Zilele sunt în ora locală. Fiecare moment apare în ora locală și în UTC (cum e stocat).</p>
+{% if error %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endif %}
+{% if result %}
 <table class="table stackable">
-  <thead><tr><th>Moment</th><th>Autor</th><th>Angajat</th><th>Descriere</th></tr></thead>
+  <thead><tr><th>Moment</th><th>Angajat</th><th>Tip</th><th>Validare</th><th>Anomalii</th><th>Autor</th><th>Descriere</th></tr></thead>
   <tbody>
-  {% for j in entries %}
-    <tr>
-      <td data-label="Moment"><time>{{ j.at }}</time> <span class="muted">({{ j.at | local_iso(tz) }})</span></td>
-      <td data-label="Autor">{{ j.author_name or "" }}</td>
+  {% for e in result.entries %}{% set j = e.row %}
+    <tr class="j-row">
+      <td data-label="Moment"><time datetime="{{ j.at }}">{{ j.at | local_iso(tz) }}</time> <span class="muted">{{ j.at | local_iso("UTC") }} UTC</span></td>
       <td data-label="Angajat">{{ j.employee_name or "" }}</td>
+      <td data-label="Tip">{{ e.kind_label }}</td>
+      <td data-label="Validare">{{ e.method_label or "—" }}</td>
+      <td data-label="Anomalii">{% for a in e.anomalies %}<span class="badge badge-anomaly">{{ a }}</span> {% endfor %}</td>
+      <td data-label="Autor">{{ j.author_name or "" }}</td>
       <td data-label="Descriere">{{ j.summary }}</td>
     </tr>
   {% else %}
-    <tr><td colspan="4">Jurnalul este gol.</td></tr>
+    <tr><td colspan="7">Nicio înregistrare pentru filtrele alese.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+<nav class="pager" aria-label="Pagini">
+  {% if result.has_prev %}<a class="btn btn-secondary" href="/admin/jurnal?{{ base_query }}{{ '&' if base_query }}page={{ result.page - 1 }}">Mai noi</a>{% endif %}
+  <span class="muted">Pagina {{ result.page }}</span>
+  {% if result.has_next %}<a class="btn btn-secondary" href="/admin/jurnal?{{ base_query }}{{ '&' if base_query }}page={{ result.page + 1 }}">Mai vechi</a>{% endif %}
+</nav>
+{% endif %}
 {% endblock %}
