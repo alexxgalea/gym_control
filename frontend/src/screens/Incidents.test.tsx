@@ -122,7 +122,7 @@ describe("ecranul Incidente", () => {
       http.get("/api/admin/incidents", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/incidents");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 
   it("marchează un Incident dintr-un dialog cu interval și notă, îl arată deschis și confirmă cu toast", async () => {

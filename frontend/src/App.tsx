@@ -9,12 +9,14 @@ import { Incidents } from "@/screens/Incidents";
 import { Settings } from "@/screens/Settings";
 import { PrintReport, Reports } from "@/screens/Reports";
 import { Journal } from "@/screens/Journal";
+import { useTheme } from "@/design/theme";
 
 /**
  * Rutele aplicației (fără router propriu: `main.tsx` pune BrowserRouter cu basename `/admin`).
  * Un ecran nou: adaugă-l în `SCREENS` (navigare) și înlocuiește `Placeholder`-ul lui cu ecranul real.
  */
 export function AppRoutes() {
+  useTheme(); // ține tema aleasă aplicată pe <html>, inclusiv la login
   return (
     <Routes>
       <Route path="/login" element={<Login />} />

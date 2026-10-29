@@ -1,0 +1,109 @@
+/*
+ * Sistemul de design GymCtrl: toți tokenii de culoare, într-un singur loc (ADR-0003).
+ * O schimbare de culoare se face aici; componentele din `src/design` doar îi consumă.
+ *
+ * - Marin #0B1F4D; degradeu #0B1F4D → #2563EB doar pe elementele-vedetă (logo, butonul principal, fundalul login-ului).
+ * - Textul pe care se dă clic e #2563EB (în tema întunecată, albastrul deschis).
+ * - Verdele și roșul sunt rezervate stărilor.
+ * - Tema: urmează sistemul; `data-theme="light|dark"` pe <html> o forțează (alegerea Adminului).
+ */
+
+/* Fontul Inter vine din pachetul @fontsource-variable/inter, importat în main.tsx: fără fonturi de pe internet. */
+
+:root {
+  color-scheme: light;
+
+  --brand: #0b1f4d;
+  --gradient-from: #0b1f4d;
+  --gradient-to: #2563eb;
+
+  --background: #f2f2f7;
+  --foreground: #0f1222;
+  --card: #ffffff;
+  --muted: #ebebf1;
+  --muted-foreground: #686b78;
+  --border: #e1e1e7;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --destructive: #d70015;
+  --success: #248a3d;
+  --warning: #c93400;
+  --ring: #2563eb;
+  --shadow: 0 1px 2px rgb(15 18 34 / 0.04), 0 6px 20px rgb(15 18 34 / 0.05);
+  --shadow-lg: 0 12px 40px rgb(15 18 34 / 0.18);
+}
+
+/* Tema întunecată: fundal #0A0F1F, suprafețe bleumarin, accent deschis. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0a0f1f;
+  --foreground: #eef1f8;
+  --card: #111a33;
+  --muted: #1c2747;
+  --muted-foreground: #98a2bc;
+  --border: #222e50;
+  --primary: #60a5fa;
+  --primary-foreground: #0a0f1f;
+  --destructive: #ff453a;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --ring: #60a5fa;
+  --shadow: 0 0 0 1px rgb(255 255 255 / 0.03);
+  --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.55);
+}
+
+/* Aceleași valori ca mai sus, când sistemul e întunecat și Adminul n-a forțat tema luminoasă. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: #0a0f1f;
+    --foreground: #eef1f8;
+    --card: #111a33;
+    --muted: #1c2747;
+    --muted-foreground: #98a2bc;
+    --border: #222e50;
+    --primary: #60a5fa;
+    --primary-foreground: #0a0f1f;
+    --destructive: #ff453a;
+    --success: #30d158;
+    --warning: #ff9f0a;
+    --ring: #60a5fa;
+    --shadow: 0 0 0 1px rgb(255 255 255 / 0.03);
+    --shadow-lg: 0 16px 48px rgb(0 0 0 / 0.55);
+  }
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-brand: var(--brand);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --shadow-card: var(--shadow);
+  --shadow-sheet: var(--shadow-lg);
+}
+
+/* Degradeul de brand: DOAR pe elementele-vedetă (butonul principal, fundalul login-ului). */
+.bg-gradient-brand {
+  background-image: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+  color: #fff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  /* cifre de lățime egală pentru ore și numere */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}

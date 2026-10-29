@@ -97,7 +97,7 @@ describe("ecranul Anomalii", () => {
       http.get("/api/admin/anomalies", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/anomalies");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 
   it("închide o Anomalie doar după confirmare; anularea nu face nimic; apoi toast și rândul dispare", async () => {

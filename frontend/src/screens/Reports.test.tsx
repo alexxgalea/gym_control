@@ -114,7 +114,7 @@ describe("ecranul Rapoarte", () => {
     );
     renderApp("/reports");
     await generate();
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });
 

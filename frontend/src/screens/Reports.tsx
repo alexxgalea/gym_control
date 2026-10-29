@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { adminApi, reportQuery, type Report } from "@/api/client";
 import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
