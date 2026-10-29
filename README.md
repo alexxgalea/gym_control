@@ -33,8 +33,9 @@ Protecții pe ecranele Admin:
 ## Interfața Admin (SPA, `frontend/`)
 
 Toate ecranele Admin sunt un SPA React 19 + Vite + TypeScript (ADR 0002), servit la `/admin/` și construit în
-Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Paginile Angajatului și ale kioskului
-(`/me`, `/enroll/<token>`, `/door`, `/status`) rămân HTML pe server (`templates/`, `static/app.css`).
+Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Build-ul are două puncte de intrare (ADR 0003): Admin și
+Angajat; `/status` (Verificare conexiune) e deja pe punctul de intrare Angajat, iar paginile Angajatului și ale kioskului
+(`/me`, `/enroll/<token>`, `/door`) rămân HTML pe server (`templates/`, `static/app.css`) până la tichetele lor.
 Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
 în imaginea Docker este setat deja.
 

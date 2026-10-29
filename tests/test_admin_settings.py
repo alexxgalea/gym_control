@@ -50,7 +50,7 @@ def test_changing_subnet_applies_immediately(harness):
     phone_new = harness.client(OUTSIDE_IP)
     phone_new.cookies.update(phone.cookies)
     assert phone_new.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 200
-    assert "în rețeaua Sălii" in harness.client(OUTSIDE_IP).get("/status").text
+    assert harness.client(OUTSIDE_IP).get("/api/employee/status").json()["in_hall"] is True
 
 
 def test_invalid_values_report_every_error_by_field_and_save_nothing(harness):

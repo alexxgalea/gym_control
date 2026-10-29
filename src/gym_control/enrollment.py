@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import journal
+from gym_control import employee_errors, journal
 from gym_control.db import get_db
 from gym_control.network import require_hall_network
 from gym_control.templates import templates
@@ -90,6 +90,8 @@ def require_employee(employee: Employee | None = Depends(current_employee)) -> E
 
 
 def enrollment_required_handler(request: Request, exc: EnrollmentRequired):
+    if employee_errors.is_employee_api(request):
+        return employee_errors.phone_not_activated_response()
     return templates.TemplateResponse(request, "enroll_required.html", {}, status_code=401)
 
 

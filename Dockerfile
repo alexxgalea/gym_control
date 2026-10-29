@@ -1,10 +1,10 @@
-# Stadiul 1: build-ul SPA-ului Admin (Node există doar aici, nu în imaginea finală).
+# Stadiul 1: build-ul frontend-ului (punctele de intrare Admin și Angajat) (Node există doar aici, nu în imaginea finală).
 FROM node:22-slim AS frontend
 WORKDIR /frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
-RUN npx vite build
+RUN npm run build  # tipuri, ambele puncte de intrare și verificarea că împart doar sistemul de design
 
 # Stadiul 2: imaginea finală, doar Python; servește build-ul la /admin/.
 FROM python:3.12-slim
