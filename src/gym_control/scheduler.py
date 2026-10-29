@@ -15,7 +15,7 @@ import threading
 from datetime import datetime
 from typing import Callable
 
-from gym_control import anomalies, journal, runtime_settings
+from gym_control import anomalies, journal, retention, runtime_settings
 from gym_control.clocktime import local_day, to_local
 
 log = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ def flag_open_sessions_at_closing(app, now: datetime) -> None:
 
 # Registrul joburilor: #13 și #14 își adaugă jobul aici.
 JOBS: list[Job] = [flag_open_sessions_at_closing]
+JOBS.append(retention.purge_job)  # #13
 
 
 def tick(app, now: datetime) -> None:

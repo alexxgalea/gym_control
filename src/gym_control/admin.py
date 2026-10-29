@@ -7,12 +7,13 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import anomalies, auth, employees, enrollment, journal, runtime_settings
+from gym_control import anomalies, auth, employees, enrollment, incidents, journal, runtime_settings
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
 
 router = APIRouter(prefix="/admin")
+KEEP = "\x00keep"  # valoare implicită a câmpurilor de formular lipsă (golul "" e valoare reală)
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -197,7 +198,8 @@ def _settings_response(request, admin, db, form, status_code=200, **extra):
 
 def _form_values(s: runtime_settings.RuntimeSettings) -> dict[str, str]:
     return {"hall_subnet": s.hall_subnet, "opening_time": s.opening_time.strftime("%H:%M"),
-            "closing_time": s.closing_time.strftime("%H:%M")}
+            "closing_time": s.closing_time.strftime("%H:%M"),
+            "retention_months": str(s.retention_months)}
 
 
 @router.get("/settings", response_class=HTMLResponse)
@@ -216,10 +218,14 @@ def save_settings(
     hall_subnet: str = Form(""),
     opening_time: str = Form(""),
     closing_time: str = Form(""),
+    retention_months: str = Form(KEEP),
     admin: Admin = Depends(require_admin),
     db: sqlite3.Connection = Depends(get_db),
 ):
-    form = {"hall_subnet": hall_subnet, "opening_time": opening_time, "closing_time": closing_time}
+    if retention_months == KEEP:  # câmp lipsă din formular: rămâne valoarea curentă
+        retention_months = str(runtime_settings.current(db, request.app.state.settings).retention_months)
+    form = {"hall_subnet": hall_subnet, "opening_time": opening_time, "closing_time": closing_time,
+            "retention_months": retention_months}
     new, errors = runtime_settings.validate(form)
     if errors:
         return _settings_response(request, admin, db, form, status_code=400, errors=errors)
@@ -276,3 +282,54 @@ def anomalies_page(
         {"admin": admin, "nav": "anomalies", "rows": anomalies.list_unresolved(db),
          "labels": anomalies.LABELS, "tz": request.app.state.settings.timezone},
     )
+
+
+def _incidents_response(request, admin, db, status_code=200, **extra):
+    context = {"admin": admin, "nav": "incidents", "rows": incidents.list_all(db),
+               "tz": request.app.state.settings.timezone, "form": {}, **extra}
+    return templates.TemplateResponse(request, "incidents.html", context, status_code=status_code)
+
+
+@router.get("/incidents", response_class=HTMLResponse)
+def incidents_page(
+    request: Request,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    return _incidents_response(request, admin, db)
+
+
+@router.post("/incidents")
+def create_incident(
+    request: Request,
+    start: str = Form(""),
+    end: str = Form(""),
+    note: str = Form(""),
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    try:
+        incidents.mark(db, now, request.app.state.settings.timezone, admin, start, end, note)
+    except incidents.InvalidIncident as exc:
+        db.rollback()
+        return _incidents_response(
+            request, admin, db, status_code=400, error=str(exc),
+            form={"start": start, "end": end, "note": note},
+        )
+    db.commit()
+    return RedirectResponse("/admin/incidents", status_code=303)
+
+
+@router.post("/incidents/{incident_id}/close")
+def close_incident(
+    request: Request,
+    incident_id: int,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    if not incidents.close(db, request.app.state.clock(), request.app.state.settings.timezone,
+                           admin, incident_id):
+        raise HTTPException(status_code=404, detail="Incident inexistent sau deja închis")
+    db.commit()
+    return RedirectResponse("/admin/incidents", status_code=303)

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Incidente{% endblock %}
+{% block content %}
+<h1>Incidente</h1>
+<p class="muted">Un Incident marchează un interval cu o pagubă sau o problemă. Datele din el nu se șterg
+(retenție) cât timp Incidentul e deschis. Orele sunt în ora locală.</p>
+{% if error %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/admin/incidents" class="card stack">
+  <label>De la
+    <input type="datetime-local" name="start" value="{{ form.start }}" required>
+  </label>
+  <label>Până la
+    <input type="datetime-local" name="end" value="{{ form.end }}" required>
+  </label>
+  <label>Notă (opțional)
+    <input name="note" value="{{ form.note }}" maxlength="500">
+  </label>
+  <button type="submit" class="btn">Marchează Incident</button>
+</form>
+<table class="table stackable">
+  <thead><tr><th>Interval</th><th>Notă</th><th>Stare</th><th>Marcat de</th><th></th></tr></thead>
+  <tbody>
+  {% for i in rows %}
+    <tr data-incident-id="{{ i.id }}">
+      <td data-label="Interval">{{ i.start_at | local_iso(tz) }} – {{ i.end_at | local_iso(tz) }}</td>
+      <td data-label="Notă">{{ i.note }}</td>
+      <td data-label="Stare">{% if i.closed_at %}Închis ({{ i.closed_at | local_iso(tz) }}, {{ i.closed_by }}){% else %}Deschis{% endif %}</td>
+      <td data-label="Marcat de">{{ i.created_by }}</td>
+      <td>{% if not i.closed_at %}
+        <form method="post" action="/admin/incidents/{{ i.id }}/close"><button type="submit" class="btn btn-secondary">Închide</button></form>
+      {% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">Nu există Incidente.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

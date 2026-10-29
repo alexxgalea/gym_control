@@ -88,6 +88,18 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+-- Incidentele (#13): interval marcat de Admin (UTC); datele din el nu se șterg cât e deschis.
+-- closed_at NULL = deschis.
+CREATE TABLE IF NOT EXISTS incidents (
+    id INTEGER PRIMARY KEY,
+    start_at TEXT NOT NULL,
+    end_at TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    closed_at TEXT,
+    closed_by TEXT
+);
 CREATE INDEX IF NOT EXISTS journal_at ON journal(at);
 CREATE INDEX IF NOT EXISTS journal_employee ON journal(employee_id, at);
 """

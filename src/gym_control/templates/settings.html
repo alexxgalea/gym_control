@@ -18,6 +18,10 @@
   <label>Ora de închidere (HH:MM)
     <input name="closing_time" value="{{ form.closing_time }}" inputmode="numeric" placeholder="22:00" required>
   </label>
+  <label>Perioada de retenție (luni)
+    <input name="retention_months" value="{{ form.retention_months }}" inputmode="numeric" required>
+  </label>
+  <p class="muted">Sesiunile și rândurile din Jurnal mai vechi de atât se șterg automat, în afara celor din Incidentele deschise.</p>
   <button type="submit" class="btn">Salvează</button>
 </form>
 {% endblock %}

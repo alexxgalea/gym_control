@@ -22,6 +22,7 @@ LABELS = {
     "hall_subnet": "Subrețea",
     "opening_time": "Ora de deschidere",
     "closing_time": "Ora de închidere",
+    "retention_months": "Perioada de retenție (luni)",
 }
 
 
@@ -30,6 +31,7 @@ class RuntimeSettings:
     hall_subnet: str
     opening_time: time
     closing_time: time
+    retention_months: int = 12
 
 
 def _dump(value) -> str:
@@ -42,6 +44,7 @@ def current(db: sqlite3.Connection, defaults: Settings) -> RuntimeSettings:
         hall_subnet=stored.get("hall_subnet", defaults.hall_subnet),
         opening_time=time.fromisoformat(stored["opening_time"]) if "opening_time" in stored else defaults.opening_time,
         closing_time=time.fromisoformat(stored["closing_time"]) if "closing_time" in stored else defaults.closing_time,
+        retention_months=int(stored.get("retention_months", defaults.retention_months)),
     )
 
 
@@ -70,9 +73,13 @@ def validate(form: dict[str, str]) -> tuple[RuntimeSettings | None, list[str]]:
         errors.append("Ora de închidere invalidă: folosește formatul HH:MM, de exemplu 22:00.")
     if opening and closing and opening >= closing:
         errors.append("Ora de deschidere trebuie să fie înainte de ora de închidere.")
+    months_raw = form.get("retention_months", "").strip()
+    months = int(months_raw) if months_raw.isascii() and months_raw.isdigit() else 0
+    if months < 1:
+        errors.append("Perioada de retenție invalidă: introdu un număr întreg pozitiv de luni, de exemplu 12.")
     if errors:
         return None, errors
-    return RuntimeSettings(subnet, opening, closing), []
+    return RuntimeSettings(subnet, opening, closing, months), []
 
 
 def save(db: sqlite3.Connection, now: datetime, admin: Admin,
