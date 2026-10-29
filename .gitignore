@@ -1,2 +1,7 @@
 # Added by code-review-graph
 .code-review-graph/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db

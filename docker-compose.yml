@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      GYM_HALL_SUBNET: ${GYM_HALL_SUBNET:-192.168.10.0/24}
+    volumes:
+      - gym_data:/data
+
+volumes:
+  gym_data:
