@@ -8,9 +8,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 
 
-# Adresele publice servite de punctul de intrare Angajat. `/door` are ruta lui în `door.py` (configurarea
-# `?k=`), care servește tot punctul de intrare Angajat prin `employee_entry`.
-EMPLOYEE_PAGES = ("/status", "/me", "/enroll/{token}")
+# Adresele publice servite de punctul de intrare Angajat. `/door` are ruta lui în `door.py`, care servește
+# tot punctul de intrare Angajat prin `employee_entry`.
+EMPLOYEE_PAGES = ("/status", "/me", "/enroll/{token}", "/door/activate/{token}")
 
 
 def employee_entry(request: Request, status_code: int = 200) -> FileResponse:

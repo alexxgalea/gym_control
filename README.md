@@ -132,19 +132,21 @@ Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Euro
 
 ## Ecranul de la ușă (QR TOTP)
 
-Pe telefonul de la ușă (Ecranul de la ușă) deschide o singură dată `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se
-păstrează în cookie, apoi te redirecționează la `/door`, care afișează un QR mare, negru pe alb, cu un inel-cronometru
-(SVG generat pe server, fără CDN; codul vine din `GET /api/employee/door/qr`). Un telefon neconfigurat sau un token greșit
-primesc o pagină explicativă (`GYM_KIOSK_TOKEN` nesetat = telefon neconfigurat). Dacă reîmprospătarea
+Ecranul de la ușă se activează din aplicație (ADR 0004), fără variabile de mediu: în meniul „Ecranul de la ușă” Adminul
+vede starea (neactivat / activ din data X) și apasă „Activează”. Aplicația emite un link cu QR, de unică folosință,
+valabil 48 de ore (`/door/activate/<token>`). Pe telefonul de la ușă linkul arată „Activezi acest telefon ca Ecran de la
+ușă?” și nu se consumă până la apăsarea butonului; apoi telefonul trece la `/door`, care afișează un QR mare, negru pe alb,
+cu un inel-cronometru (SVG generat pe server, fără CDN; codul vine din `GET /api/employee/door/qr`, doar pentru telefonul
+activat). Activarea cere rețeaua Sălii și intră în Jurnal cu autorul; o nouă Activare scoate din uz telefonul anterior, iar
+starea stă în baza de date (rămâne după repornire). Un telefon neactivat primește o pagină explicativă. Dacă reîmprospătarea
 eșuează mai mult de 30 s, inelul se oprește și apare „Codul nu se mai actualizează. Verifică Wi-Fi-ul telefonului.”
 
-- `GYM_KIOSK_TOKEN`: tokenul Ecranului de la ușă (secret lung, ales de Admin).
 - `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
 
 QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /api/employee/entry|exit`, JSON) cer câmpul `totp`, validat pe ceasul
 serverului (fereastra curentă și cea anterioară, 30 s); nu e de unică folosință, iar orice timestamp trimis de client
 e ignorat. Metoda de validare `qr_totp` apare în Sesiune și în Jurnal. În teste: `harness.current_totp()`,
-`harness.kiosk_client()`.
+`harness.door_client()`.
 
 ## `tick` și schedulerul
 
@@ -185,7 +187,6 @@ lasă o linie fără autor în Jurnal („Păstrarea datelor: șterse …”).
    | Variabilă | Rol |
    | --- | --- |
    | `GYM_ADMIN_USER`, `GYM_ADMIN_PASSWORD` | primul Admin (vezi „Primul Admin”) |
-   | `GYM_KIOSK_TOKEN` | tokenul Ecranului de la ușă (secret lung; fără el `/door` e refuzat) |
    | `GYM_TOTP_SECRET` | secretul TOTP (opțional; altfel generat o dată și păstrat în baza de date) |
    | `GYM_HALL_SUBNET` | subrețeaua Wi-Fi a Sălii (implicit `192.168.10.0/24`) |
    | `GYM_BACKUP_PATH` | directorul de pe gazdă unde se scriu backup-urile (vezi „Backup”) |
@@ -234,7 +235,7 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 - Dacă totuși ai nevoie de proxy, setează `GYM_TRUSTED_PROXIES` (IP-uri sau subrețele, separate prin virgulă):
   `X-Forwarded-For` e luat în calcul doar când conexiunea vine de la un proxy din listă, iar proxy-ul trebuie
   să adauge (nu să păstreze) adresa clientului real. Implicit lista e goală.
-- Cookie-urile (Admin, dispozitiv, kiosk) **nu au flagul `Secure`**: aplicația rulează în HTTP simplu în LAN, iar
+- Cookie-urile (Admin, dispozitiv, Ecranul de la ușă) **nu au flagul `Secure`**: aplicația rulează în HTTP simplu în LAN, iar
   un cookie `Secure` nu ar fi trimis deloc. Nu o expune pe internet.
 
 ## Setup fizic
@@ -243,9 +244,9 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 - Folosește un telefon vechi **fără baterie umflată**; o baterie umflată este un risc de incendiu, nu-l lăsa la încărcat permanent.
 - Încărcător permanent, cablu bun; Setări > Opțiuni dezvoltator > **Stay awake** (ecran aprins la încărcare).
 - Luminozitate fixă (auto-brightness oprit), notificările oprite, blocarea ecranului dezactivată.
-- Browser în ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de kiosk).
-- O singură dată, deschide `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se păstrează în cookie
-  și apoi poți folosi `http://<laptop>:8000/door`. Telefonul trebuie să fie pe Wi-Fi-ul Sălii.
+- Browser în ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de ecran dedicat).
+- Activează-l din aplicație (Admin > „Ecranul de la ușă” > „Activează”): scanează QR-ul de pe laptop cu telefonul de la
+  ușă și apasă butonul de confirmare. Telefonul trebuie să fie pe Wi-Fi-ul Sălii.
 
 ### Laptopul
 - Dezactivează suspendarea la închiderea capacului (ex. `HandleLidSwitch=ignore` în `/etc/systemd/logind.conf`) și suspendarea automată.

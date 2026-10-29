@@ -49,7 +49,7 @@ describe("bara de sus și meniul", () => {
     const labels = within(nav)
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(labels).toEqual(["Acasă", "Angajați", "Jurnal", "Anomalii", "Incidente", "Raport de prezență", "Setări"]);
+    expect(labels).toEqual(["Acasă", "Angajați", "Ecranul de la ușă", "Jurnal", "Anomalii", "Incidente", "Raport de prezență", "Setări"]);
     expect(screen.getByText("admin")).toBeInTheDocument();
     expect(screen.getByRole("radiogroup", { name: "Temă" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Deconectare" })).toBeInTheDocument();

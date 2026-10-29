@@ -4,6 +4,7 @@ import { Shell, SCREENS } from "@/screens/Shell";
 import { Placeholder } from "@/screens/Placeholder";
 import { Login } from "@/screens/Login";
 import { Home } from "@/screens/Home";
+import { DoorScreen } from "@/screens/DoorScreen";
 import { Employees } from "@/screens/Employees";
 import { Anomalies } from "@/screens/Anomalies";
 import { Incidents } from "@/screens/Incidents";
@@ -25,12 +26,13 @@ export function AppRoutes() {
         <Route element={<Shell />}>
           <Route index element={<Home />} />
           <Route path="employees" element={<Employees />} />
+          <Route path="door-screen" element={<DoorScreen />} />
           <Route path="journal" element={<Journal />} />
           <Route path="anomalies" element={<Anomalies />} />
           <Route path="incidents" element={<Incidents />} />
           <Route path="settings" element={<Settings />} />
           <Route path="reports" element={<Reports />} />
-          {SCREENS.filter((screen) => !["employees", "anomalies", "incidents", "settings", "reports", "journal"].includes(screen.path)).map((screen) => (
+          {SCREENS.filter((screen) => !["employees", "door-screen", "anomalies", "incidents", "settings", "reports", "journal"].includes(screen.path)).map((screen) => (
             <Route key={screen.path} path={screen.path} element={<Placeholder title={screen.label} />} />
           ))}
         </Route>

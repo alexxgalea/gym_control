@@ -19,7 +19,6 @@ HALL_IP = "192.168.10.25"
 OUTSIDE_IP = "10.0.0.5"
 ADMIN_USER = "admin"
 ADMIN_PASSWORD = "parola-de-test-1"
-KIOSK_TOKEN = "token-kiosk-de-test"
 
 
 class FakeClock:
@@ -44,6 +43,7 @@ class Harness:
     settings: Settings
     _client_factory: callable
     _tick: callable = None
+    _door_phone: TestClient | None = None
 
     def client(self, ip: str = HALL_IP) -> TestClient:
         """Client HTTP cu IP-ul sursă dat (implicit: în subrețeaua Sălii)."""
@@ -63,16 +63,31 @@ class Harness:
         assert r.status_code == 200, r.text
         return c
 
-    def kiosk_client(self, ip: str = HALL_IP) -> TestClient:
-        """Telefonul de la ușă: tokenul de kiosk setat o singură dată (`/door?k=...`)."""
+    def issue_door_link(self, admin: TestClient | None = None) -> str:
+        """Admin emite linkul de Activare Ecran de la ușă; întoarce calea (`/door/activate/<token>`)."""
+        admin = admin or self.admin_client()
+        r = admin.post("/api/admin/door-screen/activation-link")
+        assert r.status_code == 200, r.text
+        return "/door/activate/" + r.json()["link"].rsplit("/door/activate/", 1)[1]
+
+    def activate_door_screen(self, link: str, ip: str = HALL_IP) -> TestClient:
+        """Deschide linkul pe un client nou (telefonul de la ușă) și apasă „Activează” (API JSON)."""
         c = self.client(ip)
-        r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=False)
-        assert r.status_code == 303, r.text
+        api = "/api/employee" + link
+        assert c.get(api).status_code == 200
+        r = c.post(api)
+        assert r.status_code == 200, r.text
         return c
+
+    def door_client(self, ip: str = HALL_IP) -> TestClient:
+        """Telefonul de la ușă, activat din aplicație de Admin (Activare Ecran de la ușă)."""
+        return self.activate_door_screen(self.issue_door_link(), ip)
 
     def door_url(self) -> str:
         """Adresa `/me?t=<TOTP>` codificată acum în QR-ul de la ușă (din endpointul JSON al Ecranului de la ușă)."""
-        r = self.kiosk_client().get("/api/employee/door/qr")
+        if self._door_phone is None:  # activat o singură dată: QR-ul nu cere rețeaua Sălii, activarea da
+            self._door_phone = self.door_client()
+        r = self._door_phone.get("/api/employee/door/qr")
         assert r.status_code == 200, r.text
         return r.json()["url"]
 
@@ -125,7 +140,6 @@ def make_harness(clock):
             database=":memory:",
             bootstrap_admin_username=ADMIN_USER,
             bootstrap_admin_password=ADMIN_PASSWORD,
-            kiosk_token=KIOSK_TOKEN,
             totp_secret="secret-totp-de-test",
         )
         settings = Settings(**{**defaults, **overrides})
