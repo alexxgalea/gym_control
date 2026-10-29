@@ -13,7 +13,7 @@ Pagina de stare: `http://<laptop>:8000/status`. Serviciul repornește singur
 
 ## Primul Admin
 
-Ecranele Admin sunt la `/admin/` (login la `/admin/login`). Contul se creează în unul din două moduri:
+Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`). Contul se creează în unul din două moduri:
 
 - **Bootstrap din mediu**: setează `GYM_ADMIN_USER` și `GYM_ADMIN_PASSWORD`
   (de ex. într-un `.env` lângă `docker-compose.yml`); la pornire contul este creat
@@ -32,72 +32,58 @@ Protecții pe ecranele Admin:
 
 ## Interfața Admin (SPA, `frontend/`)
 
-Ecranele Admin migrează într-un SPA React + Vite + TypeScript (ADR 0002), servit la `/admin/` și
-construit în Dockerfile (multi-stage; imaginea finală nu are Node). Ecranele nemigrate rămân HTML pe server.
-Login/logout/identitate sunt JSON: `POST /api/admin/login` (`{username, password}`), `POST /api/admin/logout`,
-`GET /api/admin/me`; fără sesiune răspunsul este 401.
+Toate ecranele Admin sunt un SPA React 19 + Vite + TypeScript (ADR 0002), servit la `/admin/` și construit în
+Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Paginile Angajatului și ale kioskului
+(`/me`, `/enroll/<token>`, `/door`, `/status`) rămân HTML pe server (`templates/`, `static/app.css`).
+Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
+în imaginea Docker este setat deja.
+
+Ecrane: Angajați (adăugare, link de înrolare, revocare cu confirmare, import CSV), Jurnal (filtre în adresă:
+`?employee=&from=&to=&kind=&page=`), Anomalii, Incidente, Rapoarte (ecran, CSV, variantă tipărită la
+`/admin/reports/print`), Setări, plus dialogurile Sesiune manuală (adăugare, corectare). Fiecare acțiune a Adminului
+intră în Jurnal cu autorul.
+
+API-ul este JSON sub `/api/admin/...`, cu modele Pydantic de răspuns (în `admin_api.py`, `admin_settings_api.py`,
+`journal_api.py`, `report_api.py`, `manual_sessions.py`). Fără sesiune răspunsul este 401, iar SPA-ul duce la login.
+Erorile de validare sunt 400 `{detail, field}` (mesajele în română vin de la server). Schema este documentată de
+FastAPI la `/docs`.
+
+### Dezvoltare
+
+Node 22 și npm sunt necesare doar pentru frontend. Cu două terminale:
 
 ```
-cd frontend
-npm ci
-npm run dev          # Vite pe :5173/admin/, proxy /api către uvicorn pe :8000
-npm test             # Vitest + MSW (ecrane întregi, API simulat la granița HTTP)
-npm run typecheck
+GYM_SCHEDULER=0 GYM_ADMIN_USER=admin GYM_ADMIN_PASSWORD=parola-de-test uv run uvicorn gym_control.app:app_from_env --factory
+cd frontend && npm ci && npm run dev
+```
+
+Deschide `http://localhost:5173/admin/`: serverul Vite face proxy pentru `/api` către uvicorn pe `:8000`
+(browserul vede o singură origine, deci verificarea `Origin` a POST-urilor trece).
+
+### Build și verificări
+
+Rulează din `frontend/`:
+
+```
+npm test             # Vitest + MSW: ecrane întregi, API simulat la granița HTTP
+npm run typecheck    # tsc strict
+npm run build        # tsc + vite build -> frontend/dist
 npm run gen:api      # regenerează openapi.json + src/api/schema.d.ts din aplicația Python
-npm run check:api    # pică dacă tipurile generate nu sunt la zi (rulează și în CI)
+npm run check:api    # pică dacă openapi.json / tipurile generate nu sunt la zi
 ```
 
-Dezvoltare: pornește aplicația (`GYM_SCHEDULER=0 uv run uvicorn gym_control.app:app_from_env --factory`)
-și apoi `npm run dev`. Aplicația servește `frontend/dist` doar dacă `GYM_FRONTEND_DIST` indică un build.
-Ecran nou: endpoint-uri JSON cu modele Pydantic în `src/gym_control/admin_api.py` (sau modul nou cu prefix
-`/api/admin`), `npm run gen:api`, ecranul în `frontend/src/screens/` (înregistrat în `SCREENS` din `Shell.tsx` și
-în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON; apoi se șterg ruta Jinja, șablonul și testele HTML vechi.
+Tipurile TS sunt generate din schema OpenAPI a aplicației (`scripts/export_openapi.py`); după orice schimbare de
+câmp în API rulează `npm run gen:api` și comite rezultatul. CI (`.github/workflows/ci.yml`) rulează `uv run pytest`
+și, în `frontend/`, `npm ci`, `check:api`, `typecheck`, `test`, `build`.
 
-## Angajați (SPA)
+Ecran nou: endpoint-uri JSON cu modele Pydantic, `npm run gen:api`, ecranul în `frontend/src/screens/`
+(înregistrat în `SCREENS` din `Shell.tsx` și în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON.
 
-Ecranul Angajați (`/admin/employees`) este în SPA: listă, adăugare din dialog, link de înrolare (copiere dintr-un click),
-revocare cu confirmare. API: `GET/POST /api/admin/employees` (eroare de validare: 400 `{detail, field}`),
-`POST /api/admin/employees/{id}/enroll-link`, `POST /api/admin/employees/{id}/revoke` (204).
-Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
+### Import Angajați (CSV)
 
-## Jurnal (SPA)
-
-Ecranul Jurnal (`/admin/journal`) este în SPA: Intrări, Ieșiri, metoda de validare, Anomalii, acțiunile Adminilor cu autorul
-și Sesiunile manuale (marcate vizibil), cu filtre pe interval (zile locale, inclusiv), Angajat și tip, plus paginare.
-Filtrele stau în adresă (`?employee=&from=&to=&kind=&page=`). API: `GET /api/admin/journal` (400 `{detail}` la dată
-invalidă, interval invers sau tip necunoscut; momentele în UTC + fusul Sălii) și `GET /api/admin/journal/kinds`.
-Vechea rută `/admin/jurnal` redirecționează (307) la `/admin/journal`, păstrând query-ul.
-
-## Anomalii (SPA)
-
-Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (dialog,
-Sesiunea manuală, vezi mai jos) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
-doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET /api/admin/anomalies`,
-`POST /api/admin/anomalies/{id}/dismiss` (204; 404 dacă nu există, e deja rezolvată sau nu e `outside_hours`).
-
-## Sesiuni manuale (SPA)
-
-Dialoguri, fără rută proprie: „Sesiune manuală nouă” (în Jurnal, Anomalii și Angajați) și „Corectează” (în Anomalii,
-pentru Sesiuni deschise). Motivul e obligatoriu; erorile apar lângă câmp (`employee_id`, `entry_at`, `exit_at`,
-`reason`); orele sunt în ora locală a Sălii. Rezultatul apare în Jurnal ca Sesiune manuală, cu autorul; corectarea
-rezolvă Anomaliile `missing_exit` și `open_at_closing`. API: `POST /api/admin/sessions` (201 `{id}`; 400
-`{detail, field}`) și `POST /api/admin/sessions/{id}/correct` (204; 400 `{detail, field}`, 404, 409 dacă Sesiunea e
-deja închisă).
-## Raport de prezență (SPA)
-
-Ecranul Rapoarte (`/admin/reports`) generează Raportul pe un interval orar; varianta tipărită e ruta SPA
-`/admin/reports/print?from=..&to=..` (fără navigare laterală, `print:` ascunde butoanele). API (`report_api.py`):
-`GET /api/admin/reports?from=..&to=..` (rânduri, textul de neacceptare și textul „deschisă”, trimise de server;
-interval invalid: 400 `{detail}`) și `GET /api/admin/reports.csv?from=..&to=..` (descărcare, același CSV).
-Generarea (și afișarea tipărită) și exportul intră în Jurnal cu autorul.
-
-## Import Angajați (CSV)
-
-Pe ecranul Angajați, butonul „Importă CSV” deschide un dialog cu încărcare de fișier. API:
-`POST /api/admin/employees/import` (`multipart`, câmpul `file`) întoarce `{created, errors}`; rândurile invalide apar
-ca `"Rândul N: ..."`, iar un antet greșit dă 400 `{detail}`. Formatul: antetul `nume,email` (și `;` ca separator, BOM
-acceptat); rândurile valide se importă. Parsarea rămâne în `employees.parse_csv`. Fiecare Angajat importat și
-rezumatul „Import CSV: N importați, M respinse” apar în Jurnal, cu autorul.
+`POST /api/admin/employees/import` (`multipart`, câmpul `file`) întoarce `{created, errors}`. Antetul `nume,email`
+(separator `,` sau `;`, BOM acceptat); rândurile valide se importă, cele invalide apar ca `"Rândul N: ..."`; un antet
+greșit dă 400 `{detail}`. Parsarea este în `employees.parse_csv`.
 
 ## Teste
 
@@ -121,10 +107,10 @@ personal și confirmă; telefonul primește un cookie de lungă durată. Un sing
 re-înrolarea sau „Revocă” invalidează telefonul vechi. Fără înrolare, `/me` afișează
 mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana Pop")`.
 
-## Intrare/Ieșire (pas intermediar)
+## Intrare/Ieșire
 
 Angajatul înrolat deschide `/me`: vede starea („în Sală din 10:12” / „în afara Sălii”) și doar butonul valid.
-Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`). Încă fără QR/validare de rețea.
+Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`).
 
 ## Kiosk la ușă (QR TOTP)
 
@@ -250,7 +236,7 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 
 ## Verificări manuale (neacoperite de teste automate)
 
-- Randare responsivă: deschide `/me` și ecranele Admin pe un telefon real și verifică lizibilitatea.
+- Randare responsivă: deschide `/me` pe un telefon real și verifică lizibilitatea.
 - Pagina kiosk în browser real: `/door` afișează QR-ul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat.
 - Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
 - Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.
