@@ -2,7 +2,9 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ApiError, adminApi, type JournalEntry, type JournalFilters } from "@/api/client";
+import { adminApi, type JournalEntry, type JournalFilters } from "@/api/client";
+import { isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,10 +73,10 @@ export function Journal() {
       </p>
 
       {journal.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {journal.isError && journal.error instanceof ApiError && journal.error.status !== 401 && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+      {isShownError(journal.error) && (
+        <ErrorAlert>
           {journal.error.detail}
-        </p>
+        </ErrorAlert>
       )}
       {journal.data && !journal.isError && (
         <>

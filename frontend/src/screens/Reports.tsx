@@ -2,25 +2,21 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, Printer } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ApiError, adminApi, reportQuery, type Report } from "@/api/client";
+import { adminApi, reportQuery, type Report } from "@/api/client";
+import { errorText, isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
-const errorText = (error: unknown) => (error instanceof ApiError ? error.detail : GENERIC_ERROR);
-
-function ErrorAlert({ error }: { error: unknown }) {
+/** Mesajul de neacceptare și explicația intervalului vin de la server, ca textul „deschisă” din tabel; nu se dublează aici. */
+function Disclaimer({ report }: { report: Report }) {
   return (
-    <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-      {errorText(error)}
-    </p>
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-muted p-3 text-sm">
+      <p>{report.disclaimer}</p>
+      <p className="text-muted-foreground">{report.scope_text}</p>
+    </div>
   );
-}
-
-/** Mesajul de neacceptare vine de la server, ca textul „deschisă” din tabel; nu se dublează aici. */
-function Disclaimer({ text }: { text: string }) {
-  return <p className="rounded-md border border-border bg-muted p-3 text-sm">{text}</p>;
 }
 
 function ReportTable({ report }: { report: Report }) {
@@ -101,18 +97,14 @@ export function Reports() {
           Generează Raportul
         </Button>
       </form>
-      <p className="text-sm text-muted-foreground">
-        Ora locală. Include toate Sesiunile care se suprapun intervalului, inclusiv cele care încep înainte sau se
-        termină după el. Sesiunile deschise sunt considerate prezente până la ora de închidere a zilei Intrării.
-      </p>
 
-      {generate.isError && generate.error instanceof ApiError && generate.error.status !== 401 && (
-        <ErrorAlert error={generate.error} />
+      {isShownError(generate.error) && (
+        <ErrorAlert>{errorText(generate.error)}</ErrorAlert>
       )}
       {generate.isPending && <p className="text-muted-foreground">Se generează…</p>}
       {generate.data && (
         <>
-          <Disclaimer text={generate.data.disclaimer} />
+          <Disclaimer report={generate.data} />
           <div className="flex gap-2">
             <Button variant="outline" asChild>
               <a href={`/api/admin/reports.csv?${query}`} download>
@@ -151,9 +143,9 @@ export function PrintReport() {
       <main className="mx-auto flex max-w-4xl flex-col gap-4 p-8 print:max-w-none print:p-0">
         <h1 className="text-2xl font-semibold">Raport de prezență</h1>
         {report.isPending && <p className="text-muted-foreground">Se generează…</p>}
-        {report.isError && report.error instanceof ApiError && report.error.status !== 401 && (
+        {isShownError(report.error) && (
           <>
-            <ErrorAlert error={report.error} />
+            <ErrorAlert>{errorText(report.error)}</ErrorAlert>
             <Link className="text-sm text-primary underline print:hidden" to={back}>
               Înapoi
             </Link>
@@ -166,7 +158,7 @@ export function PrintReport() {
               <br />
               <strong>Generat de:</strong> {report.data.generated_by}, {report.data.generated_at}
             </p>
-            <Disclaimer text={report.data.disclaimer} />
+            <Disclaimer report={report.data} />
             <div className="flex gap-2 print:hidden">
               <Button className="print:hidden" onClick={() => window.print()}>
                 <Printer className="size-4" aria-hidden /> Tipărește

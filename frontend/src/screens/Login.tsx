@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import { ApiError, adminApi } from "@/api/client";
+import { ApiError, GENERIC_ERROR, adminApi } from "@/api/client";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { ME_KEY, useMe } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,7 @@ export function Login() {
     event.preventDefault();
     login.mutate({ username, password });
   };
-  const error = login.error instanceof ApiError ? login.error.detail : login.error ? "A apărut o eroare. Încearcă din nou." : null;
+  const error = login.error instanceof ApiError ? login.error.detail : login.error ? GENERIC_ERROR : null;
 
   return (
     <main className="flex min-h-screen items-center justify-center p-4">
@@ -36,9 +37,9 @@ export function Login() {
         <CardContent>
           <form onSubmit={submit} className="flex flex-col gap-4">
             {error && (
-              <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <ErrorAlert>
                 {error}
-              </p>
+              </ErrorAlert>
             )}
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">Cont</Label>

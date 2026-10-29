@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Upload } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport } from "@/api/client";
+import { errorText, isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -10,8 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const EMPLOYEES_KEY = ["admin", "employees"] as const;
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
-const errorText = (error: unknown) => (error instanceof ApiError ? error.detail : GENERIC_ERROR);
 
 export function Employees() {
   const toast = useToast();
@@ -62,10 +62,10 @@ export function Employees() {
       </div>
 
       {employees.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {employees.isError && employees.error instanceof ApiError && employees.error.status !== 401 && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+      {isShownError(employees.error) && (
+        <ErrorAlert>
           {employees.error.detail}
-        </p>
+        </ErrorAlert>
       )}
       {employees.data && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -194,9 +194,9 @@ function AddEmployeeDialog({ open, onClose, onAdded }: { open: boolean; onClose:
         <DialogDescription>Adaugă un Angajat; linkul de înrolare îl generezi apoi din listă.</DialogDescription>
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           {errors.form && (
-            <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <ErrorAlert>
               {errors.form}
-            </p>
+            </ErrorAlert>
           )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="employee-name">Nume</Label>
@@ -314,9 +314,9 @@ function ImportCsvDialog({ open, onClose, onImported }: { open: boolean; onClose
         </DialogDescription>
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           {error && (
-            <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <ErrorAlert>
               {error}
-            </p>
+            </ErrorAlert>
           )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="employees-csv">Fișier CSV</Label>

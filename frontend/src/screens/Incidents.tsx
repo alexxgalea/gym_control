@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { ApiError, adminApi, type Incident } from "@/api/client";
+import { errorText, isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -10,8 +12,6 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 const INCIDENTS_KEY = ["admin", "incidents"] as const;
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
-const errorText = (error: unknown) => (error instanceof ApiError ? error.detail : GENERIC_ERROR);
 
 export function Incidents() {
   const toast = useToast();
@@ -49,10 +49,10 @@ export function Incidents() {
       </p>
 
       {incidents.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {incidents.isError && incidents.error instanceof ApiError && incidents.error.status !== 401 && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+      {isShownError(incidents.error) && (
+        <ErrorAlert>
           {incidents.error.detail}
-        </p>
+        </ErrorAlert>
       )}
       {incidents.data && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -204,9 +204,9 @@ function MarkIncidentDialog({
         <DialogDescription>Datele din interval nu se vor șterge cât Incidentul e deschis. Orele sunt în ora locală.</DialogDescription>
         <form onSubmit={submit} noValidate className="flex flex-col gap-4">
           {errors.form && (
-            <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <ErrorAlert>
               {errors.form}
-            </p>
+            </ErrorAlert>
           )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="incident-start">De la</Label>

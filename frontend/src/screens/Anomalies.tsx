@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ApiError, adminApi, type Anomaly } from "@/api/client";
+import { adminApi, type Anomaly } from "@/api/client";
+import { errorText, isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { ANOMALIES_KEY } from "@/lib/queryKeys";
 import { AddSessionDialog, CorrectSessionDialog } from "@/screens/ManualSession";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
-const errorText = (error: unknown) => (error instanceof ApiError ? error.detail : GENERIC_ERROR);
 
 /** Doar `outside_hours` se închide cu „verificată”; celelalte se rezolvă prin Ieșire/corectare. */
 const isDismissible = (anomaly: Anomaly) => anomaly.code === "outside_hours";
@@ -48,10 +48,10 @@ export function Anomalies() {
       </p>
 
       {anomalies.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {anomalies.isError && anomalies.error instanceof ApiError && anomalies.error.status !== 401 && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+      {isShownError(anomalies.error) && (
+        <ErrorAlert>
           {anomalies.error.detail}
-        </p>
+        </ErrorAlert>
       )}
       {anomalies.data && (
         <div className="overflow-hidden rounded-lg border border-border bg-card">

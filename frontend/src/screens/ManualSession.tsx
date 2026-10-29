@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { ApiError, adminApi, type Anomaly } from "@/api/client";
+import { ApiError, GENERIC_ERROR, adminApi, type Anomaly } from "@/api/client";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { ANOMALIES_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
 
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
 type Field = "employee_id" | "entry_at" | "exit_at" | "reason";
 type Errors = Partial<Record<Field | "form", string>>;
 
@@ -41,9 +41,9 @@ const aria = (id: string, error?: string) => ({
 
 function FormError({ message }: { message?: string }) {
   return message ? (
-    <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+    <ErrorAlert>
       {message}
-    </p>
+    </ErrorAlert>
   ) : null;
 }
 

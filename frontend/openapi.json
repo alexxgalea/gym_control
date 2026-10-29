@@ -187,7 +187,7 @@
         "type": "object"
       },
       "FieldErrorResponse": {
-        "description": "Eroare de validare în română; `field` indică câmpul din formular (`name` sau `email`).",
+        "description": "Eroare de validare în română; `field` indică câmpul din formular.",
         "properties": {
           "detail": {
             "title": "Detail",
@@ -528,6 +528,10 @@
             },
             "title": "Rows",
             "type": "array"
+          },
+          "scope_text": {
+            "title": "Scope Text",
+            "type": "string"
           }
         },
         "required": [
@@ -536,6 +540,7 @@
           "generated_at",
           "generated_by",
           "disclaimer",
+          "scope_text",
           "open_text",
           "rows"
         ],

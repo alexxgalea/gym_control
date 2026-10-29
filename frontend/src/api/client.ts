@@ -10,7 +10,6 @@ export type Incident = components["schemas"]["IncidentOut"];
 export type IncidentInput = components["schemas"]["IncidentIn"];
 export type HallSettings = components["schemas"]["SettingsOut"];
 export type HallSettingsInput = components["schemas"]["SettingsIn"];
-export type SettingsFieldError = components["schemas"]["SettingsFieldError"];
 export type ImportReport = components["schemas"]["ImportReport"];
 export type Report = components["schemas"]["ReportOut"];
 export type JournalEntry = components["schemas"]["JournalEntryOut"];
@@ -21,13 +20,19 @@ export type SessionCorrectionInput = components["schemas"]["SessionCorrection"];
 /** Filtrele Jurnalului (zilele `AAAA-LL-ZZ`, în ora Sălii); câmpurile goale sau lipsă nu filtrează. */
 export type JournalFilters = { employee?: string; from?: string; to?: string; kind?: string; page?: number };
 
+/** Mesajul implicit când serverul nu trimite unul. */
+export const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
+
+/** Eroare de validare a unui câmp, ca în corpul 400 al serverului. */
+export type FieldError = { field: string; detail: string };
+
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
   constructor(
     public status: number,
     public detail: string,
     public field: string | null = null,
-    public errors: SettingsFieldError[] = [],
+    public errors: FieldError[] = [],
   ) {
     super(detail);
   }
@@ -42,9 +47,9 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
     body: init.body === undefined || init.body instanceof FormData ? (init.body as FormData | undefined) : JSON.stringify(init.body),
   });
   if (!response.ok) {
-    let detail = "A apărut o eroare. Încearcă din nou.";
+    let detail = GENERIC_ERROR;
     let field: string | null = null;
-    let errors: SettingsFieldError[] = [];
+    let errors: FieldError[] = [];
     try {
       const data = await response.json();
       if (typeof data?.detail === "string") detail = data.detail;
