@@ -82,14 +82,18 @@ describe("bara de sus și meniul", () => {
     await menuIsClosed();
   });
 
-  it("deschide implicit Angajații, iar Acasă duce la ruta de pornire", async () => {
-    server.use(signedIn);
+  it("Acasă duce la pagina de gestiune, ruta de pornire", async () => {
+    server.use(
+      signedIn,
+      http.get("/api/admin/in-hall", () => HttpResponse.json({ people: [], timezone: "Europe/Bucharest" })),
+      http.get("/api/admin/anomalies", () => HttpResponse.json([])),
+    );
     const user = userEvent.setup();
     renderApp("/incidents");
 
     const nav = await openMenu(user);
     await user.click(within(nav).getByRole("link", { name: "Acasă" }));
-    expect(await screen.findByRole("heading", { name: /^Angajați/ })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Acasă" })).toBeInTheDocument();
   });
 
   it("închide sesiunea la Deconectare și duce la login", async () => {

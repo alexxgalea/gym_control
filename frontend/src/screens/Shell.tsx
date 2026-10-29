@@ -22,7 +22,7 @@ import { Logo } from "@/design/Logo";
 import { ThemeSwitch } from "@/design/ThemeSwitch";
 import { cn } from "@/lib/utils";
 
-/** „Acasă” duce la ruta de pornire (deocamdată redirecționarea către Angajați). */
+/** „Acasă” duce la ruta de pornire: pagina de gestiune. */
 const HOME = { path: "", label: "Acasă", icon: House } as const;
 
 /** Ecranele din meniu, în ordinea afișării. */

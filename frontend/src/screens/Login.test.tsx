@@ -16,7 +16,9 @@ describe("ecranul de login", () => {
   it("duce în shell cu numele contului după credențiale corecte", async () => {
     let signedIn = false;
     server.use(
-      http.get("/api/admin/employees", () => HttpResponse.json([])),
+      http.get("/api/admin/in-hall", () => HttpResponse.json({ people: [], timezone: "Europe/Bucharest" })),
+      http.get("/api/admin/anomalies", () => HttpResponse.json([])),
+      http.get("/api/admin/incidents", () => HttpResponse.json([])),
       http.get("/api/admin/me", () =>
         signedIn ? HttpResponse.json({ username: "admin" }) : HttpResponse.json({ detail: "x" }, { status: 401 }),
       ),
@@ -30,7 +32,7 @@ describe("ecranul de login", () => {
     renderApp("/");
     await fillAndSubmit(user, "admin", "parola-buna");
 
-    await screen.findByRole("heading", { name: /^Angajați/ }); // după redirecționarea către ruta de pornire
+    await screen.findByRole("heading", { name: "Acasă" }); // după redirecționarea către ruta de pornire
     await user.click(await screen.findByRole("button", { name: "Meniu" }));
     expect(screen.getByText("admin")).toBeInTheDocument();
   });

@@ -51,3 +51,16 @@ export function formatLocalDateTime(local: string, timeZone: string, now: Date =
   const [year, month, day, hour, minute] = match.slice(1).map(Number) as [number, number, number, number, number];
   return render({ year, month, day, hour, minute }, partsInZone(now, timeZone));
 }
+
+/** Doar ora („17:42”) dintr-un moment deja în ora Sălii (`AAAA-LL-ZZ HH:MM`). */
+export function formatLocalTime(local: string): string {
+  return /^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/.exec(local)?.[1] ?? local;
+}
+
+/** O durată în minute: „35 min”, „1 h”, „2 h 5 min”. */
+export function formatDuration(minutes: number): string {
+  const total = Math.max(0, Math.round(minutes));
+  if (total < 60) return `${total} min`;
+  const rest = total % 60;
+  return rest === 0 ? `${total / 60} h` : `${Math.floor(total / 60)} h ${rest} min`;
+}

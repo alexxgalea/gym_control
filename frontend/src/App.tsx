@@ -3,6 +3,7 @@ import { RequireAuth } from "@/auth";
 import { Shell, SCREENS } from "@/screens/Shell";
 import { Placeholder } from "@/screens/Placeholder";
 import { Login } from "@/screens/Login";
+import { Home } from "@/screens/Home";
 import { Employees } from "@/screens/Employees";
 import { Anomalies } from "@/screens/Anomalies";
 import { Incidents } from "@/screens/Incidents";
@@ -22,7 +23,7 @@ export function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth />}>
         <Route element={<Shell />}>
-          <Route index element={<Navigate to="/employees" replace />} />
+          <Route index element={<Home />} />
           <Route path="employees" element={<Employees />} />
           <Route path="journal" element={<Journal />} />
           <Route path="anomalies" element={<Anomalies />} />

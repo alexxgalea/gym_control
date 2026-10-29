@@ -1,4 +1,17 @@
-import { formatDateTime, formatLocalDateTime } from "@/lib/format";
+import { formatDateTime, formatDuration, formatLocalDateTime, formatLocalTime } from "@/lib/format";
+
+describe("ora și durata", () => {
+  it("scoate ora dintr-un moment în ora Sălii", () => {
+    expect(formatLocalTime("2026-03-10 17:42")).toBe("17:42");
+  });
+
+  it("scrie durata în minute și ore", () => {
+    expect(formatDuration(0)).toBe("0 min");
+    expect(formatDuration(35)).toBe("35 min");
+    expect(formatDuration(60)).toBe("1 h");
+    expect(formatDuration(125)).toBe("2 h 5 min");
+  });
+});
 
 const HALL = "Europe/Bucharest"; // iarna UTC+2, vara UTC+3
 
