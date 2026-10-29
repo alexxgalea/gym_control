@@ -13,6 +13,7 @@
   <nav class="nav">
     <a href="/admin/employees" {% if nav == "employees" %}aria-current="page"{% endif %}>Angajați</a>
     <a href="/admin/jurnal" {% if nav == "journal" %}aria-current="page"{% endif %}>Jurnal</a>
+    <a href="/admin/settings" {% if nav == "settings" %}aria-current="page"{% endif %}>Setări</a>
   </nav>
   <form method="post" action="/admin/logout" class="logout">
     <span class="who">{{ admin.username }}</span>
