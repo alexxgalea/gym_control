@@ -18,7 +18,7 @@
     <a href="/admin/reports" {% if nav == "reports" %}aria-current="page"{% endif %}>Rapoarte</a>
     <a href="/admin/settings" {% if nav == "settings" %}aria-current="page"{% endif %}>Setări</a>
   </nav>
-  <form method="post" action="/admin/logout" class="logout">
+  <form class="logout" onsubmit="fetch('/api/admin/logout',{method:'POST'}).then(function(){location.href='/admin/login'});return false">
     <span class="who">{{ admin.username }}</span>
     <button type="submit" class="btn btn-secondary">Ieșire cont</button>
   </form>

@@ -30,11 +30,14 @@ class Settings:
     # IP-uri/subrețele de proxy de încredere (GYM_TRUSTED_PROXIES, separate prin virgulă). Gol = nicio
     # încredere: se folosește doar adresa conexiunii (ADR 0001: fără proxy).
     trusted_proxies: tuple[str, ...] = ()
+    # Build-ul SPA-ului Admin (`frontend/dist`), servit la /admin/*. Gol sau inexistent = SPA nepornit.
+    frontend_dist: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
         env = os.environ
         return cls(
+            frontend_dist=env.get("GYM_FRONTEND_DIST", ""),
             database=env.get("GYM_DATABASE", cls.database),
             hall_subnet=env.get("GYM_HALL_SUBNET", cls.hall_subnet),
             opening_time=time.fromisoformat(env.get("GYM_OPENING_TIME", "06:00")),

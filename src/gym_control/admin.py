@@ -16,57 +16,6 @@ router = APIRouter(prefix="/admin", dependencies=[Depends(auth.require_same_orig
 KEEP = "\x00keep"  # valoare implicită a câmpurilor de formular lipsă (golul "" e valoare reală)
 
 
-@router.get("/login", response_class=HTMLResponse)
-def login_form(request: Request):
-    return templates.TemplateResponse(request, "login.html", {"error": None})
-
-
-@router.post("/login")
-def login(
-    request: Request,
-    username: str = Form(""),
-    password: str = Form(""),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    now = request.app.state.clock()
-    throttle: auth.LoginThrottle = request.app.state.login_throttle
-    key = (network.source_ip(request), username.strip().lower())
-    wait = throttle.retry_after(key, now)
-    if wait is not None:
-        minutes = int(wait.total_seconds() // 60) + 1
-        return templates.TemplateResponse(
-            request, "login.html",
-            {"error": f"Prea multe încercări eșuate. Încearcă din nou peste {minutes} min."},
-            status_code=429,
-        )
-    admin = auth.authenticate(db, username, password)
-    if admin is None:
-        throttle.record_failure(key, now)
-        return templates.TemplateResponse(
-            request, "login.html", {"error": "Cont sau parolă greșite."}, status_code=401
-        )
-    throttle.record_success(key)
-    token = auth.open_session(db, now, admin)
-    journal.write_admin_action(db, now, admin, "admin.login", "Autentificare")
-    db.commit()
-    response = RedirectResponse("/admin/employees", status_code=303)
-    response.set_cookie(
-        auth.COOKIE, token, httponly=True, samesite="lax",
-        max_age=int(auth.SESSION_TTL.total_seconds()),
-    )
-    return response
-
-
-@router.post("/logout")
-def logout(request: Request, db: sqlite3.Connection = Depends(get_db)):
-    token = request.cookies.get(auth.COOKIE)
-    if token:
-        auth.close_session(db, token)
-    response = RedirectResponse("/admin/login", status_code=303)
-    response.delete_cookie(auth.COOKIE)
-    return response
-
-
 @router.get("/employees", response_class=HTMLResponse)
 def employees_page(
     request: Request,
