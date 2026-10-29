@@ -6,6 +6,8 @@ export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
 export type Anomaly = components["schemas"]["AnomalyOut"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
+export type Incident = components["schemas"]["IncidentOut"];
+export type IncidentInput = components["schemas"]["IncidentIn"];
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
@@ -52,6 +54,11 @@ export const adminApi = {
   anomalies: {
     list: () => api<Anomaly[]>("/api/admin/anomalies"),
     dismiss: (id: number) => api<void>(`/api/admin/anomalies/${id}/dismiss`, { method: "POST" }),
+  },
+  incidents: {
+    list: () => api<Incident[]>("/api/admin/incidents"),
+    create: (body: IncidentInput) => api<Incident>("/api/admin/incidents", { method: "POST", body }),
+    close: (id: number) => api<Incident>(`/api/admin/incidents/${id}/close`, { method: "POST" }),
   },
   /** Contul curent, sau `null` dacă nu există sesiune (401). */
   me: async (): Promise<AdminAccount | null> => {

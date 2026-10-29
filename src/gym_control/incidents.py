@@ -15,17 +15,29 @@ MAX_NOTE = 500
 
 
 class InvalidIncident(ValueError):
-    pass
+    """Interval sau notă invalidă; `field` (`start`, `end`, `note`) indică câmpul din formular."""
+
+    def __init__(self, message: str, field: str | None = None):
+        super().__init__(message)
+        self.field = field
+
+
+def _parse(raw: str, name: str, field: str, tz: str) -> datetime:
+    try:
+        return parse_local(raw, name, tz, InvalidIncident)
+    except InvalidIncident as exc:
+        raise InvalidIncident(str(exc), field) from None
 
 
 def mark(db: sqlite3.Connection, now: datetime, tz: str, admin: Admin,
          start: str, end: str, note: str) -> int:
-    first, last = parse_local(start, "Începutul", tz, InvalidIncident), parse_local(end, "Sfârșitul", tz, InvalidIncident)
+    first = _parse(start, "Începutul", "start", tz)
+    last = _parse(end, "Sfârșitul", "end", tz)
     if first >= last:
-        raise InvalidIncident("Începutul trebuie să fie înainte de sfârșit.")
+        raise InvalidIncident("Începutul trebuie să fie înainte de sfârșit.", "start")
     note = " ".join(note.split())
     if len(note) > MAX_NOTE:
-        raise InvalidIncident(f"Nota e prea lungă (maximum {MAX_NOTE} caractere).")
+        raise InvalidIncident(f"Nota e prea lungă (maximum {MAX_NOTE} caractere).", "note")
     cur = db.execute(
         "INSERT INTO incidents (start_at, end_at, note, created_at, created_by) VALUES (?,?,?,?,?)",
         (first.isoformat(), last.isoformat(), note, now.isoformat(), admin.username),
