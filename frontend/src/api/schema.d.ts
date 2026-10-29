@@ -313,6 +313,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/settings/network-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Network Suggestion */
+        get: operations["network_suggestion_api_admin_settings_network_suggestion_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/door": {
         parameters: {
             query?: never;
@@ -591,6 +608,8 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "closed";
+            /** Timezone */
+            timezone: string;
         };
         /** JournalEntryOut */
         JournalEntryOut: {
@@ -649,6 +668,19 @@ export interface components {
              * @default
              */
             username: string;
+        };
+        /**
+         * NetworkSuggestion
+         * @description Sugestia calculată din conexiunea curentă a Adminului. Pentru o adresă fără sugestie, `network` e
+         *     `null`, iar `message` spune pe înțeles de ce. Nu se salvează nimic.
+         */
+        NetworkSuggestion: {
+            /** Address */
+            address: string;
+            /** Message */
+            message: string | null;
+            /** Network */
+            network: string | null;
         };
         /** ReportOut */
         ReportOut: {
@@ -1707,6 +1739,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    network_suggestion_api_admin_settings_network_suggestion_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NetworkSuggestion"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

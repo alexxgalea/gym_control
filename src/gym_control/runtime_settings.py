@@ -19,10 +19,10 @@ from gym_control.auth import Admin
 from gym_control.settings import Settings
 
 LABELS = {
-    "hall_subnet": "Subrețea",
+    "hall_subnet": "Rețeaua Wi-Fi a Sălii",
     "opening_time": "Ora de deschidere",
     "closing_time": "Ora de închidere",
-    "retention_months": "Perioada de retenție (luni)",
+    "retention_months": "Păstrarea datelor (luni)",
 }
 
 
@@ -65,19 +65,19 @@ def validate(form: dict[str, str]) -> tuple[RuntimeSettings | None, list[tuple[s
     try:
         subnet = str(ipaddress.ip_network(subnet, strict=False))
     except ValueError:
-        errors.append(("hall_subnet", "Subrețea invalidă: folosește notația CIDR, de exemplu 192.168.10.0/24."))
+        errors.append(("hall_subnet", "Rețeaua Wi-Fi a Sălii nu e validă. Apasă „Folosește rețeaua la care sunt conectat acum” sau scrie o adresă ca 192.168.10.0/24."))
     opening = _parse_time(form.get("opening_time", ""))
     if opening is None:
-        errors.append(("opening_time", "Ora de deschidere invalidă: folosește formatul HH:MM, de exemplu 06:00."))
+        errors.append(("opening_time", "Ora de deschidere nu e validă. Alege o oră, de exemplu 06:00."))
     closing = _parse_time(form.get("closing_time", ""))
     if closing is None:
-        errors.append(("closing_time", "Ora de închidere invalidă: folosește formatul HH:MM, de exemplu 22:00."))
+        errors.append(("closing_time", "Ora de închidere nu e validă. Alege o oră, de exemplu 22:00."))
     if opening and closing and opening >= closing:
         errors.append(("closing_time", "Ora de deschidere trebuie să fie înainte de ora de închidere."))
     months_raw = form.get("retention_months", "").strip()
     months = int(months_raw) if months_raw.isascii() and months_raw.isdigit() else 0
     if months < 1:
-        errors.append(("retention_months", "Perioada de retenție invalidă: introdu un număr întreg pozitiv de luni, de exemplu 12."))
+        errors.append(("retention_months", "Păstrarea datelor nu e validă. Scrie un număr întreg de luni, de exemplu 12."))
     if errors:
         return None, errors
     return RuntimeSettings(subnet, opening, closing, months), []

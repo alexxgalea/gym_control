@@ -30,13 +30,27 @@ function partsInZone(date: Date, timeZone: string): Parts {
 const dayNumber = (p: Parts) => Math.round(Date.UTC(p.year, p.month - 1, p.day) / 86_400_000);
 const two = (n: number) => String(n).padStart(2, "0");
 
-export function formatDateTime(iso: string, timeZone: string, now: Date = new Date()): string {
-  const at = partsInZone(new Date(iso), timeZone);
-  const today = partsInZone(now, timeZone);
+function describe(at: Parts, today: Parts): string {
   const time = `${two(at.hour)}:${two(at.minute)}`;
   const daysAgo = dayNumber(today) - dayNumber(at);
   if (daysAgo === 0) return `azi, ${time}`;
   if (daysAgo === 1) return `ieri, ${time}`;
   const date = `${at.day} ${MONTHS[at.month - 1]}`;
   return at.year === today.year ? `${date}, ${time}` : `${date} ${at.year}, ${time}`;
+}
+
+export function formatDateTime(iso: string, timeZone: string, now: Date = new Date()): string {
+  const at = partsInZone(new Date(iso), timeZone);
+  const today = partsInZone(now, timeZone);
+  return describe(at, today);
+}
+
+/** Ca `formatDateTime`, dar pentru o oră locală a Sălii deja calculată de server (`AAAA-LL-ZZ HH:MM`). */
+export function formatHallLocal(local: string, timeZone: string, now: Date = new Date()): string {
+  const [datePart = "", timePart = ""] = local.split(/[ T]/);
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const at: Parts = { year: year!, month: month!, day: day!, hour: hour!, minute: minute! };
+  const today = partsInZone(now, timeZone);
+  return describe(at, today);
 }

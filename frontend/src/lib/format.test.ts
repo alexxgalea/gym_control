@@ -1,4 +1,4 @@
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatHallLocal } from "@/lib/format";
 
 const HALL = "Europe/Bucharest"; // iarna UTC+2, vara UTC+3
 
@@ -50,5 +50,21 @@ describe("formatarea datelor și orelor", () => {
     expect(formatDateTime("2026-12-31T22:30:00Z", HALL, newYear)).toBe("azi, 00:30");
     expect(formatDateTime("2026-12-31T21:30:00Z", HALL, newYear)).toBe("ieri, 23:30");
     expect(formatDateTime("2026-12-30T10:00:00Z", HALL, newYear)).toBe("30 dec. 2026, 12:00");
+  });
+});
+
+describe("formatarea orelor locale ale Sălii (fără fus orar în valoare)", () => {
+  const now = new Date("2026-03-10T10:00:00Z"); // 12:00 în ora Sălii
+
+  it("tratează valoarea `AAAA-LL-ZZ HH:MM` ca oră a Sălii și o scrie în același format", () => {
+    expect(formatHallLocal("2026-03-10 10:12", HALL, now)).toBe("azi, 10:12");
+    expect(formatHallLocal("2026-03-09 18:40", HALL, now)).toBe("ieri, 18:40");
+    expect(formatHallLocal("2026-01-05 10:12", HALL, now)).toBe("5 ian., 10:12");
+    expect(formatHallLocal("2025-12-31 10:12", HALL, now)).toBe("31 dec. 2025, 10:12");
+  });
+
+  it("compară cu ziua curentă din ora Sălii, nu din UTC", () => {
+    // 22:30 UTC pe 9 martie = 00:30 pe 10 martie în ora Sălii
+    expect(formatHallLocal("2026-03-10 00:15", HALL, new Date("2026-03-09T22:30:00Z"))).toBe("azi, 00:15");
   });
 });

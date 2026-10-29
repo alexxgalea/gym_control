@@ -275,6 +275,7 @@ class IncidentOut(BaseModel):
     created_by: str
     closed_at: str | None = None
     closed_by: str | None = None
+    timezone: str
 
 
 class IncidentIn(BaseModel):
@@ -291,6 +292,7 @@ def _incident_out(row, tz: str) -> IncidentOut:
         id=row["id"], start=clocktime.local_iso(row["start_at"], tz), end=clocktime.local_iso(row["end_at"], tz),
         note=row["note"], status="closed" if closed else "open", created_by=row["created_by"],
         closed_at=clocktime.local_iso(row["closed_at"], tz) if closed else None, closed_by=row["closed_by"],
+        timezone=tz,
     )
 
 

@@ -57,7 +57,7 @@ def test_kinds_lists_every_type_with_romanian_labels(harness):
     kinds = {k["value"]: k["label"] for k in harness.admin_client().get(f"{URL}/kinds").json()}
     assert kinds == {
         "entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
-        "manual_session": "Sesiune manuală", "retention": "Retenție", "anomaly": "Anomalie",
+        "manual_session": "Sesiune manuală", "retention": "Păstrarea datelor", "anomaly": "Anomalie",
         "enrollment": "Înrolare",
     }
 

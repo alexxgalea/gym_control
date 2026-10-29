@@ -59,7 +59,7 @@ PAGE_SIZE = 50
 
 KIND_LABELS = {"entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
                "manual_session": "Sesiune manuală",
-               "retention": "Retenție", "anomaly": "Anomalie", "enrollment": "Înrolare"}
+               "retention": "Păstrarea datelor", "anomaly": "Anomalie", "enrollment": "Înrolare"}
 METHOD_LABELS = {"none": "Fără validare", "qr_totp": "Cod QR", "manual": "Introdus manual"}
 
 

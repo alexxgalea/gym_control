@@ -58,9 +58,9 @@ def test_invalid_values_report_every_error_by_field_and_save_nothing(harness):
     r = admin.put(URL, json={"hall_subnet": "nu-e-ip", "opening_time": "25:99", "closing_time": "abc"})
     assert r.status_code == 400
     by_field = {e["field"]: e["detail"] for e in r.json()["errors"]}
-    assert "Subrețea invalidă" in by_field["hall_subnet"]
-    assert "Ora de deschidere invalidă" in by_field["opening_time"]
-    assert "Ora de închidere invalidă" in by_field["closing_time"]
+    assert "Rețeaua Wi-Fi a Sălii nu e validă" in by_field["hall_subnet"]
+    assert "Ora de deschidere nu e validă" in by_field["opening_time"]
+    assert "Ora de închidere nu e validă" in by_field["closing_time"]
     assert r.json()["detail"] == r.json()["errors"][0]["detail"]
     assert r.json()["field"] == r.json()["errors"][0]["field"]
     assert admin.get(URL).json()["hall_subnet"] == "192.168.10.0/24"
@@ -80,7 +80,7 @@ def test_invalid_retention_is_rejected_by_field(harness):
         r = admin.put(URL, json={**VALID, "retention_months": bad})
         assert r.status_code == 400, bad
         assert r.json()["errors"][0]["field"] == "retention_months"
-        assert "Perioada de retenție invalidă" in r.json()["errors"][0]["detail"]
+        assert "Păstrarea datelor nu e validă" in r.json()["errors"][0]["detail"]
     assert admin.get(URL).json()["retention_months"] == 12
 
 
@@ -104,3 +104,40 @@ def test_save_requires_same_origin(harness):
     admin = harness.admin_client()
     r = admin.put(URL, json=VALID, headers={"Origin": "http://evil.example"})
     assert r.status_code == 403
+
+
+def test_validation_messages_use_plain_language(harness):
+    r = harness.admin_client().put(
+        URL, json={"hall_subnet": "x", "opening_time": "x", "closing_time": "x", "retention_months": "x"})
+    text = " ".join(e["detail"] for e in r.json()["errors"])
+    for technical in ("CIDR", "HH:MM", "Subrețea", "retenți"):
+        assert technical not in text
+
+
+# --- sugestia de rețea ------------------------------------------------------------------
+
+SUGGESTION = "/api/admin/settings/network-suggestion"
+
+
+def test_network_suggestion_requires_admin(harness):
+    assert harness.client().get(SUGGESTION).status_code == 401
+
+
+def test_network_suggestion_for_ipv4_is_the_slash_24_of_the_request(harness):
+    r = harness.admin_client("10.20.30.40").get(SUGGESTION)
+    assert r.status_code == 200
+    assert r.json() == {"address": "10.20.30.40", "network": "10.20.30.0/24", "message": None}
+
+
+def test_network_suggestion_does_not_save_anything(harness):
+    admin = harness.admin_client("10.20.30.40")
+    admin.get(SUGGESTION)
+    assert admin.get(URL).json()["hall_subnet"] == "192.168.10.0/24"
+
+
+def test_network_suggestion_for_other_address_type_explains_itself(harness):
+    r = harness.admin_client("2001:db8::1").get(SUGGESTION)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["address"] == "2001:db8::1" and body["network"] is None
+    assert body["message"] and "IPv4" not in body["message"] and "CIDR" not in body["message"]

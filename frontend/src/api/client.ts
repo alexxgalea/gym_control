@@ -9,6 +9,7 @@ export type EnrollLink = components["schemas"]["EnrollLink"];
 export type Incident = components["schemas"]["IncidentOut"];
 export type IncidentInput = components["schemas"]["IncidentIn"];
 export type HallSettings = components["schemas"]["SettingsOut"];
+export type NetworkSuggestion = components["schemas"]["NetworkSuggestion"];
 export type HallSettingsInput = components["schemas"]["SettingsIn"];
 export type ImportReport = components["schemas"]["ImportReport"];
 export type Report = components["schemas"]["ReportOut"];
@@ -108,6 +109,8 @@ export const adminApi = {
   settings: {
     get: () => api<HallSettings>("/api/admin/settings"),
     save: (body: HallSettingsInput) => api<HallSettings>("/api/admin/settings", { method: "PUT", body }),
+    /** Rețeaua calculată din conexiunea curentă; doar o sugestie, nu se salvează. */
+    networkSuggestion: () => api<NetworkSuggestion>("/api/admin/settings/network-suggestion"),
   },
   reports: {
     /** Generează (și înscrie în Jurnal) Raportul pe intervalul dat, în ora locală (`YYYY-MM-DDTHH:MM`). */
