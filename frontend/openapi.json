@@ -14,6 +14,62 @@
         "title": "AdminAccount",
         "type": "object"
       },
+      "AnomalyOut": {
+        "description": "O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).\n`exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "employee_name": {
+            "title": "Employee Name",
+            "type": "string"
+          },
+          "entry_at": {
+            "title": "Entry At",
+            "type": "string"
+          },
+          "exit_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "code",
+          "label",
+          "employee_name",
+          "at",
+          "entry_at",
+          "exit_at"
+        ],
+        "title": "AnomalyOut",
+        "type": "object"
+      },
       "Body_correct_admin_sessions__session_id__correct_post": {
         "properties": {
           "exit_at": {
@@ -455,61 +511,6 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/admin/anomalies": {
-      "get": {
-        "operationId": "anomalies_page_admin_anomalies_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Anomalies Page"
-      }
-    },
-    "/admin/anomalies/{anomaly_id}/dismiss": {
-      "post": {
-        "operationId": "dismiss_anomaly_admin_anomalies__anomaly_id__dismiss_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "anomaly_id",
-            "required": true,
-            "schema": {
-              "title": "Anomaly Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Dismiss Anomaly"
-      }
-    },
     "/admin/incidents": {
       "get": {
         "operationId": "incidents_page_admin_incidents_get",
@@ -957,6 +958,96 @@
           }
         },
         "summary": "Save Settings"
+      }
+    },
+    "/api/admin/anomalies": {
+      "get": {
+        "operationId": "list_anomalies_api_admin_anomalies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AnomalyOut"
+                  },
+                  "title": "Response List Anomalies Api Admin Anomalies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "List Anomalies",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/anomalies/{anomaly_id}/dismiss": {
+      "post": {
+        "operationId": "dismiss_anomaly_api_admin_anomalies__anomaly_id__dismiss_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anomaly_id",
+            "required": true,
+            "schema": {
+              "title": "Anomaly Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dismiss Anomaly",
+        "tags": [
+          "admin"
+        ]
       }
     },
     "/api/admin/employees": {

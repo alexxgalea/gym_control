@@ -4,7 +4,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import anomalies, auth, employees, incidents, journal, runtime_settings
+from gym_control import auth, employees, incidents, journal, runtime_settings
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
@@ -64,40 +64,6 @@ def journal_moved(request: Request):
     """Ruta veche a Jurnalului: SPA-ul îl servește la `/admin/journal`, cu aceleași filtre în query."""
     query = request.url.query
     return RedirectResponse("/admin/journal" + (f"?{query}" if query else ""), status_code=307)
-
-
-@router.get("/anomalies", response_class=HTMLResponse)
-def anomalies_page(
-    request: Request,
-    admin: Admin = Depends(require_admin),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    return templates.TemplateResponse(
-        request, "anomalies.html",
-        {"admin": admin, "nav": "anomalies", "rows": anomalies.list_unresolved(db),
-         "labels": anomalies.LABELS, "tz": request.app.state.settings.timezone},
-    )
-
-
-@router.post("/anomalies/{anomaly_id}/dismiss")
-def dismiss_anomaly(
-    request: Request,
-    anomaly_id: int,
-    admin: Admin = Depends(require_admin),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    now = request.app.state.clock()
-    row = anomalies.dismiss(db, anomaly_id, now)
-    if row is None:
-        raise HTTPException(status_code=404, detail="Anomalie inexistentă sau deja rezolvată")
-    journal.write_admin_action(
-        db, now, admin, "anomaly.dismiss",
-        f"Anomalie verificată ({anomalies.LABELS[anomalies.OUTSIDE_HOURS]}): {row['employee_name']}",
-        employee_id=row["employee_id"],
-        detail={"session_id": row["session_id"], "anomalies": [anomalies.OUTSIDE_HOURS]},
-    )
-    db.commit()
-    return RedirectResponse("/admin/anomalies", status_code=303)
 
 
 def _incidents_response(request, admin, db, status_code=200, **extra):

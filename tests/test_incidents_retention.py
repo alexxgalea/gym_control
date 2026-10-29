@@ -15,7 +15,8 @@ def _journal(harness) -> str:
 
 
 def _anomalies(harness) -> str:
-    return harness.admin_client().get("/admin/anomalies").text
+    rows = harness.admin_client().get("/api/admin/anomalies").json()
+    return "\n".join(f"{a['employee_name']} | {a['label']}" for a in rows) or "Nu există Anomalii"
 
 
 def _enter(harness, name="Ana Pop"):

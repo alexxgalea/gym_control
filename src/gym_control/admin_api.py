@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from gym_control import auth, employees, enrollment, journal, network
+from gym_control import anomalies, auth, clocktime, employees, enrollment, journal, network
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -180,6 +180,58 @@ def revoke_device(
     journal.write_admin_action(
         db, now, admin, "enroll.revoke",
         f"Dispozitiv revocat pentru {employee['name']}", employee_id=employee_id,
+    )
+    db.commit()
+    return Response(status_code=204)
+
+
+class AnomalyOut(BaseModel):
+    """O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
+    `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta)."""
+
+    id: int
+    session_id: int
+    code: str
+    label: str
+    employee_name: str
+    at: str
+    entry_at: str
+    exit_at: str | None
+
+
+@router.get("/anomalies", response_model=list[AnomalyOut], responses={401: {"model": ErrorResponse}})
+def list_anomalies(
+    request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    tz = request.app.state.settings.timezone
+    return [
+        AnomalyOut(
+            id=a["id"], session_id=a["session_id"], code=a["code"],
+            label=anomalies.LABELS.get(a["code"], a["code"]), employee_name=a["employee_name"],
+            at=clocktime.local_iso(a["at"], tz), entry_at=clocktime.local_iso(a["entry_at"], tz),
+            exit_at=clocktime.local_iso(a["exit_at"], tz) if a["exit_at"] else None,
+        )
+        for a in anomalies.list_unresolved(db)
+    ]
+
+
+@router.post(
+    "/anomalies/{anomaly_id}/dismiss", status_code=204,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def dismiss_anomaly(
+    anomaly_id: int, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    row = anomalies.dismiss(db, anomaly_id, now)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Anomalie inexistentă sau deja rezolvată")
+    journal.write_admin_action(
+        db, now, admin, "anomaly.dismiss",
+        f"Anomalie verificată ({anomalies.LABELS[anomalies.OUTSIDE_HOURS]}): {row['employee_name']}",
+        employee_id=row["employee_id"],
+        detail={"session_id": row["session_id"], "anomalies": [anomalies.OUTSIDE_HOURS]},
     )
     db.commit()
     return Response(status_code=204)

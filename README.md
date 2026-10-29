@@ -68,6 +68,13 @@ Filtrele stau în adresă (`?employee=&from=&to=&kind=&page=`). API: `GET /api/a
 invalidă, interval invers sau tip necunoscut; momentele în UTC + fusul Sălii) și `GET /api/admin/journal/kinds`.
 Vechea rută `/admin/jurnal` redirecționează (307) la `/admin/journal`, păstrând query-ul.
 
+## Anomalii (SPA)
+
+Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (spre
+ecranul HTML al Sesiunii manuale, încă nemigrat) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
+doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET /api/admin/anomalies`,
+`POST /api/admin/anomalies/{id}/dismiss` (204; 404 dacă nu există, e deja rezolvată sau nu e `outside_hours`).
+
 ## Import Angajați (CSV)
 
 Încă nu are ecran în SPA (tichetul #19); ruta HTML veche a fost ștearsă odată cu ecranul Angajați.

@@ -4,40 +4,6 @@
  */
 
 export interface paths {
-    "/admin/anomalies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Anomalies Page */
-        get: operations["anomalies_page_admin_anomalies_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/anomalies/{anomaly_id}/dismiss": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Dismiss Anomaly */
-        post: operations["dismiss_anomaly_admin_anomalies__anomaly_id__dismiss_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/incidents": {
         parameters: {
             query?: never;
@@ -188,6 +154,40 @@ export interface paths {
         put?: never;
         /** Save Settings */
         post: operations["save_settings_admin_settings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/anomalies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Anomalies */
+        get: operations["list_anomalies_api_admin_anomalies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/anomalies/{anomaly_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Anomaly */
+        post: operations["dismiss_anomaly_api_admin_anomalies__anomaly_id__dismiss_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -460,6 +460,29 @@ export interface components {
             /** Username */
             username: string;
         };
+        /**
+         * AnomalyOut
+         * @description O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
+         *     `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).
+         */
+        AnomalyOut: {
+            /** At */
+            at: string;
+            /** Code */
+            code: string;
+            /** Employee Name */
+            employee_name: string;
+            /** Entry At */
+            entry_at: string;
+            /** Exit At */
+            exit_at: string | null;
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            /** Session Id */
+            session_id: number;
+        };
         /** Body_correct_admin_sessions__session_id__correct_post */
         Body_correct_admin_sessions__session_id__correct_post: {
             /**
@@ -686,57 +709,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    anomalies_page_admin_anomalies_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-        };
-    };
-    dismiss_anomaly_admin_anomalies__anomaly_id__dismiss_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                anomaly_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     incidents_page_admin_incidents_get: {
         parameters: {
             query?: never;
@@ -1087,6 +1059,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_anomalies_api_admin_anomalies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnomalyOut"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    dismiss_anomaly_api_admin_anomalies__anomaly_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anomaly_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */

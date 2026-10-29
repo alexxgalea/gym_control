@@ -4,6 +4,7 @@ export type AdminAccount = components["schemas"]["AdminAccount"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
+export type Anomaly = components["schemas"]["AnomalyOut"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
 export type JournalEntry = components["schemas"]["JournalEntryOut"];
 export type JournalPage = components["schemas"]["JournalPageOut"];
@@ -61,6 +62,10 @@ export const adminApi = {
       return api<JournalPage>(`/api/admin/journal${text ? `?${text}` : ""}`);
     },
     kinds: () => api<JournalKind[]>("/api/admin/journal/kinds"),
+  },
+  anomalies: {
+    list: () => api<Anomaly[]>("/api/admin/anomalies"),
+    dismiss: (id: number) => api<void>(`/api/admin/anomalies/${id}/dismiss`, { method: "POST" }),
   },
   /** Contul curent, sau `null` dacă nu există sesiune (401). */
   me: async (): Promise<AdminAccount | null> => {
