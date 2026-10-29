@@ -39,20 +39,20 @@ def test_report_lists_overlapping_sessions_including_straddling_ones(harness):
     dan = harness.enrolled_client("Dan Vlad")
     eva = harness.enrolled_client("Eva Stan")
     # Ana 09:00-10:30 local (începe înainte)
-    _at(harness, 7); ana.post("/me/entry", data=totp(harness))
-    _at(harness, 8, 30); ana.post("/me/exit", data=totp(harness))
+    _at(harness, 7); ana.post("/api/employee/entry", json=totp(harness))
+    _at(harness, 8, 30); ana.post("/api/employee/exit", json=totp(harness))
     # Bob 11:30-13:00 local (se termină după)
-    _at(harness, 9, 30); bob.post("/me/entry", data=totp(harness))
-    _at(harness, 11); bob.post("/me/exit", data=totp(harness))
+    _at(harness, 9, 30); bob.post("/api/employee/entry", json=totp(harness))
+    _at(harness, 11); bob.post("/api/employee/exit", json=totp(harness))
     # Cris 08:00-09:50 (înainte)
-    _at(harness, 6); cris.post("/me/entry", data=totp(harness))
-    _at(harness, 7, 50); cris.post("/me/exit", data=totp(harness))
+    _at(harness, 6); cris.post("/api/employee/entry", json=totp(harness))
+    _at(harness, 7, 50); cris.post("/api/employee/exit", json=totp(harness))
     # Dan 13:00-14:00 (după)
-    _at(harness, 11); dan.post("/me/entry", data=totp(harness))
-    _at(harness, 12); dan.post("/me/exit", data=totp(harness))
+    _at(harness, 11); dan.post("/api/employee/entry", json=totp(harness))
+    _at(harness, 12); dan.post("/api/employee/exit", json=totp(harness))
     # Eva 10:30-10:45 (înăuntru)
-    _at(harness, 8, 30); eva.post("/me/entry", data=totp(harness))
-    _at(harness, 8, 45); eva.post("/me/exit", data=totp(harness))
+    _at(harness, 8, 30); eva.post("/api/employee/entry", json=totp(harness))
+    _at(harness, 8, 45); eva.post("/api/employee/exit", json=totp(harness))
     body = _report(harness).json()
     assert [r["employee_name"] for r in body["rows"]] == ["Ana Pop", "Eva Stan", "Bob Ionescu"]
     ana_row = body["rows"][0]
@@ -70,7 +70,7 @@ def test_report_lists_overlapping_sessions_including_straddling_ones(harness):
 
 def test_open_session_is_marked_and_present_until_closing(harness):
     ana = harness.enrolled_client("Ana Pop")
-    ana.post("/me/entry", data=totp(harness))  # 10:12 local, deschisă
+    ana.post("/api/employee/entry", json=totp(harness))  # 10:12 local, deschisă
     [row] = _report(harness, "from=2026-01-05T15:00&to=2026-01-05T16:00").json()["rows"]
     assert row["employee_name"] == "Ana Pop" and row["open"] and row["exit"] is None
     assert _names(_report(harness, "from=2026-01-05T22:30&to=2026-01-05T23:00")) == []
@@ -80,7 +80,7 @@ def test_open_session_is_marked_and_present_until_closing(harness):
 def test_anomaly_labels_are_shown(harness):
     ana = harness.enrolled_client("Ana Pop")
     _at(harness, 21, 30)  # 23:30 local
-    ana.post("/me/entry", data=totp(harness))
+    ana.post("/api/employee/entry", json=totp(harness))
     [row] = _report(harness, "from=2026-01-05T23:00&to=2026-01-06T00:00").json()["rows"]
     assert row["employee_name"] == "Ana Pop" and "Intrare în afara programului" in row["label"]
 
@@ -103,7 +103,7 @@ def test_invalid_interval_is_not_journaled(harness):
 
 
 def test_generating_report_is_journaled_with_author_and_interval(harness):
-    harness.enrolled_client("Ana Pop").post("/me/entry", data=totp(harness))
+    harness.enrolled_client("Ana Pop").post("/api/employee/entry", json=totp(harness))
     admin = harness.admin_client()
     assert "Raport de prezență" not in admin.get("/api/admin/journal").text
     assert admin.get(f"/api/admin/reports?{Q}").status_code == 200
@@ -116,7 +116,7 @@ def test_generating_report_is_journaled_with_author_and_interval(harness):
 
 
 def test_csv_export_utf8_bom_columns_and_formula_safety(harness):
-    harness.enrolled_client('=HYPERLINK("x")', "evil@firma.ro").post("/me/entry", data=totp(harness))
+    harness.enrolled_client('=HYPERLINK("x")', "evil@firma.ro").post("/api/employee/entry", json=totp(harness))
     r = _report(harness, path="/api/admin/reports.csv")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")

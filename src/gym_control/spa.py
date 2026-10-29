@@ -8,9 +8,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 
-# Adresele publice servite de punctul de intrare Angajat. `/me`, `/enroll/{token}` și `/door` rămân pe paginile
+# Adresele publice servite de punctul de intrare Angajat. `/enroll/{token}` și `/door` rămân pe paginile
 # vechi până la tichetele lor; fiecare tichet își adaugă adresa aici.
-EMPLOYEE_PAGES = ("/status",)
+EMPLOYEE_PAGES = ("/status", "/me")
 
 
 def mount(app: FastAPI, dist: str) -> None:

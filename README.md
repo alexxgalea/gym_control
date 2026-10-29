@@ -122,7 +122,7 @@ Fără token valid `/door` este refuzat (și rămâne refuzat dacă `GYM_KIOSK_T
 - `GYM_KIOSK_TOKEN`: tokenul kiosk (secret lung, ales de Admin).
 - `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
 
-QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /me/entry|exit`) cer câmpul `totp`, validat pe ceasul
+QR-ul codifică `/me?t=<TOTP>`. Pagina `/me` e servită de punctul de intrare Angajat; Intrarea/Ieșirea (`POST /api/employee/entry|exit`, JSON) cer câmpul `totp`, validat pe ceasul
 serverului (fereastra curentă și cea anterioară, 30 s); nu e de unică folosință, iar orice timestamp trimis de client
 e ignorat. Metoda de validare `qr_totp` apare în Sesiune și în Jurnal. În teste: `harness.current_totp()`,
 `harness.kiosk_client()`.

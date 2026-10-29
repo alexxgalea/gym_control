@@ -12,6 +12,9 @@ API_PREFIX = "/api/employee/"
 
 NOT_IN_HALL_NETWORK = "not_in_hall_network"
 PHONE_NOT_ACTIVATED = "phone_not_activated"
+CODE_INVALID = "code_invalid"  # include și codul expirat
+NO_OPEN_ENTRY = "no_open_entry"
+ALREADY_INSIDE = "already_inside"
 
 
 def is_employee_api(request: Request) -> bool:
