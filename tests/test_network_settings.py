@@ -1,6 +1,6 @@
 """Validare de rețea și ecranul Setări (#7)."""
 
-from tests.conftest import OUTSIDE_IP
+from tests.conftest import HALL_IP, OUTSIDE_IP
 
 
 def test_entry_and_exit_from_outside_subnet_are_rejected_with_message(harness):
@@ -112,3 +112,30 @@ def test_settings_screen_is_mobile_friendly(harness):
     page = harness.admin_client().get("/admin/settings").text
     assert 'name="viewport"' in page
     assert 'class="card stack"' in page
+
+
+def test_forwarded_for_is_ignored_by_default(harness):
+    enrolled = harness.enrolled_client("Ana Pop")
+    phone = harness.client(OUTSIDE_IP)
+    phone.cookies.update(enrolled.cookies)
+    r = phone.post("/me/entry", data={"totp": harness.current_totp()},
+                   headers={"X-Forwarded-For": HALL_IP})
+    assert r.status_code == 403
+
+
+def test_forwarded_for_is_honoured_only_from_trusted_proxy(make_harness):
+    h = make_harness(trusted_proxies=(OUTSIDE_IP,))
+    phone = h.enrolled_client("Ana Pop")
+    proxy = h.client(OUTSIDE_IP)
+    proxy.cookies.update(phone.cookies)
+    totp = {"totp": h.current_totp()}
+    # proxy de încredere: se folosește adresa din X-Forwarded-For (clientul real)
+    assert proxy.post("/me/entry", data=totp, headers={"X-Forwarded-For": HALL_IP}).status_code == 200
+    assert proxy.post("/me/exit", data=totp, headers={"X-Forwarded-For": "10.9.9.9"}).status_code == 403
+    # un client oarecare nu poate falsifica antetul
+    stranger = h.client("10.7.7.7")
+    stranger.cookies.update(phone.cookies)
+    assert stranger.post("/me/exit", data=totp, headers={"X-Forwarded-For": HALL_IP}).status_code == 403
+    # un X-Forwarded-For falsificat de client, adăugat în față de proxy, nu contează (se ia ultima adresă necunoscută)
+    assert proxy.post("/me/exit", data=totp,
+                      headers={"X-Forwarded-For": f"{HALL_IP}, 10.9.9.9"}).status_code == 403

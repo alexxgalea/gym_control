@@ -151,6 +151,17 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 4. Pornește: `docker compose up -d`; verifică `/status` și ecranele Admin (Angajați, Jurnal).
 5. Datele de după momentul backup-ului se pierd; Angajații înrolați după el trebuie re-înrolați.
 
+## Rețea, proxy și cookie-uri
+
+- Validarea de rețea folosește doar adresa conexiunii TCP (ADR 0001: LAN, expunere directă, fără proxy).
+  **Nu pune un reverse proxy în fața aplicației**: toate cererile ar părea să vină de la IP-ul proxy-ului și
+  validarea IP (Intrare/Ieșire/înrolare doar din subrețeaua Sălii) ar fi ocolită sau ar refuza pe toată lumea.
+- Dacă totuși ai nevoie de proxy, setează `GYM_TRUSTED_PROXIES` (IP-uri sau subrețele, separate prin virgulă):
+  `X-Forwarded-For` e luat în calcul doar când conexiunea vine de la un proxy din listă, iar proxy-ul trebuie
+  să adauge (nu să păstreze) adresa clientului real. Implicit lista e goală.
+- Cookie-urile (Admin, dispozitiv, kiosk) **nu au flagul `Secure`**: aplicația rulează în HTTP simplu în LAN, iar
+  un cookie `Secure` nu ar fi trimis deloc. Nu o expune pe internet.
+
 ## Setup fizic
 
 ### Telefonul-kiosk (ușa)

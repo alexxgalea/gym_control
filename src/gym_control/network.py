@@ -25,8 +25,25 @@ def in_subnet(ip: str, subnet: str) -> bool:
         return False
 
 
+def _trusted(ip: str, proxies: tuple[str, ...]) -> bool:
+    return any(in_subnet(ip, p) for p in proxies)
+
+
 def source_ip(request: Request) -> str:
-    return request.client.host if request.client else ""
+    """Adresa sursă a cererii: cea a conexiunii TCP.
+
+    `X-Forwarded-For` se ia în calcul doar dacă conexiunea vine de la un proxy din `GYM_TRUSTED_PROXIES`
+    (implicit niciunul). Lanțul se parcurge de la dreapta, sărind peste proxy-urile de încredere; prima adresă
+    necunoscută e clientul. Antetul trimis de client în stânga lanțului nu poate falsifica rezultatul."""
+    peer = request.client.host if request.client else ""
+    proxies = request.app.state.settings.trusted_proxies
+    if not proxies or not _trusted(peer, proxies):
+        return peer
+    chain = [a.strip() for a in request.headers.get("x-forwarded-for", "").split(",") if a.strip()]
+    for addr in reversed(chain):
+        if not _trusted(addr, proxies):
+            return addr
+    return peer
 
 
 def in_hall(request: Request, db: sqlite3.Connection) -> bool:

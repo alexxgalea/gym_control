@@ -27,6 +27,9 @@ class Settings:
     # Backup zilnic (#14): director separat de laptop (share de rețea / USB); gol = backup oprit.
     backup_dir: str = ""
     backup_keep_days: int = 30
+    # IP-uri/subrețele de proxy de încredere (GYM_TRUSTED_PROXIES, separate prin virgulă). Gol = nicio
+    # încredere: se folosește doar adresa conexiunii (ADR 0001: fără proxy).
+    trusted_proxies: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -46,4 +49,6 @@ class Settings:
             scheduler_interval=float(env.get("GYM_SCHEDULER_INTERVAL", "60")),
             backup_dir=env.get("GYM_BACKUP_DIR", ""),
             backup_keep_days=int(env.get("GYM_BACKUP_KEEP_DAYS", "30")),
+            trusted_proxies=tuple(
+                x.strip() for x in env.get("GYM_TRUSTED_PROXIES", "").split(",") if x.strip()),
         )
