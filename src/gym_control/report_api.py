@@ -5,7 +5,7 @@ Orice Raport generat cu interval valid (afișat, tipărit sau exportat) intră �
 Textul de neacceptare și cel pentru Sesiuni deschise vin de aici, nu sunt dublate în SPA."""
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import NamedTuple
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -38,6 +38,9 @@ class ReportRowOut(BaseModel):
 
 
 class ReportOut(BaseModel):
+    """Toate orele sunt instante ISO (UTC); interfața le formatează în ora Sălii (`timezone`)."""
+
+    timezone: str
     date_from: str
     date_to: str
     generated_at: str
@@ -46,6 +49,10 @@ class ReportOut(BaseModel):
     scope_text: str
     open_text: str
     rows: list[ReportRowOut]
+
+
+def _iso(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat(timespec="seconds")
 
 
 class GeneratedReport(NamedTuple):
@@ -87,13 +94,13 @@ def generate_report(
     tz = request.app.state.settings.timezone
     report = _generate_and_journal(request, admin, db, date_from, date_to, "report.generate")
     return ReportOut(
-        date_from=local_iso(report.start, tz), date_to=local_iso(report.end, tz),
-        generated_at=local_iso(request.app.state.clock(), tz), generated_by=admin.username,
+        timezone=tz, date_from=_iso(report.start), date_to=_iso(report.end),
+        generated_at=_iso(request.app.state.clock()), generated_by=admin.username,
         disclaimer=reports.DISCLAIMER, scope_text=reports.SCOPE_TEXT, open_text=reports.OPEN_TEXT,
         rows=[
             ReportRowOut(
-                employee_name=r.employee_name, entry=local_iso(r.entry_at, tz),
-                exit=local_iso(r.exit_at, tz) if r.exit_at else None, open=r.open,
+                employee_name=r.employee_name, entry=_iso(r.entry_at),
+                exit=_iso(r.exit_at) if r.exit_at else None, open=r.open,
                 manual=r.manual, label=r.label, method_label=r.method_label,
             )
             for r in report.rows

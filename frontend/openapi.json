@@ -497,6 +497,7 @@
         "type": "object"
       },
       "ReportOut": {
+        "description": "Toate orele sunt instante ISO (UTC); interfața le formatează în ora Sălii (`timezone`).",
         "properties": {
           "date_from": {
             "title": "Date From",
@@ -532,9 +533,14 @@
           "scope_text": {
             "title": "Scope Text",
             "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
+          "timezone",
           "date_from",
           "date_to",
           "generated_at",
