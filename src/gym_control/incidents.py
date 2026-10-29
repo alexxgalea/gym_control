@@ -5,12 +5,11 @@ Orele se introduc în ora locală și se stochează în UTC. `mark`/`close` scri
 """
 
 import sqlite3
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
+from datetime import datetime
 
 from gym_control import journal
 from gym_control.auth import Admin
-from gym_control.clocktime import local_iso
+from gym_control.clocktime import local_iso, parse_local
 
 MAX_NOTE = 500
 
@@ -19,19 +18,9 @@ class InvalidIncident(ValueError):
     pass
 
 
-def _parse_local(raw: str, tz: str, label: str) -> datetime:
-    try:
-        naive = datetime.fromisoformat(raw.strip())
-    except ValueError:
-        naive = None
-    if naive is None or naive.tzinfo is not None:
-        raise InvalidIncident(f"{label} invalid: folosește data și ora locală.")
-    return naive.replace(tzinfo=ZoneInfo(tz)).astimezone(timezone.utc)
-
-
 def mark(db: sqlite3.Connection, now: datetime, tz: str, admin: Admin,
          start: str, end: str, note: str) -> int:
-    first, last = _parse_local(start, tz, "Începutul"), _parse_local(end, tz, "Sfârșitul")
+    first, last = parse_local(start, "Începutul", tz, InvalidIncident), parse_local(end, "Sfârșitul", tz, InvalidIncident)
     if first >= last:
         raise InvalidIncident("Începutul trebuie să fie înainte de sfârșit.")
     note = " ".join(note.split())

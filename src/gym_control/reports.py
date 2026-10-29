@@ -20,7 +20,7 @@ from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 
 from gym_control import anomalies, journal
-from gym_control.clocktime import local_iso, to_local
+from gym_control.clocktime import local_iso, parse_local, to_local
 
 DISCLAIMER = (
     "Acest Raport este o listă credibilă de persoane prezente în Sală în interval, "
@@ -36,22 +36,9 @@ class InvalidInterval(ValueError):
     pass
 
 
-def _parse_local(raw: str, name: str, zone: ZoneInfo) -> datetime:
-    raw = (raw or "").strip()
-    if not raw:
-        raise InvalidInterval(f"Completează data și ora pentru „{name}”.")
-    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S"):
-        try:
-            return datetime.strptime(raw, fmt).replace(tzinfo=zone).astimezone(timezone.utc)
-        except ValueError:
-            continue
-    raise InvalidInterval(f"Data și ora pentru „{name}” sunt invalide. Folosește formatul AAAA-LL-ZZ HH:MM.")
-
-
 def parse_interval(raw_from: str, raw_to: str, tz: str) -> tuple[datetime, datetime]:
-    zone = ZoneInfo(tz)
-    x = _parse_local(raw_from, "De la", zone)
-    y = _parse_local(raw_to, "Până la", zone)
+    x = parse_local(raw_from, "De la", tz, InvalidInterval)
+    y = parse_local(raw_to, "Până la", tz, InvalidInterval)
     if x >= y:
         raise InvalidInterval("Intervalul e invalid: „De la” trebuie să fie înainte de „Până la”.")
     return x, y

@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from gym_control import anomalies, employees, journal, reports
 from gym_control.auth import Admin, require_admin
-from gym_control.clocktime import local_iso
+from gym_control.clocktime import local_iso, parse_local
 from gym_control.db import get_db
 from gym_control.templates import templates
 
@@ -67,9 +67,8 @@ def add_session(db, now, tz, admin: Admin, employee_id: int, raw_entry: str, raw
     employee = db.execute("SELECT id, name FROM employees WHERE id = ?", (employee_id,)).fetchone()
     if employee is None:
         raise InvalidManualSession("Angajatul ales nu există.")
-    zone = reports.ZoneInfo(tz)
-    entry = reports._parse_local(raw_entry, "Intrare", zone)
-    exit_ = reports._parse_local(raw_exit, "Ieșire", zone)
+    entry = parse_local(raw_entry, "Intrare", tz, reports.InvalidInterval)
+    exit_ = parse_local(raw_exit, "Ieșire", tz, reports.InvalidInterval)
     _check_interval(db, tz, now, employee_id, entry, exit_)
     session_id = db.execute(
         "INSERT INTO sessions (employee_id, entry_at, exit_at, entry_method, exit_method,"
@@ -100,7 +99,7 @@ def open_session_row(db, session_id: int):
 def correct_session(db, now, tz, admin: Admin, row, raw_exit: str, raw_reason: str) -> None:
     """Închide o Sesiune deschisă cu o Ieșire manuală și îi rezolvă Anomaliile. Apelantul comite."""
     reason = _reason(raw_reason)
-    exit_ = reports._parse_local(raw_exit, "Ieșire", reports.ZoneInfo(tz))
+    exit_ = parse_local(raw_exit, "Ieșire", tz, reports.InvalidInterval)
     entry = datetime.fromisoformat(row["entry_at"])
     _check_interval(db, tz, now, row["employee_id"], entry, exit_, ignore_id=row["id"])
     journal.write(
