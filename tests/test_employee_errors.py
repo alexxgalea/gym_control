@@ -38,6 +38,11 @@ def test_phone_not_activated_is_json_401_with_reason(harness):
 
 
 def test_legacy_pages_still_answer_in_html(harness):
-    r = harness.client(OUTSIDE_IP).get("/door")
+    def needs_hall():
+        raise network.NotInHallNetwork()
+
+    c = harness.client(OUTSIDE_IP)
+    c.app.add_api_route("/_probe/legacy", needs_hall)
+    r = c.get("/_probe/legacy")
     assert r.status_code == 403
     assert "text/html" in r.headers["content-type"]
