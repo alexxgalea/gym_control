@@ -1,20 +1,26 @@
 /* Stiluri comune ale ecranelor Gym Control. Mobile-first, fără derulare laterală. */
 :root {
-  --bg: #f5f6f8; --fg: #1b1f24; --muted: #5b6570; --card: #fff;
-  --line: #d9dde2; --accent: #0b5fff; --accent-fg: #fff;
-  --error-bg: #fdecec; --error-fg: #8a1c1c; --ok-bg: #e8f6ec; --ok-fg: #14532d;
+  color-scheme: light dark;
+  /* Aceleași jetoane ca SPA-ul (frontend/src/index.css), ca paginile să arate la fel. */
+  --bg: oklch(0.985 0 0); --fg: oklch(0.2 0 0); --muted: oklch(0.5 0 0); --card: oklch(1 0 0);
+  --line: oklch(0.9 0 0); --accent: oklch(0.45 0.2 264); --accent-fg: oklch(0.99 0 0);
+  --ring: oklch(0.6 0.15 264);
+  --error-bg: oklch(0.95 0.03 27); --error-fg: oklch(0.42 0.17 27);
+  --ok-bg: oklch(0.95 0.04 150); --ok-fg: oklch(0.38 0.09 150);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14171a; --fg: #e8eaed; --muted: #9aa4af; --card: #1e2327;
-    --line: #333b42; --accent: #6b9bff; --accent-fg: #0a0f1a;
-    --error-bg: #3b1a1a; --error-fg: #ffb4b4; --ok-bg: #16301f; --ok-fg: #a7e3b9;
+    --bg: oklch(0.17 0 0); --fg: oklch(0.95 0 0); --muted: oklch(0.7 0 0); --card: oklch(0.22 0 0);
+    --line: oklch(0.32 0 0); --accent: oklch(0.68 0.16 264); --accent-fg: oklch(0.15 0 0);
+    --ring: oklch(0.65 0.15 264);
+    --error-bg: oklch(0.28 0.07 22); --error-fg: oklch(0.85 0.09 22);
+    --ok-bg: oklch(0.28 0.05 150); --ok-fg: oklch(0.85 0.08 150);
   }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--fg);
-  font: 16px/1.45 system-ui, sans-serif; overflow-wrap: anywhere; }
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-wrap: anywhere; }
 h1 { font-size: 1.4rem; margin: 0 0 1rem; }
 h2 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; }
 .container { max-width: 60rem; margin: 0 auto; padding: 1rem; }
@@ -32,6 +38,7 @@ input, button { font: inherit; }
 input:not([type=file]) { display: block; width: 100%; margin-top: .25rem; padding: .6rem;
   border: 1px solid var(--line); border-radius: .4rem; background: var(--bg); color: var(--fg); }
 input[type=file] { display: block; width: 100%; margin-top: .25rem; }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .btn { min-height: 2.75rem; padding: .5rem 1rem; border: 0; border-radius: .4rem;
   background: var(--accent); color: var(--accent-fg); font-weight: 600; cursor: pointer; }
 .btn-secondary { background: transparent; color: var(--fg); border: 1px solid var(--line); }
@@ -75,3 +82,21 @@ select { display: block; width: 100%; margin-top: .25rem; padding: .6rem; font: 
   .stackable thead { position: static; }
   .disclaimer { border: 1px solid #000; background: #fff; color: #000; }
 }
+
+/* Paginile Angajatului (/me, /enroll) și kioskul (/door, /status): coloană îngustă, ținte mari. */
+.container:has(.state, .qr), body.status-page { max-width: 34rem; }
+.card { box-shadow: 0 1px 2px oklch(0 0 0 / .06); }
+.state-line { font-size: 1.35rem; }
+.btn-big { border-radius: .6rem; font-size: 1.25rem; }
+.btn:active { filter: brightness(.92); }
+/* Kiosk: codul QR umple lățimea disponibilă (tabletă), mereu pe fond alb cu zonă liniștită. */
+.qr { max-width: 28rem; margin: 0 auto; padding: .75rem; background: #fff; border-radius: .6rem; line-height: 0; }
+.qr svg { display: block; width: 100%; height: auto; }
+#qr-holder { background: transparent; border: 0; box-shadow: none; padding: 0; }
+@media (min-width: 40rem) {
+  main:has(.qr) h1 { font-size: 2rem; text-align: center; }
+  main:has(.qr) > .muted { text-align: center; font-size: 1.15rem; }
+  .container:has(.qr) { max-width: 40rem; }
+  .qr { max-width: 32rem; }
+}
+body.status-page { margin: 0 auto; padding: 1rem; }
