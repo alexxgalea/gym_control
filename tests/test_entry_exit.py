@@ -69,21 +69,21 @@ def test_stale_form_after_state_change_is_rejected(harness):
     assert "Nu ai o Intrare deschisă" in r.text
 
 
-def test_events_are_in_journal_in_local_time(harness):
+def test_events_are_in_journal_with_their_utc_moment(harness):
     phone = harness.enrolled_client("Ana Pop")
     phone.post("/me/entry", data=totp(harness))
     harness.clock.advance(hours=2)
     phone.post("/me/exit", data=totp(harness))
-    page = harness.admin_client().get("/admin/jurnal").text
+    page = harness.admin_client().get("/api/admin/journal").text
     assert "Intrare: Ana Pop" in page
     assert "Ieșire: Ana Pop" in page
-    assert "10:12" in page and "12:12" in page
+    assert "2026-01-05T08:12:00+00:00" in page and "2026-01-05T10:12:00+00:00" in page  # ora locală: în SPA
 
 
 def test_rejected_events_are_not_journaled(harness):
     phone = harness.enrolled_client("Ana Pop")
     phone.post("/me/exit", data=totp(harness))
-    assert "Ieșire: Ana Pop" not in harness.admin_client().get("/admin/jurnal").text
+    assert "Ieșire: Ana Pop" not in harness.admin_client().get("/api/admin/journal").text
 
 
 def test_states_are_per_employee(harness):

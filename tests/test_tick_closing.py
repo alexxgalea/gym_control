@@ -14,7 +14,7 @@ def _page(harness) -> str:
 
 
 def _journal(harness) -> str:
-    return harness.admin_client().get("/admin/jurnal").text
+    return harness.admin_client().get("/api/admin/journal").text
 
 
 def _enter(harness, name="Ana Pop"):

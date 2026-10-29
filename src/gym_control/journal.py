@@ -139,14 +139,18 @@ def query(
     employee_id: int | None = None,
     first: date | None = None,
     last: date | None = None,
+    kind: str | None = None,
     page: int = 1,
     page_size: int = PAGE_SIZE,
 ) -> Page:
-    """Jurnalul filtrat după Angajat și zile locale (inclusiv), cel mai nou primul, paginat."""
+    """Jurnalul filtrat după Angajat, zile locale (inclusiv) și tip, cel mai nou primul, paginat."""
     where, params = [], []
     if employee_id is not None:
         where.append("j.employee_id = ?")
         params.append(employee_id)
+    if kind is not None:
+        where.append("j.kind = ?")
+        params.append(kind)
     start, end = local_day_bounds(first, last, tz)
     if start:
         where.append("j.at >= ?")

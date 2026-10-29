@@ -4,6 +4,7 @@ import { Shell, SCREENS } from "@/screens/Shell";
 import { Placeholder } from "@/screens/Placeholder";
 import { Login } from "@/screens/Login";
 import { Employees } from "@/screens/Employees";
+import { Journal } from "@/screens/Journal";
 
 /**
  * Rutele aplicației (fără router propriu: `main.tsx` pune BrowserRouter cu basename `/admin`).
@@ -17,7 +18,8 @@ export function AppRoutes() {
         <Route element={<Shell />}>
           <Route index element={<Navigate to="/employees" replace />} />
           <Route path="employees" element={<Employees />} />
-          {SCREENS.filter((screen) => screen.path !== "employees").map((screen) => (
+          <Route path="journal" element={<Journal />} />
+          {SCREENS.filter((screen) => !["employees", "journal"].includes(screen.path)).map((screen) => (
             <Route key={screen.path} path={screen.path} element={<Placeholder title={screen.label} />} />
           ))}
         </Route>

@@ -95,14 +95,14 @@ def test_generating_report_is_journaled_with_author_and_interval(harness):
     harness.enrolled_client("Ana Pop").post("/me/entry", data=totp(harness))
     admin = harness.admin_client()
     admin.get("/admin/reports")  # fără interval: nu e Raport
-    assert "Raport de prezență" not in admin.get("/admin/jurnal").text
+    assert "Raport de prezență" not in admin.get("/api/admin/journal").text
     assert admin.get(f"/admin/reports?{Q}").status_code == 200
-    journal = admin.get("/admin/jurnal").text
+    journal = admin.get("/api/admin/journal").text
     assert "Raport de prezență generat" in journal
     assert "2026-01-05 10:00" in journal and "2026-01-05 12:00" in journal
     assert "admin" in journal
     admin.get(f"/admin/reports.csv?{Q}")
-    assert "Raport de prezență exportat" in admin.get("/admin/jurnal").text
+    assert "Raport de prezență exportat" in admin.get("/api/admin/journal").text
 
 
 def test_csv_export_utf8_bom_columns_and_formula_safety(harness):

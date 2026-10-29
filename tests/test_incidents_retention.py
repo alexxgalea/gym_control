@@ -11,7 +11,7 @@ FAR = datetime(2027, 2, 5, 12, 0, tzinfo=timezone.utc)  # > 12 luni după ceasul
 
 
 def _journal(harness) -> str:
-    return harness.admin_client().get("/admin/jurnal").text
+    return harness.admin_client().get("/api/admin/journal").text
 
 
 def _anomalies(harness) -> str:

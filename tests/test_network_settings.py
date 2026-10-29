@@ -95,7 +95,7 @@ def test_settings_changes_are_journaled_with_author(harness):
     admin = harness.admin_client()
     admin.post("/admin/settings", data={"hall_subnet": "10.1.0.0/16", "opening_time": "06:00",
                                          "closing_time": "20:00"})
-    page = admin.get("/admin/jurnal").text
+    page = admin.get("/api/admin/journal").text
     assert "Setări modificate" in page
     assert "10.1.0.0/16" in page and "20:00" in page
     assert "admin" in page
@@ -105,7 +105,7 @@ def test_saving_unchanged_settings_writes_no_journal_line(harness):
     admin = harness.admin_client()
     admin.post("/admin/settings", data={"hall_subnet": "192.168.10.0/24", "opening_time": "06:00",
                                          "closing_time": "22:00"})
-    assert "Setări modificate" not in admin.get("/admin/jurnal").text
+    assert "Setări modificate" not in admin.get("/api/admin/journal").text
 
 
 def test_settings_screen_is_mobile_friendly(harness):
