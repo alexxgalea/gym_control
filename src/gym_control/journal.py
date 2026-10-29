@@ -59,8 +59,8 @@ PAGE_SIZE = 50
 
 KIND_LABELS = {"entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
                "manual_session": "Sesiune manuală",
-               "retention": "Retenție", "anomaly": "Anomalie", "enrollment": "Înrolare"}
-METHOD_LABELS = {"none": "Fără validare", "qr_totp": "Cod QR", "manual": "Introdus manual"}
+               "retention": "Păstrarea datelor", "anomaly": "Anomalie", "enrollment": "Activare telefon"}
+METHOD_LABELS = {"none": "Fără validare", "qr_totp": "Cod QR", "manual": "Sesiune manuală"}
 
 
 def local_day_bounds(first: date | None, last: date | None, tz: str) -> tuple[str | None, str | None]:

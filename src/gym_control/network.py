@@ -9,9 +9,8 @@ import sqlite3
 
 from fastapi import Depends, Request
 
-from gym_control import runtime_settings
+from gym_control import employee_errors, runtime_settings
 from gym_control.db import get_db
-from gym_control.templates import templates
 
 
 class NotInHallNetwork(Exception):
@@ -57,4 +56,4 @@ def require_hall_network(request: Request, db: sqlite3.Connection = Depends(get_
 
 
 def not_in_hall_handler(request: Request, exc: NotInHallNetwork):
-    return templates.TemplateResponse(request, "network_rejected.html", {}, status_code=403)
+    return employee_errors.not_in_hall_response()

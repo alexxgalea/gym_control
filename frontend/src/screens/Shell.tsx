@@ -1,21 +1,39 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LogOut } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import {
+  FileText,
+  House,
+  LogOut,
+  Menu,
+  ScrollText,
+  Settings,
+  ShieldAlert,
+  TriangleAlert,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { adminApi } from "@/api/client";
 import { ME_KEY, useMe } from "@/auth";
 import { ToastProvider } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
+import { Logo } from "@/design/Logo";
+import { ThemeSwitch } from "@/design/ThemeSwitch";
 import { cn } from "@/lib/utils";
 
-/** Ecranele din navigarea laterală, în ordinea afișării. */
-export const SCREENS = [
-  { path: "employees", label: "Angajați" },
-  { path: "journal", label: "Jurnal" },
-  { path: "anomalies", label: "Anomalii" },
-  { path: "incidents", label: "Incidente" },
-  { path: "reports", label: "Rapoarte" },
-  { path: "settings", label: "Setări" },
-] as const;
+/** „Acasă” duce la ruta de pornire: pagina de gestiune. */
+const HOME = { path: "", label: "Acasă", icon: House } as const;
+
+/** Ecranele din meniu, în ordinea afișării. */
+export const SCREENS: readonly { path: string; label: string; icon: LucideIcon }[] = [
+  { path: "employees", label: "Angajați", icon: Users },
+  { path: "journal", label: "Jurnal", icon: ScrollText },
+  { path: "anomalies", label: "Anomalii", icon: TriangleAlert },
+  { path: "incidents", label: "Incidente", icon: ShieldAlert },
+  { path: "reports", label: "Raport de prezență", icon: FileText },
+  { path: "settings", label: "Setări", icon: Settings },
+];
 
 export function Shell() {
   const me = useMe();
@@ -24,35 +42,90 @@ export function Shell() {
     mutationFn: adminApi.logout,
     onSuccess: () => queryClient.setQueryData(ME_KEY, null),
   });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const { pathname } = useLocation();
+
+  // orice navigare închide meniul
+  useEffect(() => setMenuOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      buttonRef.current?.focus();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [menuOpen]);
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col gap-6 border-r border-border bg-card p-4">
-        <strong className="px-2 text-lg">Gym Control</strong>
-        <nav className="flex flex-col gap-1">
-          {SCREENS.map((screen) => (
-            <NavLink
-              key={screen.path}
-              to={`/${screen.path}`}
-              className={({ isActive }) =>
-                cn(
-                  "rounded-md px-3 py-2 text-sm font-medium hover:bg-muted",
-                  isActive && "bg-muted text-primary",
-                )
-              }
-            >
-              {screen.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="mt-auto flex flex-col gap-2 border-t border-border pt-4">
-          <span className="px-2 text-sm text-muted-foreground">{me.data?.username}</span>
-          <Button variant="outline" size="sm" onClick={() => logout.mutate()} disabled={logout.isPending}>
-            <LogOut className="size-4" aria-hidden /> Ieșire cont
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-border bg-card">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-8">
+          <Logo />
+          <Button
+            ref={buttonRef}
+            variant="outline"
+            size="sm"
+            aria-expanded={menuOpen}
+            aria-controls="meniu-principal"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <Menu className="size-4" aria-hidden /> Meniu
           </Button>
         </div>
-      </aside>
-      <main className="min-w-0 flex-1 p-8">
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              id="meniu-principal"
+              ref={menuRef}
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full right-2 left-2 mt-2 flex max-h-[calc(100dvh-5rem)] flex-col gap-3 overflow-y-auto rounded-2xl border border-border bg-card p-3 shadow-sheet sm:right-8 sm:left-auto sm:w-80"
+            >
+              <nav aria-label="Meniu principal" className="flex flex-col gap-0.5">
+                {[HOME, ...SCREENS].map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={`/${item.path}`}
+                    end={item.path === ""}
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium hover:bg-muted",
+                        isActive && "bg-muted text-primary",
+                      )
+                    }
+                  >
+                    <item.icon className="size-5" aria-hidden />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+              <div className="flex flex-col gap-3 border-t border-border pt-3">
+                <span className="px-3 text-sm text-muted-foreground">{me.data?.username}</span>
+                <ThemeSwitch />
+                <Button variant="outline" onClick={() => logout.mutate()} disabled={logout.isPending}>
+                  <LogOut className="size-4" aria-hidden /> Deconectare
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+      <main className="mx-auto min-w-0 max-w-6xl p-4 sm:p-8">
         <ToastProvider>
           <Outlet />
         </ToastProvider>

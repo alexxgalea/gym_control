@@ -76,31 +76,39 @@ function pageOf(entries: Entry[], extra: Partial<{ page: number; has_next: boole
   });
 }
 
-const rowOf = async (text: RegExp | string) => within(await screen.findByRole("row", { name: text }));
+const rowOf = async (text: RegExp | string) => within((await screen.findByText(text)).closest("li")!);
 
 describe("ecranul Jurnal", () => {
-  it("arată stare de încărcare, apoi rândurile cu momentul local și UTC, Angajatul, tipul, validarea și descrierea", async () => {
+  // formatul datelor depinde de „azi”: înghețăm doar ceasul, nu și temporizatoarele
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-01T10:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("arată schelet la încărcare, apoi rândurile cu momentul în ora Sălii (fără UTC), Angajatul, tipul, metoda și descrierea", async () => {
     mockApi(() => pageOf([entry({})]), { listDelay: 20 });
     renderApp("/journal");
 
-    expect(await screen.findByText("Se încarcă…")).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: "Se încarcă" })).toBeInTheDocument();
     const row = await rowOf(/Intrare: Ana Pop/);
-    expect(row.getByText("05.01.2026, 10:12")).toBeInTheDocument(); // ora Sălii, format românesc
-    expect(row.getByText("05.01.2026, 08:12 UTC")).toBeInTheDocument();
+    expect(row.getByText("5 ian., 10:12")).toBeInTheDocument(); // ora Sălii, format românesc
+    expect(screen.queryByText(/UTC/)).not.toBeInTheDocument();
     expect(row.getByText("Ana Pop")).toBeInTheDocument();
     expect(row.getByText("Intrare")).toBeInTheDocument();
     expect(row.getByText("Cod QR")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Jurnal" })).toBeInTheDocument();
+    expect(screen.getByText(/Tot ce s-a întâmplat în aplicație/)).toBeInTheDocument();
   });
 
   it("folosește ora de vară a Sălii pentru momentele din vară", async () => {
     mockApi(() => pageOf([entry({ at: "2026-07-05T08:12:00+00:00", summary: "Intrare vară" })]));
     renderApp("/journal");
     const row = await rowOf(/Intrare vară/);
-    expect(row.getByText("05.07.2026, 11:12")).toBeInTheDocument();
+    expect(row.getByText("5 iul., 11:12")).toBeInTheDocument();
   });
 
-  it("arată acțiunile Adminilor cu autorul, Anomaliile ca insigne și lipsa validării ca liniuță", async () => {
+  it("arată acțiunile Adminilor cu autorul, Anomaliile ca insigne și evenimentele automate marcate pe înțeles", async () => {
     mockApi(() =>
       pageOf([
         entry({
@@ -119,11 +127,13 @@ describe("ecranul Jurnal", () => {
     renderApp("/journal");
     const action = await rowOf(/Angajat creat/);
     expect(action.getByText("Acțiune Admin")).toBeInTheDocument();
-    expect(action.getByText("admin")).toBeInTheDocument();
-    expect(action.getByText("—")).toBeInTheDocument();
+    expect(action.getByText("Făcut de admin")).toBeInTheDocument();
+    expect(action.queryByText("—")).not.toBeInTheDocument();
     const late = await rowOf(/Intrare târzie/);
     expect(late.getByText("Intrare în afara programului")).toBeInTheDocument();
     expect(late.getByText("Ieșire lipsă")).toBeInTheDocument();
+    expect(late.getByText("Eveniment automat")).toBeInTheDocument();
+    expect(action.queryByText("Eveniment automat")).not.toBeInTheDocument();
   });
 
   it("marchează vizibil Sesiunile manuale, cu autorul, metoda și motivul, și nu pe celelalte rânduri", async () => {
@@ -134,7 +144,7 @@ describe("ecranul Jurnal", () => {
           kind: "manual_session",
           kind_label: "Sesiune manuală",
           manual: true,
-          method_label: "Introdus manual",
+          method_label: "Sesiune manuală",
           author: "admin",
           summary: "Sesiune manuală adăugată: Ana Pop. Motiv: Telefon stricat",
         }),
@@ -143,9 +153,8 @@ describe("ecranul Jurnal", () => {
     );
     renderApp("/journal");
     const manual = await rowOf(/Telefon stricat/);
-    expect(manual.getByText("Sesiune manuală")).toBeInTheDocument();
-    expect(manual.getByText("Introdus manual")).toBeInTheDocument();
-    expect(manual.getByText("admin")).toBeInTheDocument();
+    expect(manual.getAllByText("Sesiune manuală")).toHaveLength(1); // doar tipul; metoda identică nu se repetă
+    expect(manual.getByText("Făcut de admin")).toBeInTheDocument();
     expect(manual.getByTestId("manual-mark")).toBeInTheDocument();
     expect((await rowOf(/Intrare: Ana Pop/)).queryByTestId("manual-mark")).not.toBeInTheDocument();
   });
@@ -232,11 +241,29 @@ describe("ecranul Jurnal", () => {
     expect(await screen.findByText("Intrare: Ana Pop")).toBeInTheDocument();
   });
 
+  it("pe telefon filtrele se deschid într-o foaie și se aplică de acolo", async () => {
+    const base = window.matchMedia;
+    window.matchMedia = (query: string) => ({ ...base(query), matches: query.includes("max-width") }) as MediaQueryList;
+    const requests = mockApi(() => pageOf([entry({})]));
+    const user = userEvent.setup();
+    renderApp("/journal");
+    await screen.findByText("Intrare: Ana Pop");
+    expect(screen.queryByLabelText("De la (inclusiv)")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Filtre" }));
+    fireEvent.change(await screen.findByLabelText("De la (inclusiv)"), { target: { value: "2026-01-05" } });
+    await user.click(screen.getByRole("button", { name: "Filtrează" }));
+
+    await vi.waitFor(() => expect(Object.fromEntries(requests.at(-1)!)).toEqual({ from: "2026-01-05" }));
+    expect(screen.queryByLabelText("De la (inclusiv)")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Filtre (1)" })).toBeInTheDocument();
+  });
+
   it("duce la login când sesiunea a expirat (401)", async () => {
     server.use(
       http.get("/api/admin/me", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/journal");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });

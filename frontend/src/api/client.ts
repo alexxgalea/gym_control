@@ -5,10 +5,13 @@ export type LoginRequest = components["schemas"]["LoginRequest"];
 export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
 export type Anomaly = components["schemas"]["AnomalyOut"];
+export type InHall = components["schemas"]["InHallOut"];
+export type InHallPerson = components["schemas"]["InHallPerson"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
 export type Incident = components["schemas"]["IncidentOut"];
 export type IncidentInput = components["schemas"]["IncidentIn"];
 export type HallSettings = components["schemas"]["SettingsOut"];
+export type NetworkSuggestion = components["schemas"]["NetworkSuggestion"];
 export type HallSettingsInput = components["schemas"]["SettingsIn"];
 export type ImportReport = components["schemas"]["ImportReport"];
 export type Report = components["schemas"]["ReportOut"];
@@ -96,6 +99,8 @@ export const adminApi = {
     correct: (id: number, body: SessionCorrectionInput) =>
       api<void>(`/api/admin/sessions/${id}/correct`, { method: "POST", body }),
   },
+  /** „Acum în Sală”: Sesiunile de azi fără Ieșire. */
+  inHall: () => api<InHall>("/api/admin/in-hall"),
   anomalies: {
     list: () => api<Anomaly[]>("/api/admin/anomalies"),
     dismiss: (id: number) => api<void>(`/api/admin/anomalies/${id}/dismiss`, { method: "POST" }),
@@ -108,6 +113,8 @@ export const adminApi = {
   settings: {
     get: () => api<HallSettings>("/api/admin/settings"),
     save: (body: HallSettingsInput) => api<HallSettings>("/api/admin/settings", { method: "PUT", body }),
+    /** Rețeaua calculată din conexiunea curentă; doar o sugestie, nu se salvează. */
+    networkSuggestion: () => api<NetworkSuggestion>("/api/admin/settings/network-suggestion"),
   },
   reports: {
     /** Generează (și înscrie în Jurnal) Raportul pe intervalul dat, în ora locală (`YYYY-MM-DDTHH:MM`). */

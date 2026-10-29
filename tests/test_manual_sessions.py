@@ -29,9 +29,9 @@ def _manual_entries(admin):
 def _forgotten_exit(harness):
     """Ana intră ieri, uită Ieșirea, intră din nou azi. Întoarce (telefon, URL de corectare)."""
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=_totp(harness))
+    phone.post("/api/employee/entry", json=_totp(harness))
     harness.clock.advance(days=1)
-    phone.post("/me/entry", data=_totp(harness))
+    phone.post("/api/employee/entry", json=_totp(harness))
     [row] = harness.admin_client().get("/api/admin/anomalies").json()
     assert row["exit_at"] is None
     return phone, f"/api/admin/sessions/{row['session_id']}/correct"
@@ -71,13 +71,14 @@ def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(ha
     assert isinstance(r.json()["id"], int)
     [entry] = _manual_entries(admin)
     assert entry["kind_label"] == "Sesiune manuală"
-    assert entry["method_label"] == "Introdus manual"
+    assert entry["method_label"] == "Sesiune manuală"
     assert "Telefonul de la ușă nu a funcționat" in entry["summary"]
     assert entry["author"] == ADMIN_USER
     assert entry["employee_name"] == "Ana Pop"
-    report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
-    assert "Ana Pop" in report and "Sesiune manuală" in report
-    assert "2026-01-05 08:00" in report and "2026-01-05 09:30" in report
+    [row] = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").json()["rows"]
+    assert row["employee_name"] == "Ana Pop" and "Sesiune manuală" in row["label"]
+    assert row["method_label"] == "Sesiune manuală"
+    assert row["entry"] == "2026-01-05T06:00:00+00:00" and row["exit"] == "2026-01-05T07:30:00+00:00"
 
 
 def test_add_validation_errors_name_the_field(harness):
@@ -117,9 +118,9 @@ def test_manual_session_does_not_block_or_open_presence(harness):
     admin = harness.admin_client()
     eid = admin.get("/api/admin/employees").json()[0]["id"]
     assert _add(admin, eid, "2026-01-05T06:00", "2026-01-05T07:00").status_code == 201
-    assert "în afara Sălii" in phone.get("/me").text
-    assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
-    assert phone.post("/me/exit", data=_totp(harness)).status_code == 200
+    assert phone.get("/api/employee/me").json()["inside_since"] is None
+    assert phone.post("/api/employee/entry", json=_totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 200
 
 
 def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
@@ -129,14 +130,14 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert r.status_code == 204, r.text
     assert admin.get("/api/admin/anomalies").json() == []
     # Ana poate continua normal: Ieșire din Sesiunea curentă, apoi Intrare
-    assert phone.post("/me/exit", data=_totp(harness)).status_code == 200
-    assert phone.post("/me/exit", data=_totp(harness)).status_code == 409  # cea veche nu se redeschide
-    assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 200
+    assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 409  # cea veche nu se redeschide
+    assert phone.post("/api/employee/entry", json=_totp(harness)).status_code == 200
     [entry] = _manual_entries(admin)
     assert "Ieșire uitată" in entry["summary"]
-    assert entry["method_label"] == "Introdus manual" and entry["author"] == ADMIN_USER
+    assert entry["method_label"] == "Sesiune manuală" and entry["author"] == ADMIN_USER
     report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
-    assert "Sesiune manuală" in report and "2026-01-05 18:00" in report
+    assert "Sesiune manuală" in report and "2026-01-05T16:00:00+00:00" in report
 
 
 def test_correct_requires_reason_and_valid_exit(harness):
@@ -170,7 +171,7 @@ def test_correct_closed_or_missing_session_is_refused(harness):
 
 def test_correct_session_flagged_open_at_closing_resolves_it(harness):
     phone = harness.enrolled_client("Ana Pop")
-    phone.post("/me/entry", data=_totp(harness))
+    phone.post("/api/employee/entry", json=_totp(harness))
     harness.clock.advance(hours=12)  # 22:12 local, după închidere
     harness.tick()
     admin = harness.admin_client()

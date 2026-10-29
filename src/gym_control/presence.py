@@ -1,4 +1,4 @@
-"""Intrare/Ieșire: starea Angajatului, Sesiunile și ecranul /me.
+"""Intrare/Ieșire: starea Angajatului și Sesiunile (endpointurile JSON sunt în `employee_api`).
 
 API reutilizabil de tichetele următoare:
 - `open_session`: starea Angajatului (Sesiune deschisă sau None);
@@ -11,18 +11,10 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
-
-from gym_control import anomalies, journal, runtime_settings, totp
+from gym_control import anomalies, journal, runtime_settings
 from gym_control.clocktime import local_day, local_hm, to_local
-from gym_control.db import get_db
-from gym_control.enrollment import Employee, require_employee
-from gym_control.network import require_hall_network
+from gym_control.enrollment import Employee
 from gym_control.settings import Settings
-from gym_control.templates import templates
-
-router = APIRouter()
 
 METHOD_NONE = "none"  # fără validare (doar apeluri interne)
 METHOD_QR_TOTP = "qr_totp"  # validat prin TOTP-ul din QR (#6)
@@ -42,6 +34,26 @@ def open_session(db: sqlite3.Connection, employee_id: int) -> OpenSession | None
         (employee_id, anomalies.MISSING_EXIT),
     ).fetchone()
     return OpenSession(row["id"], datetime.fromisoformat(row["entry_at"])) if row else None
+
+
+@dataclass(frozen=True)
+class Inside:
+    session_id: int
+    employee_name: str
+    entry_at: datetime
+
+
+def inside_today(db: sqlite3.Connection, now: datetime, tz: str) -> list[Inside]:
+    """„Acum în Sală”: Sesiunile începute în ziua locală de azi, fără Ieșire. Cele vechi nu apar (sunt Anomalii)."""
+    rows = db.execute(
+        "SELECT s.id, s.entry_at, e.name FROM sessions s JOIN employees e ON e.id = s.employee_id"
+        " WHERE s.exit_at IS NULL ORDER BY s.entry_at, s.id",
+    ).fetchall()
+    today = local_day(now, tz)
+    return [
+        Inside(r["id"], r["name"], datetime.fromisoformat(r["entry_at"]))
+        for r in rows if local_day(r["entry_at"], tz) == today
+    ]
 
 
 def is_old(session: OpenSession, now: datetime, tz: str) -> bool:
@@ -120,49 +132,3 @@ def record_exit(db: sqlite3.Connection, now: datetime, tz: str, employee: Employ
     anomalies.resolve(db, current.id, anomalies.OPEN_AT_CLOSING, now)
     db.commit()
     return None
-
-
-def _page(request, db, employee, status_code=200, error=None, done=None, totp_code=""):
-    tz = request.app.state.settings.timezone
-    current = open_session(db, employee.id)
-    return templates.TemplateResponse(
-        request, "me.html",
-        {
-            "employee": employee,
-            "inside_since": local_hm(current.entry_at, tz) if current else None,
-            "error": error,
-            "done": done,
-            "totp": totp_code,
-        },
-        status_code=status_code,
-    )
-
-
-@router.get("/me", response_class=HTMLResponse)
-def me(request: Request, t: str = "", employee: Employee = Depends(require_employee),
-       db: sqlite3.Connection = Depends(get_db)):
-    return _page(request, db, employee, totp_code=t)
-
-
-def _event(request, db, employee, record, label, code):
-    now = request.app.state.clock()
-    tz = request.app.state.settings.timezone
-    check = totp.check(request.app.state.totp_secret, now, code)  # doar ceasul serverului
-    if check != totp.OK:
-        return _page(request, db, employee, status_code=403, error=totp.reject_message(check))
-    error = record(db, now, tz, employee, request.app.state.settings, METHOD_QR_TOTP)
-    if error:
-        return _page(request, db, employee, status_code=409, error=error, totp_code=code)
-    return _page(request, db, employee, done=f"{label} înregistrată la {local_hm(now, tz)}", totp_code=code)
-
-
-@router.post("/me/entry", response_class=HTMLResponse, dependencies=[Depends(require_hall_network)])
-def entry(request: Request, code: str = Form("", alias="totp"),
-          employee: Employee = Depends(require_employee), db: sqlite3.Connection = Depends(get_db)):
-    return _event(request, db, employee, record_entry, "Intrare", code)
-
-
-@router.post("/me/exit", response_class=HTMLResponse, dependencies=[Depends(require_hall_network)])
-def exit_(request: Request, code: str = Form("", alias="totp"),
-          employee: Employee = Depends(require_employee), db: sqlite3.Connection = Depends(get_db)):
-    return _event(request, db, employee, record_exit, "Ieșire", code)

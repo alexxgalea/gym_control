@@ -3,12 +3,13 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, GENERIC_ERROR, adminApi, type Anomaly } from "@/api/client";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/design/button";
+import { Sheet } from "@/design/Sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { ANOMALIES_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
+import { formatLocalDateTime } from "@/lib/format";
+import { ANOMALIES_KEY, IN_HALL_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
 
 type Field = "employee_id" | "entry_at" | "exit_at" | "reason";
 type Errors = Partial<Record<Field | "form", string>>;
@@ -54,23 +55,22 @@ function useRefreshAfterSession() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: JOURNAL_KEY }),
       queryClient.invalidateQueries({ queryKey: ANOMALIES_KEY }),
+      queryClient.invalidateQueries({ queryKey: IN_HALL_KEY }),
     ]);
   };
 }
 
-/** Dialog „Sesiune manuală nouă”: Intrare și Ieșire în ora Sălii, motiv obligatoriu. */
+/** Foaia „Sesiune manuală nouă”: Intrare și Ieșire în ora Sălii, motiv obligatoriu. (Numele `Dialog` e păstrat ca importurile din alte ecrane să rămână la fel.) */
 export function AddSessionDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        <DialogTitle>Sesiune manuală nouă</DialogTitle>
-        <DialogDescription>
-          Acoperă o Intrare sau Ieșire neînregistrată. Orele sunt în ora locală a Sălii; motivul este obligatoriu și
-          apare în Jurnal, cu numele tău.
-        </DialogDescription>
-        <AddForm onClose={onClose} />
-      </DialogContent>
-    </Dialog>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      title="Sesiune manuală nouă"
+      description="Acoperă o Intrare sau o Ieșire neînregistrată. Orele sunt în ora Sălii. Motivul este obligatoriu și apare în Jurnal, cu numele tău."
+    >
+      <AddForm onClose={onClose} />
+    </Sheet>
   );
 }
 
@@ -148,31 +148,30 @@ function AddForm({ onClose }: { onClose: () => void }) {
           {...aria("session-reason", errors.reason)}
         />
       </Row>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Anulează
-        </Button>
+      <div className="flex flex-col gap-2">
         <Button type="submit" disabled={create.isPending}>
-          Adaugă Sesiunea
+          Salvează Sesiunea
         </Button>
       </div>
     </form>
   );
 }
 
-/** Dialog „Corectează Sesiunea”: închide o Sesiune deschisă cu o Ieșire manuală (rezolvă Anomaliile ei). */
+/** Foaia „Completează Ieșirea”: închide o Sesiune deschisă cu o Ieșire manuală (rezolvă Anomaliile ei). */
 export function CorrectSessionDialog({ anomaly, onClose }: { anomaly: Anomaly | null; onClose: () => void }) {
   return (
-    <Dialog open={anomaly !== null} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent>
-        <DialogTitle>Corectează Sesiunea</DialogTitle>
-        <DialogDescription>
-          {anomaly?.employee_name}: Intrare la {anomaly?.entry_at} (ora locală), fără Ieșire. Ieșirea introdusă rezolvă
-          Anomaliile Sesiunii; motivul este obligatoriu și apare în Jurnal, cu numele tău.
-        </DialogDescription>
-        {anomaly && <CorrectForm key={anomaly.session_id} sessionId={anomaly.session_id} onClose={onClose} />}
-      </DialogContent>
-    </Dialog>
+    <Sheet
+      open={anomaly !== null}
+      onOpenChange={(next) => !next && onClose()}
+      title="Completează Ieșirea"
+      description={
+        anomaly
+          ? `${anomaly.employee_name}: Intrare ${formatLocalDateTime(anomaly.entry_at, anomaly.timezone)}, fără Ieșire. Ieșirea introdusă rezolvă Anomaliile Sesiunii. Motivul este obligatoriu și apare în Jurnal, cu numele tău.`
+          : ""
+      }
+    >
+      {anomaly && <CorrectForm key={anomaly.session_id} sessionId={anomaly.session_id} onClose={onClose} />}
+    </Sheet>
   );
 }
 
@@ -222,12 +221,9 @@ function CorrectForm({ sessionId, onClose }: { sessionId: number; onClose: () =>
           {...aria("correct-reason", errors.reason)}
         />
       </Row>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Anulează
-        </Button>
+      <div className="flex flex-col gap-2">
         <Button type="submit" disabled={correct.isPending}>
-          Corectează
+          Salvează Ieșirea
         </Button>
       </div>
     </form>

@@ -33,7 +33,7 @@ Marcaj pe jurnal pentru o situație care cere verificare umană, nu o eroare teh
 _Avoid_: Alertă
 
 **Admin**:
-Persoana cu cont care înrolează Angajați, corectează Jurnalul și generează Rapoarte de prezență.
+Persoana cu cont care activează telefoanele Angajaților, corectează Jurnalul și generează Rapoarte de prezență.
 _Avoid_: Administrator, manager
 
 **Sesiune manuală**:
@@ -51,3 +51,15 @@ _Avoid_: Log, istoric
 **Raport de prezență**:
 Lista Angajaților prezenți în Sală într-un interval orar dat. Este o listă credibilă de persoane, nu o dovadă a vinovăției.
 _Avoid_: Raport de pontaj
+
+**Activare telefon**:
+Legarea unui singur telefon de un Angajat, printr-un link de unică folosință; doar de pe telefonul activat se pot face Intrare și Ieșire. O nouă Activare scoate din uz telefonul anterior.
+_Avoid_: Înrolare, dispozitiv
+
+**Ecranul de la ușă**:
+Telefonul fix de lângă ușa Sălii care afișează codul QR scanat pentru Intrare și Ieșire.
+_Avoid_: Kiosk, terminal
+
+**Perioadă de păstrare**:
+Numărul de luni după care Sesiunile și rândurile din Jurnal se șterg automat, cu excepția celor care se suprapun cu un Incident deschis.
+_Avoid_: Retenție

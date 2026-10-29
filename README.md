@@ -1,6 +1,18 @@
-# Gym Control
+# GymCtrl
 
-Pontaj Intrare/Ieșire pentru Sală, cu QR TOTP. Vocabular: `GLOSSARY.md`.
+Aplicația înregistrează Intrările și Ieșirile Angajaților din Sală, cu cod QR TOTP, și îi dă Adminului pagina de
+gestiune, Jurnalul și Raportul de prezență. Vocabular: `GLOSSARY.md`.
+
+Un singur proiect frontend (React + TypeScript, un singur sistem de design) cu **două puncte de intrare**,
+ambele servite de aplicația Python (ADR 0002, 0003):
+
+| Punct de intrare | Adrese publice | Pentru cine |
+| --- | --- | --- |
+| **Admin** (`frontend/index.html`) | `/admin/*` (login la `/admin/login`) | Adminul, pe laptop sau pe telefon |
+| **Angajat** (`frontend/employee.html`) | `/me`, `/enroll/{token}` (Activare telefon), `/door` (Ecranul de la ușă), `/status` (Verificare conexiune) | Angajatul, pe telefonul lui; telefonul de la ușă |
+
+Punctul de intrare Angajat nu importă cod Admin (verificat la build); cele două împart doar sistemul de design.
+API-ul este JSON sub `/api/admin/...` și `/api/employee/...`; paginile nu sunt randate pe server.
 
 ## Rulare
 
@@ -8,12 +20,13 @@ Pontaj Intrare/Ieșire pentru Sală, cu QR TOTP. Vocabular: `GLOSSARY.md`.
 docker compose up -d
 ```
 
-Pagina de stare: `http://<laptop>:8000/status`. Serviciul repornește singur
+Pornește aplicația cu ambele puncte de intrare (imaginea se construiește în două etape: build-ul frontend-ului cu Node,
+apoi imaginea finală doar cu Python). Pagina de stare: `http://<laptop>:8000/status`. Serviciul repornește singur
 (`restart: unless-stopped`). Subrețeaua Sălii: variabila `GYM_HALL_SUBNET`.
 
 ## Primul Admin
 
-Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`). Contul se creează în unul din două moduri:
+Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`; butonul „Deconectare” din meniu). Contul se creează în unul din două moduri:
 
 - **Bootstrap din mediu**: setează `GYM_ADMIN_USER` și `GYM_ADMIN_PASSWORD`
   (de ex. într-un `.env` lângă `docker-compose.yml`); la pornire contul este creat
@@ -30,17 +43,17 @@ Protecții pe ecranele Admin:
 - **CSRF**: orice POST pe `/admin/...` și `/api/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
   Fără tokeni în formulare. Cookie-ul Adminului este și `SameSite=Lax`. În teste, clienții trimit `Origin: http://testserver`.
 
-## Interfața Admin (SPA, `frontend/`)
+## Interfața (SPA, `frontend/`)
 
-Toate ecranele Admin sunt un SPA React 19 + Vite + TypeScript (ADR 0002), servit la `/admin/` și construit în
-Dockerfile (multi-stage; imaginea finală are doar Python, fără Node). Paginile Angajatului și ale kioskului
-(`/me`, `/enroll/<token>`, `/door`, `/status`) rămân HTML pe server (`templates/`, `static/app.css`).
+Toate ecranele sunt React 19 + Vite + TypeScript strict (ADR 0002, 0003), construite în Dockerfile (multi-stage;
+imaginea finală are doar Python, fără Node). Structura `frontend/src/`: `design/` (sistemul de design comun), `screens/` și
+`components/` (Admin), `employee/` (Angajat), `api/` (client și tipuri generate din OpenAPI). Telefonul de la ușă e vechi: build-ul Vite țintește Chrome 64 / Safari 11 (vezi ADR 0003, „Ținta de build”).
 Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
 în imaginea Docker este setat deja.
 
-Ecrane: Angajați (adăugare, link de înrolare, revocare cu confirmare, import CSV), Jurnal (filtre în adresă:
-`?employee=&from=&to=&kind=&page=`), Anomalii, Incidente, Rapoarte (ecran, CSV, variantă tipărită la
-`/admin/reports/print`), Setări, plus dialogurile Sesiune manuală (adăugare, corectare). Fiecare acțiune a Adminului
+Ecrane Admin: pagina de gestiune (Acasă), Angajați (adăugare, Activare telefon, scoatere din uz cu confirmare, import din Excel/CSV), Jurnal (filtre în adresă:
+`?employee=&from=&to=&kind=&page=`), Anomalii, Incidente, Raport de prezență (ecran, CSV, variantă tipărită la
+`/admin/reports/print`), Setări (inclusiv Perioada de păstrare), plus dialogurile Sesiune manuală (adăugare, corectare). Fiecare acțiune a Adminului
 intră în Jurnal cu autorul.
 
 API-ul este JSON sub `/api/admin/...`, cu modele Pydantic de răspuns (în `admin_api.py`, `admin_settings_api.py`,
@@ -50,7 +63,8 @@ FastAPI la `/docs`.
 
 ### Dezvoltare
 
-Node 22 și npm sunt necesare doar pentru frontend. Cu două terminale:
+Node 22+ și npm sunt necesare doar pentru frontend. **Sub WSL folosește Node 22+ de Linux** (instalat în WSL, de ex. cu
+nvm); `npm` din Windows, văzut prin `/mnt/c/...`, nu merge. Cu două terminale:
 
 ```
 GYM_SCHEDULER=0 GYM_ADMIN_USER=admin GYM_ADMIN_PASSWORD=parola-de-test uv run uvicorn gym_control.app:app_from_env --factory
@@ -59,6 +73,10 @@ cd frontend && npm ci && npm run dev
 
 Deschide `http://localhost:5173/admin/`: serverul Vite face proxy pentru `/api` către uvicorn pe `:8000`
 (browserul vede o singură origine, deci verificarea `Origin` a POST-urilor trece).
+
+Paginile Angajatului (`/me`, `/enroll/<token>`, `/door`, `/status`) sunt servite de Python din build, nu de Vite: rulează
+`npm run build` și pornește uvicorn cu `GYM_FRONTEND_DIST=frontend/dist`, apoi deschide `http://localhost:8000/me` etc.
+(validarea de rețea cere IP-ul sursă din `GYM_HALL_SUBNET`; local setează-l, de ex. `GYM_HALL_SUBNET=127.0.0.0/8`).
 
 ### Build și verificări
 
@@ -79,7 +97,7 @@ câmp în API rulează `npm run gen:api` și comite rezultatul. CI (`.github/wor
 Ecran nou: endpoint-uri JSON cu modele Pydantic, `npm run gen:api`, ecranul în `frontend/src/screens/`
 (înregistrat în `SCREENS` din `Shell.tsx` și în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON.
 
-### Import Angajați (CSV)
+### Import listă din Excel (CSV)
 
 `POST /api/admin/employees/import` (`multipart`, câmpul `file`) întoarce `{created, errors}`. Antetul `nume,email`
 (separator `,` sau `;`, BOM acceptat); rândurile valide se importă, cele invalide apar ca `"Rândul N: ..."`; un antet
@@ -99,29 +117,31 @@ fixture-uri: `harness.clock.advance(...)`, `harness.client(ip)`,
 `harness.admin_client()` întoarce un client deja autentificat ca Admin
 (contul de bootstrap din `tests/conftest.py`).
 
-## Înrolarea dispozitivului
+## Activarea telefonului
 
-În ecranul Angajați, Adminul apasă „Generează link” și îi trimite Angajatului linkul
-(`/enroll/<token>`, valabil 48 de ore, o singură folosire). Angajatul îl deschide pe telefonul
-personal și confirmă; telefonul primește un cookie de lungă durată. Un singur telefon este activ:
-re-înrolarea sau „Revocă” invalidează telefonul vechi. Fără înrolare, `/me` afișează
-mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana Pop")`.
+În ecranul Angajați, Adminul face Activarea telefonului: Angajatul scanează codul QR sau primește linkul
+(`/enroll/<token>`, valabil 48 de ore, o singură folosire). Îl deschide pe telefonul
+personal și apasă „Activează acest telefon”; telefonul primește un cookie de lungă durată. Un singur telefon este activ:
+o nouă Activare sau scoaterea din uz invalidează telefonul vechi. Fără Activare, `/me` afișează
+o pagină care spune să ceri Adminului un link. În teste: `harness.enrolled_client("Ana Pop")`.
 
 ## Intrare/Ieșire
 
-Angajatul înrolat deschide `/me`: vede starea („în Sală din 10:12” / „în afara Sălii”) și doar butonul valid.
+Angajatul cu telefon activat scanează codul de la ușă (se deschide `/me?t=...`): vede un buton rotund mare, Intrare sau Ieșire, după starea lui. Fiecare eroare are propriul ecran.
 Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`).
 
-## Kiosk la ușă (QR TOTP)
+## Ecranul de la ușă (QR TOTP)
 
-Pe telefonul de la ușă deschide o singură dată `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se
-păstrează în cookie, iar `/door` afișează un QR care se reînnoiește singur la 30 s (SVG generat pe server, fără CDN).
-Fără token valid `/door` este refuzat (și rămâne refuzat dacă `GYM_KIOSK_TOKEN` nu e setat).
+Pe telefonul de la ușă (Ecranul de la ușă) deschide o singură dată `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se
+păstrează în cookie, apoi te redirecționează la `/door`, care afișează un QR mare, negru pe alb, cu un inel-cronometru
+(SVG generat pe server, fără CDN; codul vine din `GET /api/employee/door/qr`). Un telefon neconfigurat sau un token greșit
+primesc o pagină explicativă (`GYM_KIOSK_TOKEN` nesetat = telefon neconfigurat). Dacă reîmprospătarea
+eșuează mai mult de 30 s, inelul se oprește și apare „Codul nu se mai actualizează. Verifică Wi-Fi-ul telefonului.”
 
-- `GYM_KIOSK_TOKEN`: tokenul kiosk (secret lung, ales de Admin).
+- `GYM_KIOSK_TOKEN`: tokenul Ecranului de la ușă (secret lung, ales de Admin).
 - `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
 
-QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /me/entry|exit`) cer câmpul `totp`, validat pe ceasul
+QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /api/employee/entry|exit`, JSON) cer câmpul `totp`, validat pe ceasul
 serverului (fereastra curentă și cea anterioară, 30 s); nu e de unică folosință, iar orice timestamp trimis de client
 e ignorat. Metoda de validare `qr_totp` apare în Sesiune și în Jurnal. În teste: `harness.current_totp()`,
 `harness.kiosk_client()`.
@@ -148,15 +168,15 @@ curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcat�
 - `outside_hours` e o marcă istorică a Intrării: rămâne în Raport și în Jurnal, dar Adminul o poate marca
   „verificată” în ecranul Anomalii (rând în Jurnal cu autorul), ca să nu aglomereze lista de acțiuni.
 
-## Incidente și retenție
+## Incidente și Perioada de păstrare
 
 Ecranul Incidente (SPA la `/admin/incidents`, API `/api/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
-mai târziu; ambele acțiuni apar în Jurnal cu autorul. Jobul de retenție (`retention.purge_job`, rulat de `tick`)
-șterge Sesiunile (cu Anomaliile lor) și rândurile din Jurnal (de orice fel) mai vechi de perioada de retenție
+mai târziu; ambele acțiuni apar în Jurnal cu autorul. Jobul de păstrare a datelor (`retention.purge_job`, rulat de `tick`)
+șterge Sesiunile (cu Anomaliile lor) și rândurile din Jurnal (de orice fel) mai vechi de Perioada de păstrare
 (Setări, implicit 12 luni; `GYM_RETENTION_MONTHS` ca valoare inițială). Nu se șterg Angajații și conturile Admin.
-Datele care se suprapun cu un Incident deschis rămân; după închiderea lui reintră în retenția normală.
+Datele care se suprapun cu un Incident deschis rămân; după închiderea lui reintră sub Perioada de păstrare.
 O Sesiune care traversează limita rămâne, cu rândurile de Jurnal ale Intrării/Ieșirii ei. O rulare care a șters ceva
-lasă o linie fără autor în Jurnal („Retenție: șterse …”).
+lasă o linie fără autor în Jurnal („Păstrarea datelor: șterse …”).
 ## Instalare (rezumat)
 
 1. Pe laptop: Docker + Docker Compose. Clonează depozitul.
@@ -165,13 +185,13 @@ lasă o linie fără autor în Jurnal („Retenție: șterse …”).
    | Variabilă | Rol |
    | --- | --- |
    | `GYM_ADMIN_USER`, `GYM_ADMIN_PASSWORD` | primul Admin (vezi „Primul Admin”) |
-   | `GYM_KIOSK_TOKEN` | tokenul telefonului de la ușă (secret lung; fără el `/door` e refuzat) |
+   | `GYM_KIOSK_TOKEN` | tokenul Ecranului de la ușă (secret lung; fără el `/door` e refuzat) |
    | `GYM_TOTP_SECRET` | secretul TOTP (opțional; altfel generat o dată și păstrat în baza de date) |
    | `GYM_HALL_SUBNET` | subrețeaua Wi-Fi a Sălii (implicit `192.168.10.0/24`) |
    | `GYM_BACKUP_PATH` | directorul de pe gazdă unde se scriu backup-urile (vezi „Backup”) |
    | `GYM_BACKUP_KEEP_DAYS` | zile de păstrare a backup-urilor (implicit 30) |
 
-   Fusul orar, programul și retenția se pot seta și cu `GYM_TIMEZONE`, `GYM_OPENING_TIME`,
+   Fusul orar, programul și Perioada de păstrare se pot seta și cu `GYM_TIMEZONE`, `GYM_OPENING_TIME`,
    `GYM_CLOSING_TIME`, `GYM_RETENTION_MONTHS`.
 3. `docker compose up -d`, apoi verifică `http://<laptop>:8000/status`.
 
@@ -204,7 +224,7 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
    ```
    (pune întâi fișierul ales în `./restore/`).
 4. Pornește: `docker compose up -d`; verifică `/status` și ecranele Admin (Angajați, Jurnal).
-5. Datele de după momentul backup-ului se pierd; Angajații înrolați după el trebuie re-înrolați.
+5. Datele de după momentul backup-ului se pierd; Telefoanele activate după el trebuie activate din nou.
 
 ## Rețea, proxy și cookie-uri
 
@@ -219,11 +239,11 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 
 ## Setup fizic
 
-### Telefonul-kiosk (ușa)
+### Ecranul de la ușă (telefonul fix)
 - Folosește un telefon vechi **fără baterie umflată**; o baterie umflată este un risc de incendiu, nu-l lăsa la încărcat permanent.
 - Încărcător permanent, cablu bun; Setări > Opțiuni dezvoltator > **Stay awake** (ecran aprins la încărcare).
 - Luminozitate fixă (auto-brightness oprit), notificările oprite, blocarea ecranului dezactivată.
-- Browser în mod kiosk / ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de kiosk).
+- Browser în ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de kiosk).
 - O singură dată, deschide `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se păstrează în cookie
   și apoi poți folosi `http://<laptop>:8000/door`. Telefonul trebuie să fie pe Wi-Fi-ul Sălii.
 
@@ -236,7 +256,8 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 
 ## Verificări manuale (neacoperite de teste automate)
 
-- Randare responsivă: deschide `/me` pe un telefon real și verifică lizibilitatea.
-- Pagina kiosk în browser real: `/door` afișează QR-ul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat.
+- Randare responsivă: deschide `/me` și `/admin/` pe un telefon real și verifică lizibilitatea, temele luminoasă/întunecată
+  și instalarea pe ecranul telefonului.
+- **Ecranul de la ușă pe telefonul real de la ușă** (browserul lui e vechi; ADR 0003, „Ținta de build”): `/door` afișează QR-ul și inelul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon activat. Oprește Wi-Fi-ul telefonului ~40 s și verifică avertismentul, apoi repornește-l. Dacă pagina rămâne albă, notează versiunea din `chrome://version` și coboară ținta de build.
 - Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
 - Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.

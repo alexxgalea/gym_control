@@ -9,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel
 
-from gym_control import anomalies, auth, clocktime, employees, enrollment, incidents, journal, network
+from gym_control import anomalies, auth, clocktime, door, employees, enrollment, incidents, journal, network
 from gym_control.admin_common import UNAUTHORIZED, ErrorResponse, FieldErrorResponse, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
@@ -89,6 +89,7 @@ class EmployeeIn(BaseModel):
 class EnrollLink(BaseModel):
     name: str
     link: str
+    qr_svg: str
     hours: int
 
 
@@ -185,12 +186,14 @@ def create_enroll_link(
     token = enrollment.issue_link(db, now, employee_id)
     journal.write_admin_action(
         db, now, admin, "enroll.link",
-        f"Link de înrolare generat pentru {employee['name']}", employee_id=employee_id,
+        f"Activare telefon: link generat pentru {employee['name']}", employee_id=employee_id,
     )
     db.commit()
+    link = str(request.base_url).rstrip("/") + f"/enroll/{token}"
     return EnrollLink(
         name=employee["name"],
-        link=str(request.base_url).rstrip("/") + f"/enroll/{token}",
+        link=link,
+        qr_svg=door.qr_svg(link),
         hours=int(enrollment.LINK_TTL.total_seconds() // 3600),
     )
 
@@ -208,7 +211,7 @@ def revoke_device(
     enrollment.revoke(db, employee_id)
     journal.write_admin_action(
         db, now, admin, "enroll.revoke",
-        f"Dispozitiv revocat pentru {employee['name']}", employee_id=employee_id,
+        f"Telefon scos din uz: {employee['name']}", employee_id=employee_id,
     )
     db.commit()
     return Response(status_code=204)
@@ -216,7 +219,8 @@ def revoke_device(
 
 class AnomalyOut(BaseModel):
     """O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
-    `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta)."""
+    `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).
+    `timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii."""
 
     id: int
     session_id: int
@@ -226,6 +230,7 @@ class AnomalyOut(BaseModel):
     at: str
     entry_at: str
     exit_at: str | None
+    timezone: str
 
 
 @router.get("/anomalies", response_model=list[AnomalyOut], responses=UNAUTHORIZED)
@@ -238,7 +243,7 @@ def list_anomalies(
             id=a["id"], session_id=a["session_id"], code=a["code"],
             label=anomalies.LABELS.get(a["code"], a["code"]), employee_name=a["employee_name"],
             at=clocktime.local_iso(a["at"], tz), entry_at=clocktime.local_iso(a["entry_at"], tz),
-            exit_at=clocktime.local_iso(a["exit_at"], tz) if a["exit_at"] else None,
+            exit_at=clocktime.local_iso(a["exit_at"], tz) if a["exit_at"] else None, timezone=tz,
         )
         for a in anomalies.list_unresolved(db)
     ]
@@ -275,6 +280,7 @@ class IncidentOut(BaseModel):
     created_by: str
     closed_at: str | None = None
     closed_by: str | None = None
+    timezone: str
 
 
 class IncidentIn(BaseModel):
@@ -291,6 +297,7 @@ def _incident_out(row, tz: str) -> IncidentOut:
         id=row["id"], start=clocktime.local_iso(row["start_at"], tz), end=clocktime.local_iso(row["end_at"], tz),
         note=row["note"], status="closed" if closed else "open", created_by=row["created_by"],
         closed_at=clocktime.local_iso(row["closed_at"], tz) if closed else None, closed_by=row["closed_by"],
+        timezone=tz,
     )
 
 

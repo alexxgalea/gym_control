@@ -3,12 +3,13 @@
 Validarea și Jurnalul stau în `runtime_settings`; aici doar forma JSON. O schimbare se aplică
 imediat (setările se citesc la fiecare cerere) și apare în Jurnal cu autorul."""
 
+import ipaddress
 import sqlite3
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
-from gym_control import auth, runtime_settings
+from gym_control import auth, network, runtime_settings
 from gym_control.admin_common import UNAUTHORIZED, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
@@ -45,6 +46,15 @@ class SettingsErrorResponse(BaseModel):
     errors: list[SettingsFieldError]
 
 
+class NetworkSuggestion(BaseModel):
+    """Sugestia calculată din conexiunea curentă a Adminului. Pentru o adresă fără sugestie, `network` e
+    `null`, iar `message` spune pe înțeles de ce. Nu se salvează nimic."""
+
+    address: str
+    network: str | None
+    message: str | None
+
+
 def _out(s: runtime_settings.RuntimeSettings) -> SettingsOut:
     return SettingsOut(
         hall_subnet=s.hall_subnet, opening_time=s.opening_time.strftime("%H:%M"),
@@ -79,3 +89,20 @@ def save_settings(
     runtime_settings.save(db, request.app.state.clock(), admin, old, new)
     db.commit()
     return _out(new)
+
+
+@router.get("/settings/network-suggestion", response_model=NetworkSuggestion, responses=UNAUTHORIZED)
+def network_suggestion(request: Request, admin: Admin = Depends(require_admin_api)):
+    address = network.source_ip(request)
+    try:
+        parsed = ipaddress.ip_address(address)
+    except ValueError:
+        parsed = None
+    if isinstance(parsed, ipaddress.IPv4Address):
+        net = str(ipaddress.ip_network(f"{address}/24", strict=False))
+        return NetworkSuggestion(address=address, network=net, message=None)
+    return NetworkSuggestion(
+        address=address, network=None,
+        message="Nu putem completa rețeaua automat din această conexiune. "
+                "Conectează-te la Wi-Fi-ul Sălii și încearcă din nou, sau scrie rețeaua manual.",
+    )

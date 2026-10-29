@@ -7,15 +7,18 @@ import { renderApp } from "@/test/render";
 const noSession = http.get("/api/admin/me", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 }));
 
 async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>, username: string, password: string) {
-  await user.type(await screen.findByLabelText("Cont"), username);
+  await user.type(await screen.findByLabelText("Nume de utilizator"), username);
   await user.type(screen.getByLabelText("Parolă"), password);
-  await user.click(screen.getByRole("button", { name: "Intră" }));
+  await user.click(screen.getByRole("button", { name: "Intră în cont" }));
 }
 
 describe("ecranul de login", () => {
   it("duce în shell cu numele contului după credențiale corecte", async () => {
     let signedIn = false;
     server.use(
+      http.get("/api/admin/in-hall", () => HttpResponse.json({ people: [], timezone: "Europe/Bucharest" })),
+      http.get("/api/admin/anomalies", () => HttpResponse.json([])),
+      http.get("/api/admin/incidents", () => HttpResponse.json([])),
       http.get("/api/admin/me", () =>
         signedIn ? HttpResponse.json({ username: "admin" }) : HttpResponse.json({ detail: "x" }, { status: 401 }),
       ),
@@ -29,8 +32,19 @@ describe("ecranul de login", () => {
     renderApp("/");
     await fillAndSubmit(user, "admin", "parola-buna");
 
-    expect(await screen.findByRole("navigation")).toBeInTheDocument();
+    await screen.findByRole("heading", { name: "Acasă" }); // după redirecționarea către ruta de pornire
+    await user.click(await screen.findByRole("button", { name: "Meniu" }));
     expect(screen.getByText("admin")).toBeInTheDocument();
+  });
+
+  it("arată identitatea GymCtrl și câmpuri numite clar", async () => {
+    server.use(noSession);
+    renderApp("/login");
+
+    expect(await screen.findByRole("img", { name: "GymCtrl" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "GymCtrl" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Nume de utilizator")).toBeInTheDocument();
+    expect(screen.getByLabelText("Parolă")).toHaveAttribute("type", "password");
   });
 
   it("arată mesajul serverului la credențiale greșite", async () => {
@@ -67,8 +81,8 @@ describe("sesiunea", () => {
     server.use(noSession);
     renderApp("/employees");
 
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
-    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
+    expect(screen.queryByRole("banner")).not.toBeInTheDocument();
   });
 
   it("duce la login când un ecran primește 401 după ce sesiunea a expirat", async () => {
@@ -80,11 +94,11 @@ describe("sesiunea", () => {
       ),
     );
     renderApp("/employees");
-    expect(await screen.findByRole("navigation")).toBeInTheDocument();
+    expect(await screen.findByRole("banner")).toBeInTheDocument();
     // sesiunea expiră; următoarea verificare a identității primește 401
     expired = true;
     window.dispatchEvent(new Event("visibilitychange"));
 
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });

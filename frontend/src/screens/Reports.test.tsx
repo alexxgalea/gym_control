@@ -5,22 +5,32 @@ import { server } from "@/test/server";
 import { renderApp } from "@/test/render";
 
 const DISCLAIMER = "Text de neacceptare trimis de server.";
-const OPEN_TEXT = "în curs";
+const OPEN_TEXT = "Sesiune deschisă";
 const SCOPE = "Explicația intervalului trimisă de server.";
 
+// orele vin ca instante UTC; Sala e în Europe/Bucharest (iarna UTC+2): 08:00Z = 10:00 local
 const report = {
-  date_from: "2026-01-05 10:00",
-  date_to: "2026-01-05 12:00",
-  generated_at: "2026-01-05 12:30",
+  timezone: "Europe/Bucharest",
+  date_from: "2026-01-05T08:00:00+00:00",
+  date_to: "2026-01-05T10:00:00+00:00",
+  generated_at: "2026-01-05T10:30:00+00:00",
   generated_by: "admin",
   disclaimer: DISCLAIMER,
   scope_text: SCOPE,
   open_text: OPEN_TEXT,
   rows: [
-    { employee_name: "Ana Pop", entry: "2026-01-05 09:00", exit: "2026-01-05 10:30", open: false, manual: false, label: "", method_label: "Cod QR" },
-    { employee_name: "Bob Ionescu", entry: "2026-01-05 11:00", exit: null, open: true, manual: true, label: "Sesiune manuală (Telefon defect)", method_label: "manuală" },
+    { employee_name: "Ana Pop", entry: "2026-01-05T07:00:00+00:00", exit: "2026-01-05T08:30:00+00:00", open: false, manual: false, label: "", method_label: "Cod QR" },
+    { employee_name: "Bob Ionescu", entry: "2026-01-05T09:00:00+00:00", exit: null, open: true, manual: true, label: "Sesiune manuală (Telefon defect)", method_label: "Sesiune manuală" },
   ],
 };
+
+// „azi” fix: anul curent nu se afișează, deci testele nu depind de data rulării
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-06-01T12:00:00Z") });
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const INVALID = "Intervalul e invalid: „De la” trebuie să fie înainte de „Până la”.";
 
@@ -44,7 +54,7 @@ function mockApi(rows = report.rows) {
 async function generate(from = "2026-01-05T10:00", to = "2026-01-05T12:00") {
   await userEvent.type(await screen.findByLabelText("De la"), from);
   await userEvent.type(screen.getByLabelText("Până la"), to);
-  await userEvent.click(screen.getByRole("button", { name: "Generează Raportul" }));
+  await userEvent.click(screen.getByRole("button", { name: "Generează raportul" }));
 }
 
 describe("ecranul Rapoarte", () => {
@@ -60,12 +70,24 @@ describe("ecranul Rapoarte", () => {
     expect(screen.getByText(SCOPE)).toBeInTheDocument();
     expect(queries).toEqual(["?from=2026-01-05T10%3A00&to=2026-01-05T12%3A00"]);
     const ana = within(screen.getByRole("row", { name: /Ana Pop/ }));
-    expect(ana.getByText("2026-01-05 09:00")).toBeInTheDocument();
-    expect(ana.getByText("2026-01-05 10:30")).toBeInTheDocument();
+    expect(ana.getByText("5 ian., 09:00")).toBeInTheDocument(); // ora Sălii, formatul unic
+    expect(ana.getByText("5 ian., 10:30")).toBeInTheDocument();
     expect(ana.getByText("Cod QR")).toBeInTheDocument();
     const bob = within(screen.getByRole("row", { name: /Bob Ionescu/ }));
     expect(bob.getByText(OPEN_TEXT)).toBeInTheDocument(); // textul vine din API, nu din TS
     expect(bob.getByText("Sesiune manuală (Telefon defect)")).toBeInTheDocument();
+    expect(bob.getByText("Sesiune manuală")).toBeInTheDocument(); // metoda
+  });
+
+  it("explică raportul înainte de prima generare și apoi lasă doar mesajul serverului", async () => {
+    mockApi();
+    renderApp("/reports");
+    expect(await screen.findByText(/nu e o dovadă a vinovăției/)).toBeInTheDocument();
+    expect(screen.getByText(/rămâne scrisă în Jurnal/)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    await generate();
+    expect(await screen.findByText(DISCLAIMER)).toBeInTheDocument();
+    expect(screen.queryByText(/rămâne scrisă în Jurnal/)).not.toBeInTheDocument();
   });
 
   it("afișează un mesaj pentru interval fără Sesiuni", async () => {
@@ -84,7 +106,7 @@ describe("ecranul Rapoarte", () => {
     expect(screen.getByLabelText("De la")).toHaveValue("2026-01-05T12:00");
     expect(screen.getByLabelText("Până la")).toHaveValue("2026-01-05T10:00");
     expect(screen.queryByText(DISCLAIMER)).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Export CSV" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Descarcă pentru Excel" })).not.toBeInTheDocument();
   });
 
   it("oferă CSV-ul ca descărcare și varianta tipărită pentru același interval", async () => {
@@ -92,7 +114,7 @@ describe("ecranul Rapoarte", () => {
     renderApp("/reports");
     await generate();
 
-    const csv = await screen.findByRole("link", { name: "Export CSV" });
+    const csv = await screen.findByRole("link", { name: "Descarcă pentru Excel" });
     expect(csv).toHaveAttribute("href", "/api/admin/reports.csv?from=2026-01-05T10%3A00&to=2026-01-05T12%3A00");
     expect(csv).toHaveAttribute("download");
     expect(screen.getByRole("link", { name: "Versiune pentru tipărit" })).toHaveAttribute(
@@ -114,20 +136,21 @@ describe("ecranul Rapoarte", () => {
     );
     renderApp("/reports");
     await generate();
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });
 
 describe("varianta tipărită", () => {
-  it("afișează intervalul, autorul, disclaimer-ul și tabelul, fără navigarea laterală", async () => {
+  it("afișează logoul, intervalul în ora Sălii, autorul, disclaimer-ul și tabelul, fără navigare", async () => {
     const queries = mockApi();
     renderApp("/reports/print?from=2026-01-05T10%3A00&to=2026-01-05T12%3A00");
 
     expect(await screen.findByText(DISCLAIMER)).toBeInTheDocument();
     expect(screen.getByText(SCOPE)).toBeInTheDocument();
     expect(queries).toHaveLength(1);
-    expect(screen.getByText(/2026-01-05 10:00 – 2026-01-05 12:00/)).toBeInTheDocument();
-    expect(screen.getByText(/admin, 2026-01-05 12:30/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "GymCtrl" })).toBeInTheDocument();
+    expect(screen.getByText(/5 ian\., 10:00 – 5 ian\., 12:00/)).toBeInTheDocument();
+    expect(screen.getByText(/Generat de admin, 5 ian\., 12:30/)).toBeInTheDocument();
     expect(screen.getByRole("row", { name: /Ana Pop/ })).toBeInTheDocument();
     expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
     // butoanele nu apar la tipărire

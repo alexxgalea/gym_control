@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/in-hall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** In Hall */
+        get: operations["in_hall_api_admin_in_hall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/incidents": {
         parameters: {
             query?: never;
@@ -313,15 +330,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/door": {
+    "/api/admin/settings/network-suggestion": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Door */
-        get: operations["door_door_get"];
+        /** Network Suggestion */
+        get: operations["network_suggestion_api_admin_settings_network_suggestion_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -330,7 +347,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/door/qr": {
+    "/api/employee/door/qr": {
         parameters: {
             query?: never;
             header?: never;
@@ -338,7 +355,7 @@ export interface paths {
             cookie?: never;
         };
         /** Door Qr */
-        get: operations["door_qr_door_qr_get"];
+        get: operations["door_qr_api_employee_door_qr_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -347,42 +364,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/enroll/{token}": {
+    "/api/employee/enroll/{token}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Enroll Page */
-        get: operations["enroll_page_enroll__token__get"];
+        /**
+         * Read Link
+         * @description Numele Angajatului din link (nu consumă linkul). Nu cere rețeaua Sălii.
+         */
+        get: operations["read_link_api_employee_enroll__token__get"];
         put?: never;
         /** Enroll */
-        post: operations["enroll_enroll__token__post"];
+        post: operations["enroll_api_employee_enroll__token__post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: operations["me_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me/entry": {
+    "/api/employee/entry": {
         parameters: {
             query?: never;
             header?: never;
@@ -392,14 +395,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Entry */
-        post: operations["entry_me_entry_post"];
+        post: operations["entry_api_employee_entry_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/me/exit": {
+    "/api/employee/exit": {
         parameters: {
             query?: never;
             header?: never;
@@ -409,22 +412,45 @@ export interface paths {
         get?: never;
         put?: never;
         /** Exit */
-        post: operations["exit__me_exit_post"];
+        post: operations["exit__api_employee_exit_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/status": {
+    "/api/employee/me": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Status */
-        get: operations["status_status_get"];
+        /**
+         * Me State
+         * @description Starea curentă a Angajatului: numele și Intrarea deschisă, dacă există.
+         */
+        get: operations["me_state_api_employee_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/employee/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Connection Status
+         * @description Verificare conexiune: dacă cererea e în rețeaua Sălii și ora serverului. Nu cere rețeaua Sălii.
+         */
+        get: operations["connection_status_api_employee_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -446,6 +472,7 @@ export interface components {
          * AnomalyOut
          * @description O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
          *     `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).
+         *     `timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii.
          */
         AnomalyOut: {
             /** At */
@@ -464,27 +491,33 @@ export interface components {
             label: string;
             /** Session Id */
             session_id: number;
-        };
-        /** Body_entry_me_entry_post */
-        Body_entry_me_entry_post: {
-            /**
-             * Totp
-             * @default
-             */
-            totp: string;
-        };
-        /** Body_exit__me_exit_post */
-        Body_exit__me_exit_post: {
-            /**
-             * Totp
-             * @default
-             */
-            totp: string;
+            /** Timezone */
+            timezone: string;
         };
         /** Body_import_employees_api_admin_employees_import_post */
         Body_import_employees_api_admin_employees_import_post: {
             /** File */
             file: string;
+        };
+        /** ConnectionStatus */
+        ConnectionStatus: {
+            /** In Hall */
+            in_hall: boolean;
+            /** Server Time */
+            server_time: string;
+            /** Time Zone */
+            time_zone: string;
+        };
+        /** DoorCode */
+        DoorCode: {
+            /** Period Seconds */
+            period_seconds: number;
+            /** Remaining Seconds */
+            remaining_seconds: number;
+            /** Svg */
+            svg: string;
+            /** Url */
+            url: string;
         };
         /** EmployeeIn */
         EmployeeIn: {
@@ -518,11 +551,35 @@ export interface components {
             link: string;
             /** Name */
             name: string;
+            /** Qr Svg */
+            qr_svg: string;
+        };
+        /** EnrollmentOut */
+        EnrollmentOut: {
+            /** Name */
+            name: string;
         };
         /** ErrorResponse */
         ErrorResponse: {
             /** Detail */
             detail: string;
+        };
+        /** EventRequest */
+        EventRequest: {
+            /**
+             * Totp
+             * @default
+             */
+            totp: string;
+        };
+        /** EventResult */
+        EventResult: {
+            /** At */
+            at: string;
+            /** Message */
+            message: string;
+            /** Time Zone */
+            time_zone: string;
         };
         /**
          * FieldErrorResponse
@@ -545,6 +602,27 @@ export interface components {
             created: number;
             /** Errors */
             errors: string[];
+        };
+        /** InHallOut */
+        InHallOut: {
+            /** People */
+            people: components["schemas"]["InHallPerson"][];
+            /** Timezone */
+            timezone: string;
+        };
+        /**
+         * InHallPerson
+         * @description `entry_at` e în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`); `minutes` e durata de la Intrare, după ceasul serverului.
+         */
+        InHallPerson: {
+            /** Employee Name */
+            employee_name: string;
+            /** Entry At */
+            entry_at: string;
+            /** Minutes */
+            minutes: number;
+            /** Session Id */
+            session_id: number;
         };
         /**
          * IncidentIn
@@ -591,6 +669,8 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "closed";
+            /** Timezone */
+            timezone: string;
         };
         /** JournalEntryOut */
         JournalEntryOut: {
@@ -650,7 +730,34 @@ export interface components {
              */
             username: string;
         };
-        /** ReportOut */
+        /** MeState */
+        MeState: {
+            /** Inside Since */
+            inside_since: string | null;
+            /** Name */
+            name: string;
+            /** Server Time */
+            server_time: string;
+            /** Time Zone */
+            time_zone: string;
+        };
+        /**
+         * NetworkSuggestion
+         * @description Sugestia calculată din conexiunea curentă a Adminului. Pentru o adresă fără sugestie, `network` e
+         *     `null`, iar `message` spune pe înțeles de ce. Nu se salvează nimic.
+         */
+        NetworkSuggestion: {
+            /** Address */
+            address: string;
+            /** Message */
+            message: string | null;
+            /** Network */
+            network: string | null;
+        };
+        /**
+         * ReportOut
+         * @description Toate orele sunt instante ISO (UTC); interfața le formatează în ora Sălii (`timezone`).
+         */
         ReportOut: {
             /** Date From */
             date_from: string;
@@ -668,6 +775,8 @@ export interface components {
             rows: components["schemas"]["ReportRowOut"][];
             /** Scope Text */
             scope_text: string;
+            /** Timezone */
+            timezone: string;
         };
         /** ReportRowOut */
         ReportRowOut: {
@@ -1098,6 +1207,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    in_hall_api_admin_in_hall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InHallOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1711,38 +1849,7 @@ export interface operations {
             };
         };
     };
-    door_door_get: {
-        parameters: {
-            query?: {
-                k?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    door_qr_door_qr_get: {
+    network_suggestion_api_admin_settings_network_suggestion_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1757,18 +1864,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/html": string;
+                    "application/json": components["schemas"]["NetworkSuggestion"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
     };
-    enroll_page_enroll__token__get: {
+    door_qr_api_employee_door_qr_get: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                token: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -1779,21 +1893,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/html": string;
+                    "application/json": components["schemas"]["DoorCode"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Telefon neconfigurat (`door_not_configured`) sau token greșit (`door_token_invalid`) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };
-    enroll_enroll__token__post: {
+    read_link_api_employee_enroll__token__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1810,8 +1922,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["EnrollmentOut"];
                 };
+            };
+            /** @description link_invalid */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -1824,11 +1943,162 @@ export interface operations {
             };
         };
     };
-    me_me_get: {
+    enroll_api_employee_enroll__token__post: {
         parameters: {
-            query?: {
-                t?: string;
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentOut"];
+                };
+            };
+            /** @description not_in_hall_network */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description link_invalid */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    entry_api_employee_entry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResult"];
+                };
+            };
+            /** @description Telefon neactivat (`phone_not_activated`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exit__api_employee_exit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EventRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResult"];
+                };
+            };
+            /** @description Telefon neactivat (`phone_not_activated`) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_state_api_employee_me_get: {
+        parameters: {
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -1841,87 +2111,19 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/html": string;
+                    "application/json": components["schemas"]["MeState"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Telefon neactivat (`phone_not_activated`) */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };
-    entry_me_entry_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_entry_me_entry_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    exit__me_exit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_exit__me_exit_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    status_status_get: {
+    connection_status_api_employee_status_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1936,7 +2138,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/html": string;
+                    "application/json": components["schemas"]["ConnectionStatus"];
                 };
             };
         };

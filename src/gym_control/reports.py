@@ -3,7 +3,7 @@
 API reutilizabil (#12 etc.):
 - `parse_interval(raw_from, raw_to, tz)` -> (x_utc, y_utc); ridică `InvalidInterval` cu mesaj în română;
 - `query(db, tz, closing_time, x, y)` -> `list[ReportRow]`, în ordinea Intrării;
-- `csv_bytes(rows, tz)` -> CSV UTF-8 cu BOM, protejat împotriva injecției de formule.
+- `csv_bytes(rows, tz)` -> CSV cu `;`, UTF-8 cu BOM, protejat împotriva injecției de formule.
 
 Regula de suprapunere (din schema `sessions`): `entry_at < Y AND (exit_at IS NULL OR exit_at > X)`.
 Sesiunile deschise se tratează ca prezente până la ora de închidere a zilei locale a Intrării;
@@ -26,7 +26,7 @@ DISCLAIMER = (
     "Acest Raport este o listă credibilă de persoane prezente în Sală în interval, "
     "nu o dovadă a vinovăției."
 )
-OPEN_TEXT = "deschisă"
+OPEN_TEXT = "Sesiune deschisă"
 SCOPE_TEXT = (
     "Ora locală. Include toate Sesiunile care se suprapun intervalului, inclusiv cele care încep "
     "înainte sau se termină după el. Sesiunile deschise sunt considerate prezente până la ora de "
@@ -34,7 +34,7 @@ SCOPE_TEXT = (
 )
 MANUAL_LABEL = "Sesiune manuală"
 CSV_HEADER = ["Angajat", "Intrare", "Ieșire", "Eticheta", "Metoda de validare"]
-METHOD_LABELS = {**journal.METHOD_LABELS, "manual": "manuală"}
+METHOD_LABELS = {**journal.METHOD_LABELS, "manual": MANUAL_LABEL}
 
 
 class InvalidInterval(ValueError):
@@ -112,7 +112,8 @@ def _safe(value: str) -> str:
 
 def csv_bytes(rows: list[ReportRow], tz: str) -> bytes:
     out = io.StringIO()
-    w = csv.writer(out)
+    # `;` ca separator: Excel cu setări românești (separator zecimal `,`) deschide fișierul pe coloane
+    w = csv.writer(out, delimiter=";")
     w.writerow(CSV_HEADER)
     for r in rows:
         w.writerow([

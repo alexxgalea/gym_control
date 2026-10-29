@@ -66,15 +66,15 @@ class Harness:
     def kiosk_client(self, ip: str = HALL_IP) -> TestClient:
         """Telefonul de la ușă: tokenul de kiosk setat o singură dată (`/door?k=...`)."""
         c = self.client(ip)
-        r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=True)
-        assert r.status_code == 200, r.text
+        r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=False)
+        assert r.status_code == 303, r.text
         return c
 
     def door_url(self) -> str:
-        """Calea `/me?t=<TOTP>` codificată acum în QR-ul de la ușă (citită din pagina /door)."""
-        m = re.search(r'data-qr-url="([^"]+)"', self.kiosk_client().get("/door").text)
-        assert m, "pagina /door nu expune URL-ul din QR"
-        return m.group(1).replace("&amp;", "&")
+        """Adresa `/me?t=<TOTP>` codificată acum în QR-ul de la ușă (din endpointul JSON al Ecranului de la ușă)."""
+        r = self.kiosk_client().get("/api/employee/door/qr")
+        assert r.status_code == 200, r.text
+        return r.json()["url"]
 
     def current_totp(self) -> str:
         """TOTP-ul din QR-ul afișat acum la ușă (după ceasul injectat)."""
@@ -95,11 +95,12 @@ class Harness:
         return "/enroll/" + r.json()["link"].rsplit("/enroll/", 1)[1]
 
     def enroll(self, link: str, ip: str = HALL_IP) -> TestClient:
-        """Deschide linkul pe un client nou (telefonul Angajatului) și confirmă înrolarea."""
+        """Deschide linkul pe un client nou (telefonul Angajatului) și activează telefonul (API JSON)."""
         c = self.client(ip)
-        assert c.get(link).status_code == 200
-        r = c.post(link, follow_redirects=False)
-        assert r.status_code == 303, r.text
+        api = "/api/employee" + link
+        assert c.get(api).status_code == 200
+        r = c.post(api)
+        assert r.status_code == 200, r.text
         return c
 
     def enrolled_client(self, name: str = "Ana Pop", email: str | None = None,

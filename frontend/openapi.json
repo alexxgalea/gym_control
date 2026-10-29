@@ -15,7 +15,7 @@
         "type": "object"
       },
       "AnomalyOut": {
-        "description": "O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).\n`exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).",
+        "description": "O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).\n`exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).\n`timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii.",
         "properties": {
           "at": {
             "title": "At",
@@ -55,6 +55,10 @@
           "session_id": {
             "title": "Session Id",
             "type": "integer"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
@@ -65,31 +69,10 @@
           "employee_name",
           "at",
           "entry_at",
-          "exit_at"
+          "exit_at",
+          "timezone"
         ],
         "title": "AnomalyOut",
-        "type": "object"
-      },
-      "Body_entry_me_entry_post": {
-        "properties": {
-          "totp": {
-            "default": "",
-            "title": "Totp",
-            "type": "string"
-          }
-        },
-        "title": "Body_entry_me_entry_post",
-        "type": "object"
-      },
-      "Body_exit__me_exit_post": {
-        "properties": {
-          "totp": {
-            "default": "",
-            "title": "Totp",
-            "type": "string"
-          }
-        },
-        "title": "Body_exit__me_exit_post",
         "type": "object"
       },
       "Body_import_employees_api_admin_employees_import_post": {
@@ -104,6 +87,57 @@
           "file"
         ],
         "title": "Body_import_employees_api_admin_employees_import_post",
+        "type": "object"
+      },
+      "ConnectionStatus": {
+        "properties": {
+          "in_hall": {
+            "title": "In Hall",
+            "type": "boolean"
+          },
+          "server_time": {
+            "title": "Server Time",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "in_hall",
+          "server_time",
+          "time_zone"
+        ],
+        "title": "ConnectionStatus",
+        "type": "object"
+      },
+      "DoorCode": {
+        "properties": {
+          "period_seconds": {
+            "title": "Period Seconds",
+            "type": "integer"
+          },
+          "remaining_seconds": {
+            "title": "Remaining Seconds",
+            "type": "integer"
+          },
+          "svg": {
+            "title": "Svg",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "svg",
+          "url",
+          "period_seconds",
+          "remaining_seconds"
+        ],
+        "title": "DoorCode",
         "type": "object"
       },
       "EmployeeIn": {
@@ -163,14 +197,32 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "qr_svg": {
+            "title": "Qr Svg",
+            "type": "string"
           }
         },
         "required": [
           "name",
           "link",
+          "qr_svg",
           "hours"
         ],
         "title": "EnrollLink",
+        "type": "object"
+      },
+      "EnrollmentOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "EnrollmentOut",
         "type": "object"
       },
       "ErrorResponse": {
@@ -184,6 +236,40 @@
           "detail"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EventRequest": {
+        "properties": {
+          "totp": {
+            "default": "",
+            "title": "Totp",
+            "type": "string"
+          }
+        },
+        "title": "EventRequest",
+        "type": "object"
+      },
+      "EventResult": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "at",
+          "time_zone"
+        ],
+        "title": "EventResult",
         "type": "object"
       },
       "FieldErrorResponse": {
@@ -243,6 +329,56 @@
           "errors"
         ],
         "title": "ImportReport",
+        "type": "object"
+      },
+      "InHallOut": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/InHallPerson"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "people",
+          "timezone"
+        ],
+        "title": "InHallOut",
+        "type": "object"
+      },
+      "InHallPerson": {
+        "description": "`entry_at` e în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`); `minutes` e durata de la Intrare, după ceasul serverului.",
+        "properties": {
+          "employee_name": {
+            "title": "Employee Name",
+            "type": "string"
+          },
+          "entry_at": {
+            "title": "Entry At",
+            "type": "string"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "employee_name",
+          "entry_at",
+          "minutes"
+        ],
+        "title": "InHallPerson",
         "type": "object"
       },
       "IncidentIn": {
@@ -319,6 +455,10 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
@@ -327,7 +467,8 @@
           "end",
           "note",
           "status",
-          "created_by"
+          "created_by",
+          "timezone"
         ],
         "title": "IncidentOut",
         "type": "object"
@@ -496,7 +637,81 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MeState": {
+        "properties": {
+          "inside_since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inside Since"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "server_time": {
+            "title": "Server Time",
+            "type": "string"
+          },
+          "time_zone": {
+            "title": "Time Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "inside_since",
+          "server_time",
+          "time_zone"
+        ],
+        "title": "MeState",
+        "type": "object"
+      },
+      "NetworkSuggestion": {
+        "description": "Sugestia calculată din conexiunea curentă a Adminului. Pentru o adresă fără sugestie, `network` e\n`null`, iar `message` spune pe înțeles de ce. Nu se salvează nimic.",
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          }
+        },
+        "required": [
+          "address",
+          "network",
+          "message"
+        ],
+        "title": "NetworkSuggestion",
+        "type": "object"
+      },
       "ReportOut": {
+        "description": "Toate orele sunt instante ISO (UTC); interfața le formatează în ora Sălii (`timezone`).",
         "properties": {
           "date_from": {
             "title": "Date From",
@@ -532,9 +747,14 @@
           "scope_text": {
             "title": "Scope Text",
             "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
+          "timezone",
           "date_from",
           "date_to",
           "generated_at",
@@ -1169,6 +1389,37 @@
           }
         },
         "summary": "Revoke Device",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/in-hall": {
+      "get": {
+        "operationId": "in_hall_api_admin_in_hall_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InHallOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "In Hall",
         "tags": [
           "admin"
         ]
@@ -1952,73 +2203,65 @@
         ]
       }
     },
-    "/door": {
+    "/api/admin/settings/network-suggestion": {
       "get": {
-        "operationId": "door_door_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "k",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "K"
-            }
-          }
-        ],
+        "operationId": "network_suggestion_api_admin_settings_network_suggestion_get",
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/NetworkSuggestion"
                 }
               }
             },
             "description": "Successful Response"
           },
-          "422": {
+          "401": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Unauthorized"
           }
         },
-        "summary": "Door"
+        "summary": "Network Suggestion",
+        "tags": [
+          "admin"
+        ]
       }
     },
-    "/door/qr": {
+    "/api/employee/door/qr": {
       "get": {
-        "operationId": "door_qr_door_qr_get",
+        "operationId": "door_qr_api_employee_door_qr_get",
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/DoorCode"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "Telefon neconfigurat (`door_not_configured`) sau token greșit (`door_token_invalid`)"
           }
         },
-        "summary": "Door Qr"
+        "summary": "Door Qr",
+        "tags": [
+          "employee"
+        ]
       }
     },
-    "/enroll/{token}": {
+    "/api/employee/enroll/{token}": {
       "get": {
-        "operationId": "enroll_page_enroll__token__get",
+        "description": "Numele Angajatului din link (nu consumă linkul). Nu cere rețeaua Sălii.",
+        "operationId": "read_link_api_employee_enroll__token__get",
         "parameters": [
           {
             "in": "path",
@@ -2033,13 +2276,16 @@
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/EnrollmentOut"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "410": {
+            "description": "link_invalid"
           },
           "422": {
             "content": {
@@ -2052,10 +2298,10 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Enroll Page"
+        "summary": "Read Link"
       },
       "post": {
-        "operationId": "enroll_enroll__token__post",
+        "operationId": "enroll_api_employee_enroll__token__post",
         "parameters": [
           {
             "in": "path",
@@ -2071,10 +2317,18 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentOut"
+                }
               }
             },
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "not_in_hall_network"
+          },
+          "410": {
+            "description": "link_invalid"
           },
           "422": {
             "content": {
@@ -2090,54 +2344,22 @@
         "summary": "Enroll"
       }
     },
-    "/me": {
-      "get": {
-        "operationId": "me_me_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "t",
-            "required": false,
-            "schema": {
-              "default": "",
-              "title": "T",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Me"
-      }
-    },
-    "/me/entry": {
+    "/api/employee/entry": {
       "post": {
-        "operationId": "entry_me_entry_post",
+        "operationId": "entry_api_employee_entry_post",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_entry_me_entry_post"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
               }
             }
           }
@@ -2145,13 +2367,22 @@
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/EventResult"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          },
+          "403": {
+            "description": "Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`)"
+          },
+          "409": {
+            "description": "Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside`"
           },
           "422": {
             "content": {
@@ -2164,17 +2395,28 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Entry"
+        "summary": "Entry",
+        "tags": [
+          "employee"
+        ]
       }
     },
-    "/me/exit": {
+    "/api/employee/exit": {
       "post": {
-        "operationId": "exit__me_exit_post",
+        "operationId": "exit__api_employee_exit_post",
         "requestBody": {
           "content": {
-            "application/x-www-form-urlencoded": {
+            "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Body_exit__me_exit_post"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/EventRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
               }
             }
           }
@@ -2182,13 +2424,22 @@
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/EventResult"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          },
+          "403": {
+            "description": "Rețea greșită (`not_in_hall_network`) sau cod greșit/expirat (`code_invalid`)"
+          },
+          "409": {
+            "description": "Conflict: `no_open_entry` (Ieșire fără Intrare) sau `already_inside`"
           },
           "422": {
             "content": {
@@ -2201,25 +2452,57 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Exit "
+        "summary": "Exit ",
+        "tags": [
+          "employee"
+        ]
       }
     },
-    "/status": {
+    "/api/employee/me": {
       "get": {
-        "operationId": "status_status_get",
+        "description": "Starea curentă a Angajatului: numele și Intrarea deschisă, dacă există.",
+        "operationId": "me_state_api_employee_me_get",
         "responses": {
           "200": {
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/MeState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Telefon neactivat (`phone_not_activated`)"
+          }
+        },
+        "summary": "Me State",
+        "tags": [
+          "employee"
+        ]
+      }
+    },
+    "/api/employee/status": {
+      "get": {
+        "description": "Verificare conexiune: dacă cererea e în rețeaua Sălii și ora serverului. Nu cere rețeaua Sălii.",
+        "operationId": "connection_status_api_employee_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatus"
                 }
               }
             },
             "description": "Successful Response"
           }
         },
-        "summary": "Status"
+        "summary": "Connection Status",
+        "tags": [
+          "employee"
+        ]
       }
     }
   }

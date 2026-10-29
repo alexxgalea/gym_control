@@ -1,19 +1,13 @@
-import sqlite3
 import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Callable
 
-from fastapi import Depends, FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
 
-from gym_control import admin_api, auth, db, door, enrollment, journal_api, manual_sessions, network, presence, report_api, scheduler, spa, totp
-from gym_control import admin_settings_api
-from gym_control import db as db_module
+from gym_control import admin_api, auth, db, door, employee_api, enrollment, journal_api, manual_sessions, network, report_api, scheduler, spa, totp
+from gym_control import admin_home_api, admin_settings_api
 from gym_control.settings import Settings
-from gym_control.templates import templates as _templates
 
 Clock = Callable[[], datetime]
 
@@ -52,28 +46,20 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
         app.state.db, clock(),
         settings.bootstrap_admin_username, settings.bootstrap_admin_password,
     )
-    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     app.include_router(admin_api.router)
     app.include_router(admin_settings_api.router)
+    app.include_router(admin_home_api.router)
     app.include_router(journal_api.router)
     app.include_router(report_api.router)
     app.include_router(manual_sessions.router)
     app.include_router(enrollment.router)
-    app.include_router(presence.router)
     app.include_router(door.router)
+    app.include_router(employee_api.router)
     app.add_exception_handler(enrollment.EnrollmentRequired, enrollment.enrollment_required_handler)
 
     app.add_exception_handler(network.NotInHallNetwork, network.not_in_hall_handler)
 
-    @app.get("/status", response_class=HTMLResponse)
-    def status(request: Request, db: sqlite3.Connection = Depends(db_module.get_db)):
-        return _templates.TemplateResponse(
-            request,
-            "status.html",
-            {"now": clock().isoformat(), "in_hall": network.in_hall(request, db)},
-        )
-
-    # Catch-all-ul SPA se înregistrează ultimul: rutele HTML ale Angajatului și kioskului au prioritate.
+    # Catch-all-ul SPA se înregistrează ultimul: rutele Angajatului și ale Ecranului de la ușă au prioritate.
     spa.mount(app, settings.frontend_dist)
 
     return app

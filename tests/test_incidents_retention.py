@@ -5,7 +5,7 @@ Ceas de start: 2026-01-05 08:12 UTC (10:12 local, iarna UTC+2). Perioada implici
 
 from datetime import datetime, timezone
 
-PURGE = "Retenție"
+PURGE = "Păstrarea datelor"
 FAR = datetime(2027, 2, 5, 12, 0, tzinfo=timezone.utc)  # > 12 luni după ceasul de start
 
 
@@ -20,12 +20,12 @@ def _anomalies(harness) -> str:
 
 def _enter(harness, name="Ana Pop"):
     phone = harness.enrolled_client(name)
-    assert phone.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 200
     return phone
 
 
 def _exit(harness, phone):
-    assert phone.post("/me/exit", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/exit", json={"totp": harness.current_totp()}).status_code == 200
 
 
 def _mark(admin, start="2026-01-05T10:00", end="2026-01-05T11:30", note="Aparat spart"):
@@ -138,11 +138,11 @@ def test_retention_is_idempotent(harness):
     _enter(harness)
     harness.clock.set(FAR)
     harness.tick()
-    assert _journal(harness).count("Retenție: șterse") == 1
+    assert _journal(harness).count("Păstrarea datelor: șterse") == 1
     harness.tick()
     harness.clock.advance(minutes=1)
     harness.tick()
-    assert _journal(harness).count("Retenție: șterse") == 1
+    assert _journal(harness).count("Păstrarea datelor: șterse") == 1
 
 
 def test_accounts_survive_retention(harness):
@@ -231,7 +231,7 @@ def test_longer_retention_keeps_data_and_shorter_deletes(harness):
 def test_retention_change_is_journaled_with_author(harness):
     _save(harness.admin_client(), "18")
     journal = _journal(harness)
-    assert "Perioada de retenție" in journal and "12 → 18" in journal and "admin" in journal
+    assert "Păstrarea datelor" in journal and "12 → 18" in journal and "admin" in journal
 
 
 def test_invalid_retention_is_rejected(harness):
@@ -247,3 +247,9 @@ def test_retention_from_environment_configuration(make_harness):
     h.clock.set(datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc))
     h.tick()
     assert "Intrare: Ana Pop" not in _journal(h)
+
+
+def test_incidents_carry_the_hall_timezone_for_display(harness):
+    admin = harness.admin_client()
+    _mark(admin)
+    assert admin.get("/api/admin/incidents").json()[0]["timezone"] == "Europe/Bucharest"

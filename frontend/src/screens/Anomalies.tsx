@@ -1,125 +1,71 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2, Plus } from "lucide-react";
 import { useState } from "react";
 import { adminApi, type Anomaly } from "@/api/client";
-import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
+import { EmptyState } from "@/design/EmptyState";
+import { ScreenHeader } from "@/design/ScreenHeader";
+import { Skeleton } from "@/design/Skeleton";
+import { StatusBadge } from "@/design/StatusBadge";
+import { isShownError } from "@/lib/errors";
+import { formatLocalDateTime } from "@/lib/format";
 import { ANOMALIES_KEY } from "@/lib/queryKeys";
-import { AddSessionDialog, CorrectSessionDialog } from "@/screens/ManualSession";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-
-
-/** Doar `outside_hours` se închide cu „verificată”; celelalte se rezolvă prin Ieșire/corectare. */
-const isDismissible = (anomaly: Anomaly) => anomaly.code === "outside_hours";
+import { AnomalyActions } from "@/screens/AnomalyActions";
+import { AddSessionDialog } from "@/screens/ManualSession";
 
 export function Anomalies() {
-  const toast = useToast();
-  const queryClient = useQueryClient();
   const anomalies = useQuery({ queryKey: ANOMALIES_KEY, queryFn: adminApi.anomalies.list });
-  const [dismissing, setDismissing] = useState<Anomaly | null>(null);
-  const [correcting, setCorrecting] = useState<Anomaly | null>(null);
   const [adding, setAdding] = useState(false);
-
-  const dismiss = useMutation({
-    mutationFn: (anomaly: Anomaly) => adminApi.anomalies.dismiss(anomaly.id),
-    onSuccess: async () => {
-      setDismissing(null);
-      toast("Anomalie marcată verificată");
-      await queryClient.invalidateQueries({ queryKey: ANOMALIES_KEY });
-    },
-    onError: async (error) => {
-      setDismissing(null);
-      toast(errorText(error), "error");
-      await queryClient.invalidateQueries({ queryKey: ANOMALIES_KEY });
-    },
-  });
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Anomalii</h1>
-        <Button variant="outline" onClick={() => setAdding(true)}>
-          Sesiune manuală nouă
-        </Button>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Situații care cer verificare umană. Orele sunt în ora locală.
-      </p>
+      <ScreenHeader
+        title="Anomalii"
+        description="Situații care cer verificarea ta. Rezolvă-le aici, iar ele dispar din listă."
+        actions={
+          <Button variant="outline" onClick={() => setAdding(true)}>
+            <Plus className="size-4" aria-hidden /> Sesiune manuală nouă
+          </Button>
+        }
+      />
 
-      {anomalies.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {isShownError(anomalies.error) && (
-        <ErrorAlert>
-          {anomalies.error.detail}
-        </ErrorAlert>
+      {anomalies.isPending && <Skeleton rows={3} />}
+      {isShownError(anomalies.error) && <ErrorAlert>{anomalies.error.detail}</ErrorAlert>}
+      {anomalies.data && anomalies.data.length === 0 && (
+        <EmptyState icon={CheckCircle2} text="Nicio Anomalie de verificat" />
       )}
-      {anomalies.data && (
-        <div className="overflow-hidden rounded-lg border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead className="bg-muted text-left text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">Angajat</th>
-                <th className="px-4 py-3 font-medium">Tip</th>
-                <th className="px-4 py-3 font-medium">Moment</th>
-                <th className="px-4 py-3 font-medium">Intrare</th>
-                <th className="px-4 py-3 text-right font-medium">Acțiuni</th>
-              </tr>
-            </thead>
-            <tbody>
-              {anomalies.data.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    Nu există Anomalii.
-                  </td>
-                </tr>
-              )}
-              {anomalies.data.map((anomaly) => (
-                <tr key={anomaly.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium">{anomaly.employee_name}</td>
-                  <td className="px-4 py-3">{anomaly.label}</td>
-                  <td className="px-4 py-3">
-                    <time>{anomaly.at}</time>
-                  </td>
-                  <td className="px-4 py-3">{anomaly.entry_at}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      {anomaly.exit_at === null && (
-                        <Button size="sm" variant="outline" onClick={() => setCorrecting(anomaly)}>
-                          Corectează
-                        </Button>
-                      )}
-                      {isDismissible(anomaly) && (
-                        <Button size="sm" variant="outline" onClick={() => setDismissing(anomaly)}>
-                          Marchează verificată
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {anomalies.data && anomalies.data.length > 0 && (
+        <ul className="flex flex-col gap-3">
+          {anomalies.data.map((anomaly) => (
+            <AnomalyRow key={anomaly.id} anomaly={anomaly} />
+          ))}
+        </ul>
       )}
 
       <AddSessionDialog open={adding} onClose={() => setAdding(false)} />
-      <CorrectSessionDialog anomaly={correcting} onClose={() => setCorrecting(null)} />
-      <Dialog open={dismissing !== null} onOpenChange={(open) => !open && setDismissing(null)}>
-        <DialogContent role="alertdialog">
-          <DialogTitle>Marchezi Anomalia ca verificată?</DialogTitle>
-          <DialogDescription>
-            {dismissing?.label}: {dismissing?.employee_name}. Închiderea apare în Jurnal, cu numele tău.
-          </DialogDescription>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDismissing(null)}>
-              Anulează
-            </Button>
-            <Button disabled={dismiss.isPending} onClick={() => dismissing && dismiss.mutate(dismissing)}>
-              Marchează verificată
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
+  );
+}
+
+/** Un rând-card: se așază pe verticală pe telefon și pe orizontală pe ecrane late, fără tabele tăiate. */
+function AnomalyRow({ anomaly }: { anomaly: Anomaly }) {
+  const when = (local: string) => formatLocalDateTime(local, anomaly.timezone);
+  return (
+    <li className="flex flex-col gap-3 rounded-2xl bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-base font-semibold">{anomaly.employee_name}</span>
+          <StatusBadge tone="warning">{anomaly.label}</StatusBadge>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          <time>{when(anomaly.at)}</time>
+          {anomaly.entry_at !== anomaly.at && <> · Intrare {when(anomaly.entry_at)}</>}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <AnomalyActions anomaly={anomaly} />
+      </div>
+    </li>
   );
 }

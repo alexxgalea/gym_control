@@ -2,6 +2,8 @@
 
 import io
 
+from gym_control import door
+
 def create(c, name, email, **kw):
     return c.post("/api/admin/employees", json={"name": name, "email": email}, **kw)
 
@@ -61,7 +63,14 @@ def test_enroll_link_returns_link_name_and_validity_and_opens_enrollment(harness
     body = r.json()
     assert body["name"] == "Ana Pop" and body["hours"] == 48
     assert body["link"].startswith("http://testserver/enroll/")
-    assert harness.client().get(body["link"].removeprefix("http://testserver")).status_code == 200
+    assert harness.client().get("/api/employee" + body["link"].removeprefix("http://testserver")).status_code == 200
+
+
+def test_enroll_link_includes_qr_svg_of_the_link(harness):
+    eid = harness.create_employee("Ana Pop")
+    body = harness.admin_client().post(f"/api/admin/employees/{eid}/enroll-link").json()
+    assert body["qr_svg"].startswith("<svg") and body["qr_svg"].rstrip().endswith("</svg>")
+    assert body["qr_svg"] == door.qr_svg(body["link"])
 
 
 def test_unknown_employee_is_404_for_link_and_revoke(harness):
@@ -87,8 +96,8 @@ def test_admin_actions_appear_in_jurnal_with_author(harness):
     c.post(f"/api/admin/employees/{eid}/revoke")
     page = c.get("/api/admin/journal").text
     assert "Angajat creat: Ana Pop" in page
-    assert "Link de înrolare generat pentru Ana Pop" in page
-    assert "Dispozitiv revocat pentru Ana Pop" in page
+    assert "Activare telefon: link generat pentru Ana Pop" in page
+    assert "Telefon scos din uz: Ana Pop" in page
     assert page.count("admin") >= 3  # autorul apare pe linii
     assert "2026-01-05T08:12:00+00:00" in page  # ceasul injectat, UTC
 

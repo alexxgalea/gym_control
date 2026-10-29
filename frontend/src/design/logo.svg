@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Logoul GymCtrl, „Ușă”: un G pătrat, ca un toc de ușă, cu bara transformată în săgeată spre interior.
+       Singurul fișier de logo: înlocuiește-l aici și se schimbă peste tot (tab, bara de sus, login). -->
+  <defs>
+    <linearGradient id="gymctrl-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0.1" stop-color="#0B1F4D"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 0C55.7 0 64 8.3 64 32S55.7 64 32 64 0 55.7 0 32 8.3 0 32 0Z" fill="url(#gymctrl-gradient)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M44 18.5H20.5V45.5H44V32.5" stroke-width="6"/>
+    <path d="M44 32.5H30.5M35.5 27.5L30.5 32.5L35.5 37.5" stroke-width="4.5"/>
+  </g>
+</svg>
