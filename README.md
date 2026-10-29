@@ -247,6 +247,7 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 - Browser în ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de ecran dedicat).
 - Activează-l din aplicație (Admin > „Ecranul de la ușă” > „Activează”): scanează QR-ul de pe laptop cu telefonul de la
   ușă și apasă butonul de confirmare. Telefonul trebuie să fie pe Wi-Fi-ul Sălii.
+- După actualizarea de la `GYM_KIOSK_TOKEN` la Activare Ecran de la ușă, cookie-ul vechi `gym_kiosk` nu mai este recunoscut: activează telefonul de la ușă o dată din aplicație.
 
 ### Laptopul
 - Dezactivează suspendarea la închiderea capacului (ex. `HandleLidSwitch=ignore` în `/etc/systemd/logind.conf`) și suspendarea automată.
