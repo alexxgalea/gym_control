@@ -253,3 +253,20 @@ def test_non_ascii_totp_is_refused_not_a_server_error(harness):
     r = phone.post("/api/employee/entry", json={"totp": "é"})
     assert r.status_code == 403
     assert "greșit" in r.text
+
+
+def test_replaced_link_is_invalid_while_the_newer_one_works(harness):
+    old = "/api/employee" + harness.issue_door_link()
+    new = "/api/employee" + harness.issue_door_link()
+    phone = harness.client()
+    assert phone.get(old).status_code == 410
+    r = phone.post(old)
+    assert r.status_code == 410
+    assert r.json()["reason"] == "link_invalid"
+    assert phone.post(new).status_code == 200
+
+
+def test_outside_hall_rejection_tells_to_connect_to_hall_wifi(harness):
+    link = "/api/employee" + harness.issue_door_link()
+    r = harness.client(OUTSIDE_IP).post(link)
+    assert "Wi-Fi" in r.json()["detail"]
