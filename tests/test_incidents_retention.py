@@ -3,7 +3,6 @@
 Ceas de start: 2026-01-05 08:12 UTC (10:12 local, iarna UTC+2). Perioada implicită: 12 luni.
 """
 
-import re
 from datetime import datetime, timezone
 
 PURGE = "Retenție"
