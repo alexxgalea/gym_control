@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, CheckCircle2, FileText, ShieldCheck, UserPlus, type LucideIcon } from "lucide-react";
+import { CalendarPlus, CheckCircle2, FileText, ShieldCheck, TriangleAlert, UserPlus, type LucideIcon } from "lucide-react";
 import { animate, useReducedMotion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -28,6 +28,7 @@ export function Home() {
   return (
     <div className="flex flex-col gap-6">
       <ScreenHeader title="Acasă" description="Cine e acum în Sală și ce ai de verificat." />
+      <DoorScreenWarning />
       <div className="grid gap-4 lg:grid-cols-2">
         <InHallTile />
         <ToCheckTile />
@@ -50,6 +51,23 @@ export function Home() {
         </section>
       </div>
       <AddSessionDialog open={addingSession} onClose={() => setAddingSession(false)} />
+    </div>
+  );
+}
+
+/** Fără Ecran de la ușă activ nimeni nu poate face Intrare sau Ieșire; dispare imediat ce unul e activat. */
+function DoorScreenWarning() {
+  const inHall = useQuery({ queryKey: IN_HALL_KEY, queryFn: adminApi.inHall, ...REFRESH });
+  if (inHall.data?.door_screen_active !== false) return null;
+  return (
+    <div role="alert" className="flex items-start gap-3 rounded-2xl bg-warning/15 p-4 text-[15px]">
+      <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+      <p>
+        Niciun Ecran de la ușă nu este activat, deci nimeni nu poate face Intrare sau Ieșire.{" "}
+        <Link to="/door-screen" className="font-semibold text-primary hover:underline">
+          Activează Ecranul de la ușă
+        </Link>
+      </p>
     </div>
   );
 }
