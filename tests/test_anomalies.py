@@ -1,6 +1,5 @@
 """Anomalii la eveniment. Ceasul de test: 08:12 UTC = 10:12 local (program implicit 06:00-22:00)."""
 
-import re
 from datetime import datetime, timezone
 
 
@@ -134,7 +133,7 @@ def test_outside_hours_can_be_dismissed_by_admin_and_is_journaled(harness):
     r = admin.post(f"/api/admin/anomalies/{row['id']}/dismiss")
     assert r.status_code == 204
     assert admin.get("/api/admin/anomalies").json() == []
-    jurnal = admin.get("/admin/jurnal").text
+    jurnal = admin.get("/api/admin/journal").text
     assert "Anomalie verificată" in jurnal and "Ana Pop" in jurnal and "admin" in jurnal
     # rămâne vizibilă în Raport
     rep = admin.get("/api/admin/reports?from=2026-01-05T23:00&to=2026-01-06T00:00").text

@@ -56,13 +56,12 @@ def test_session_expires_with_the_clock(harness):
     assert c.get("/api/admin/me").status_code == 401
 
 
-def test_old_html_screens_still_redirect_to_login_without_session(harness):
-    r = harness.client().get("/admin/jurnal", follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/admin/login"
+def test_journal_api_requires_login(harness):
+    assert harness.client().get("/api/admin/journal").status_code == 401
 
 
-def test_session_from_json_login_opens_old_html_screens(harness):
-    assert harness.admin_client().get("/admin/jurnal").status_code == 200
+def test_session_from_json_login_opens_journal_api(harness):
+    assert harness.admin_client().get("/api/admin/journal").status_code == 200
 
 
 def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path):
@@ -74,5 +73,6 @@ def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path
     assert c.get("/admin/login").text == "<html>SPA</html>"
     assert c.get("/admin/assets/app.js").text == "console.log(1)"
     assert c.get("/admin/assets/lipsa.js").status_code == 404
-    # ecranele HTML nemigrate au prioritate față de catch-all
-    assert "SPA" not in c.get("/admin/jurnal", follow_redirects=False).text
+    # redirecționarea vechii rute a Jurnalului are prioritate față de catch-all
+    r = c.get("/admin/jurnal", follow_redirects=False)
+    assert r.status_code == 307 and r.headers["location"] == "/admin/journal"

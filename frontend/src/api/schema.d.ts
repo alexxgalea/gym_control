@@ -4,23 +4,6 @@
  */
 
 export interface paths {
-    "/admin/jurnal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Journal Page */
-        get: operations["journal_page_admin_jurnal_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/admin/sessions": {
         parameters: {
             query?: never;
@@ -205,6 +188,40 @@ export interface paths {
         put?: never;
         /** Close Incident */
         post: operations["close_incident_api_admin_incidents__incident_id__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Journal */
+        get: operations["read_journal_api_admin_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/journal/kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Kinds */
+        get: operations["list_kinds_api_admin_journal_kinds_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -629,6 +646,51 @@ export interface components {
              */
             status: "open" | "closed";
         };
+        /** JournalEntryOut */
+        JournalEntryOut: {
+            /** Anomalies */
+            anomalies: string[];
+            /** At */
+            at: string;
+            /** Author */
+            author: string | null;
+            /** Employee Id */
+            employee_id: number | null;
+            /** Employee Name */
+            employee_name: string | null;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Kind Label */
+            kind_label: string;
+            /** Manual */
+            manual: boolean;
+            /** Method Label */
+            method_label: string | null;
+            /** Summary */
+            summary: string;
+        };
+        /** JournalPageOut */
+        JournalPageOut: {
+            /** Entries */
+            entries: components["schemas"]["JournalEntryOut"][];
+            /** Has Next */
+            has_next: boolean;
+            /** Has Prev */
+            has_prev: boolean;
+            /** Page */
+            page: number;
+            /** Timezone */
+            timezone: string;
+        };
+        /** KindOption */
+        KindOption: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -751,40 +813,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    journal_page_admin_jurnal_get: {
-        parameters: {
-            query?: {
-                employee?: string;
-                from?: string;
-                to?: string;
-                page?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     create_admin_sessions_post: {
         parameters: {
             query?: never;
@@ -1343,6 +1371,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_journal_api_admin_journal_get: {
+        parameters: {
+            query?: {
+                employee?: string;
+                from?: string;
+                to?: string;
+                kind?: string;
+                page?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalPageOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_kinds_api_admin_journal_kinds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindOption"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

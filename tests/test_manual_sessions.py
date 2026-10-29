@@ -46,7 +46,7 @@ def test_add_without_reason_is_refused_and_changes_nothing(harness):
         assert "motiv" in r.text.lower()
     report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Ana Pop" not in report
-    assert "Sesiune manuală" not in admin.get("/admin/jurnal").text
+    assert "Sesiune manuală" not in admin.get("/api/admin/journal").text
 
 
 def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(harness):
@@ -54,7 +54,7 @@ def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(ha
     admin = harness.admin_client()
     r = _add(admin, eid, "2026-01-05T08:00", "2026-01-05T09:30")
     assert r.status_code == 303
-    jurnal = admin.get("/admin/jurnal").text
+    jurnal = admin.get("/api/admin/journal").text
     assert "Sesiune manuală" in jurnal
     assert "Introdus manual" in jurnal
     assert "Telefonul de la ușă nu a funcționat" in jurnal
@@ -73,7 +73,7 @@ def test_add_validation_exit_after_entry_not_future_employee_exists(harness):
     assert r.status_code == 400 and "viitor" in r.text
     assert _add(admin, 9999, "2026-01-05T08:00", "2026-01-05T09:00").status_code in (400, 404)
     assert _add(admin, eid, "", "2026-01-05T09:00").status_code == 400
-    assert "Sesiune manuală" not in admin.get("/admin/jurnal").text
+    assert "Sesiune manuală" not in admin.get("/api/admin/journal").text
 
 
 def test_overlapping_manual_session_is_rejected(harness):
@@ -110,7 +110,7 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert phone.post("/me/exit", data=_totp(harness)).status_code == 200
     assert phone.post("/me/exit", data=_totp(harness)).status_code == 409  # cea veche nu se redeschide
     assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
-    jurnal = admin.get("/admin/jurnal").text
+    jurnal = admin.get("/api/admin/journal").text
     assert "Ieșire uitată" in jurnal and "Introdus manual" in jurnal and ADMIN_USER in jurnal
     report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Sesiune manuală" in report and "2026-01-05 18:00" in report

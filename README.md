@@ -60,6 +60,14 @@ revocare cu confirmare. API: `GET/POST /api/admin/employees` (eroare de validare
 `POST /api/admin/employees/{id}/enroll-link`, `POST /api/admin/employees/{id}/revoke` (204).
 Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
 
+## Jurnal (SPA)
+
+Ecranul Jurnal (`/admin/journal`) este în SPA: Intrări, Ieșiri, metoda de validare, Anomalii, acțiunile Adminilor cu autorul
+și Sesiunile manuale (marcate vizibil), cu filtre pe interval (zile locale, inclusiv), Angajat și tip, plus paginare.
+Filtrele stau în adresă (`?employee=&from=&to=&kind=&page=`). API: `GET /api/admin/journal` (400 `{detail}` la dată
+invalidă, interval invers sau tip necunoscut; momentele în UTC + fusul Sălii) și `GET /api/admin/journal/kinds`.
+Vechea rută `/admin/jurnal` redirecționează (307) la `/admin/journal`, păstrând query-ul.
+
 ## Anomalii (SPA)
 
 Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (spre

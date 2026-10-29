@@ -13,6 +13,11 @@ export type HallSettingsInput = components["schemas"]["SettingsIn"];
 export type SettingsFieldError = components["schemas"]["SettingsFieldError"];
 export type ImportReport = components["schemas"]["ImportReport"];
 export type Report = components["schemas"]["ReportOut"];
+export type JournalEntry = components["schemas"]["JournalEntryOut"];
+export type JournalPage = components["schemas"]["JournalPageOut"];
+export type JournalKind = components["schemas"]["KindOption"];
+/** Filtrele Jurnalului (zilele `AAAA-LL-ZZ`, în ora Sălii); câmpurile goale sau lipsă nu filtrează. */
+export type JournalFilters = { employee?: string; from?: string; to?: string; kind?: string; page?: number };
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
@@ -67,6 +72,15 @@ export const adminApi = {
     },
     enrollLink: (id: number) => api<EnrollLink>(`/api/admin/employees/${id}/enroll-link`, { method: "POST" }),
     revoke: (id: number) => api<void>(`/api/admin/employees/${id}/revoke`, { method: "POST" }),
+  },
+  journal: {
+    list: (filters: JournalFilters = {}) => {
+      const query = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters)) if (value) query.set(key, String(value));
+      const text = query.toString();
+      return api<JournalPage>(`/api/admin/journal${text ? `?${text}` : ""}`);
+    },
+    kinds: () => api<JournalKind[]>("/api/admin/journal/kinds"),
   },
   anomalies: {
     list: () => api<Anomaly[]>("/api/admin/anomalies"),

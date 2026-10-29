@@ -95,7 +95,7 @@ def test_admin_enrolment_actions_are_in_journal_with_author(harness):
     admin = harness.admin_client()
     harness.enroll(harness.issue_enroll_link(eid, admin))
     admin.post(f"/api/admin/employees/{eid}/revoke")
-    page = admin.get("/admin/jurnal").text
+    page = admin.get("/api/admin/journal").text
     assert "Link de înrolare generat pentru Ana Pop" in page
     assert "Dispozitiv revocat pentru Ana Pop" in page
     assert "Dispozitiv înrolat" in page

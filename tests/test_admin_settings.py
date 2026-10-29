@@ -88,7 +88,7 @@ def test_settings_changes_are_journaled_with_author(harness):
     admin = harness.admin_client()
     admin.put(URL, json={**VALID, "hall_subnet": "10.1.0.0/16", "closing_time": "20:00",
                          "retention_months": "18"})
-    page = admin.get("/admin/jurnal").text
+    page = admin.get("/api/admin/journal").text
     assert "Setări modificate" in page
     assert "10.1.0.0/16" in page and "20:00" in page and "12 → 18" in page
     assert "admin" in page
@@ -97,7 +97,7 @@ def test_settings_changes_are_journaled_with_author(harness):
 def test_saving_unchanged_settings_writes_no_journal_line(harness):
     admin = harness.admin_client()
     assert admin.put(URL, json=VALID).status_code == 200
-    assert "Setări modificate" not in admin.get("/admin/jurnal").text
+    assert "Setări modificate" not in admin.get("/api/admin/journal").text
 
 
 def test_save_requires_same_origin(harness):

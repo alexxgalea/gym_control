@@ -115,7 +115,7 @@ def test_totp_depends_on_server_secret(make_harness):
 def test_entry_records_qr_totp_method_in_journal(harness):
     phone = harness.enrolled_client("Ana Pop")
     phone.post("/me/entry", data={"totp": harness.current_totp()})
-    page = harness.admin_client().get("/admin/jurnal").text
+    page = harness.admin_client().get("/api/admin/journal").text
     assert "Cod QR" in page
 
 

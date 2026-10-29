@@ -85,7 +85,7 @@ def test_admin_actions_appear_in_jurnal_with_author(harness):
     eid = create(c, "Ana Pop", "ana@firma.ro").json()["id"]
     c.post(f"/api/admin/employees/{eid}/enroll-link")
     c.post(f"/api/admin/employees/{eid}/revoke")
-    page = c.get("/admin/jurnal").text
+    page = c.get("/api/admin/journal").text
     assert "Angajat creat: Ana Pop" in page
     assert "Link de înrolare generat pentru Ana Pop" in page
     assert "Dispozitiv revocat pentru Ana Pop" in page
@@ -96,7 +96,7 @@ def test_admin_actions_appear_in_jurnal_with_author(harness):
 def test_failed_attempts_do_not_write_created_entries(harness):
     c = harness.admin_client()
     create(c, "Ana", "nu-e-email")
-    assert "Angajat creat" not in c.get("/admin/jurnal").text
+    assert "Angajat creat" not in c.get("/api/admin/journal").text
 
 
 # --- Import CSV (POST /api/admin/employees/import, multipart) ---
@@ -170,7 +170,7 @@ def test_csv_import_requires_login(harness):
 def test_csv_import_appears_in_jurnal_with_author(harness):
     c = harness.admin_client()
     import_csv(c, "nume,email\nIon,ion@firma.ro\nRău,rau\n")
-    page = c.get("/admin/jurnal").text
+    page = c.get("/api/admin/journal").text
     assert "Angajat importat din CSV: Ion" in page
     assert "Import CSV: 1 importați, 1 respinse" in page
     assert page.count("admin") >= 2
