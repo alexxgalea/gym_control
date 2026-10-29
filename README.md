@@ -60,6 +60,14 @@ revocare cu confirmare. API: `GET/POST /api/admin/employees` (eroare de validare
 `POST /api/admin/employees/{id}/enroll-link`, `POST /api/admin/employees/{id}/revoke` (204).
 Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
 
+## Raport de prezență (SPA)
+
+Ecranul Rapoarte (`/admin/reports`) generează Raportul pe un interval orar; varianta tipărită e ruta SPA
+`/admin/reports/print?from=..&to=..` (fără navigare laterală, `print:` ascunde butoanele). API (`report_api.py`):
+`GET /api/admin/reports?from=..&to=..` (rânduri, textul de neacceptare și textul „deschisă”, trimise de server;
+interval invalid: 400 `{detail}`) și `GET /api/admin/reports.csv?from=..&to=..` (descărcare, același CSV).
+Generarea (și afișarea tipărită) și exportul intră în Jurnal cu autorul.
+
 ## Import Angajați (CSV)
 
 Încă nu are ecran în SPA (tichetul #19); ruta HTML veche a fost ștearsă odată cu ecranul Angajați.
