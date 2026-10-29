@@ -8,6 +8,8 @@ export type Anomaly = components["schemas"]["AnomalyOut"];
 export type InHall = components["schemas"]["InHallOut"];
 export type InHallPerson = components["schemas"]["InHallPerson"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
+export type DoorScreenStatus = components["schemas"]["DoorScreenStatus"];
+export type DoorActivationLink = components["schemas"]["DoorActivationLink"];
 export type Incident = components["schemas"]["IncidentOut"];
 export type IncidentInput = components["schemas"]["IncidentIn"];
 export type HallSettings = components["schemas"]["SettingsOut"];
@@ -98,6 +100,11 @@ export const adminApi = {
     /** Închide o Sesiune deschisă cu o Ieșire manuală. */
     correct: (id: number, body: SessionCorrectionInput) =>
       api<void>(`/api/admin/sessions/${id}/correct`, { method: "POST", body }),
+  },
+  /** „Ecranul de la ușă”: starea și link-ul de Activare. */
+  doorScreen: {
+    status: () => api<DoorScreenStatus>("/api/admin/door-screen"),
+    activationLink: () => api<DoorActivationLink>("/api/admin/door-screen/activation-link", { method: "POST" }),
   },
   /** „Acum în Sală”: Sesiunile de azi fără Ieșire. */
   inHall: () => api<InHall>("/api/admin/in-hall"),

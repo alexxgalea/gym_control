@@ -38,6 +38,21 @@ CREATE TABLE IF NOT EXISTS devices (
     employee_id INTEGER NOT NULL UNIQUE REFERENCES employees(id),
     enrolled_at TEXT NOT NULL
 );
+-- Activare Ecran de la ușă (ADR 0004): link cu folosire unică (48 h), emis de un Admin; un singur
+-- Ecran de la ușă activ (rândul cu id = 1), identificat prin hash-ul cookie-ului telefonului.
+CREATE TABLE IF NOT EXISTS door_links (
+    token_hash TEXT PRIMARY KEY,
+    admin_id INTEGER NOT NULL REFERENCES admins(id),
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT                   -- NULL = încă nefolosit
+);
+CREATE TABLE IF NOT EXISTS door_screen (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    token_hash TEXT NOT NULL,
+    activated_at TEXT NOT NULL,
+    activated_by_admin_id INTEGER NOT NULL REFERENCES admins(id)
+);
 -- Sesiunea: o Intrare și (opțional) Ieșirea ei. Deschisă = exit_at IS NULL.
 -- Orele sunt UTC (ISO 8601, aceeași formă ca în Jurnal).
 -- Invariant (în cod, `presence`): cel mult o Sesiune deschisă fără Anomalia `missing_exit`;

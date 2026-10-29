@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
+  DoorOpen,
   House,
   LogOut,
   Menu,
@@ -28,6 +29,7 @@ const HOME = { path: "", label: "Acasă", icon: House } as const;
 /** Ecranele din meniu, în ordinea afișării. */
 export const SCREENS: readonly { path: string; label: string; icon: LucideIcon }[] = [
   { path: "employees", label: "Angajați", icon: Users },
+  { path: "door-screen", label: "Ecranul de la ușă", icon: DoorOpen },
   { path: "journal", label: "Jurnal", icon: ScrollText },
   { path: "anomalies", label: "Anomalii", icon: TriangleAlert },
   { path: "incidents", label: "Incidente", icon: ShieldAlert },

@@ -62,7 +62,7 @@ function useDoorCode(enabled: boolean) {
           if (isBlocked(error)) {
             clearTimeout(staleTimer);
             setBlocked(error.reason);
-            return; // se rezolvă doar deschizând linkul de configurare: nu mai insistăm
+            return; // se rezolvă doar printr-o nouă Activare din aplicație: nu mai insistăm
           }
           if (!haveCode) setStale(true); // niciun cod de arătat: nu lăsăm un ecran gol fără explicație
           pollTimer = setTimeout(poll, RETRY_MS);
@@ -105,24 +105,22 @@ function Explanation({ title, children }: { title: string; children: ReactNode }
 
 const RING_RADIUS = 104;
 
-/** `/door` și `/door?k=<token>`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui. */
-export function Door({ setupToken }: { setupToken: string | null }) {
-  const configuredWith = setupToken; // serverul redirecționează `?k=` doar când tokenul e corect
-  const { code, stale, blocked } = useDoorCode(configuredWith === null);
+/** `/door`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui; doar pentru telefonul activat. */
+export function Door() {
+  const { code, stale, blocked } = useDoorCode(true);
 
-  if (configuredWith !== null || blocked === "door_token_invalid") {
+  if (blocked === "door_token_invalid") {
     return (
-      <Explanation title="Link de configurare greșit">
-        Linkul de configurare nu este corect sau nu mai e valabil. Cere Adminului linkul exact și deschide-l din nou pe
-        acest telefon.
+      <Explanation title="Acest telefon nu mai este Ecranul de la ușă">
+        Ecranul de la ușă a fost activat pe alt telefon. Cere Adminului să activeze din nou acest telefon, dacă e cazul.
       </Explanation>
     );
   }
   if (blocked === "door_not_configured") {
     return (
-      <Explanation title="Telefon neconfigurat">
-        Acest telefon nu este configurat ca Ecran de la ușă. Cere Adminului linkul de configurare și deschide-l o
-        singură dată pe acest telefon.
+      <Explanation title="Telefon neactivat">
+        Acest telefon nu este activat ca Ecran de la ușă. Cere Adminului să activeze Ecranul de la ușă din aplicație și
+        deschide linkul primit pe acest telefon.
       </Explanation>
     );
   }
