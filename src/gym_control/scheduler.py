@@ -43,6 +43,9 @@ def flag_open_sessions_at_closing(app, now: datetime) -> None:
         rows = db.execute(
             "SELECT s.id, s.entry_at, s.employee_id, e.name FROM sessions s"
             " JOIN employees e ON e.id = s.employee_id WHERE s.exit_at IS NULL"
+            " AND NOT EXISTS (SELECT 1 FROM session_anomalies a"
+            "   WHERE a.session_id = s.id AND a.code = ?)",   # deja marcate: nu le mai reîncărcăm la fiecare tick
+            (anomalies.OPEN_AT_CLOSING,),
         ).fetchall()
         today = local_day(now, tz)
         missing = {r["session_id"] for r in db.execute(
