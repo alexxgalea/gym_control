@@ -117,3 +117,19 @@ def test_entry_records_qr_totp_method_in_journal(harness):
     phone.post("/me/entry", data={"totp": harness.current_totp()})
     page = harness.admin_client().get("/admin/jurnal").text
     assert "Cod QR" in page
+
+
+def test_non_ascii_totp_is_refused_not_a_server_error(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    r = phone.post("/me/entry", data={"totp": "é"})
+    assert r.status_code == 403
+    assert "greșit" in r.text
+
+
+def test_non_ascii_kiosk_token_in_url_is_refused(harness):
+    assert harness.client().get("/door?k=é").status_code == 403
+
+
+def test_non_ascii_kiosk_cookie_is_refused(harness):
+    r = harness.client().get("/door", headers={"Cookie": "gym_kiosk=é".encode("utf-8")})
+    assert r.status_code == 403

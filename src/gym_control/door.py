@@ -20,7 +20,7 @@ COOKIE = "gym_kiosk"
 
 def _token_ok(request: Request, candidate: str | None) -> bool:
     expected = request.app.state.settings.kiosk_token
-    return bool(expected) and bool(candidate) and hmac.compare_digest(candidate, expected)
+    return bool(expected) and bool(candidate) and hmac.compare_digest(candidate.encode(), expected.encode())
 
 
 def require_kiosk(request: Request) -> None:

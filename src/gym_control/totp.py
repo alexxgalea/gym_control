@@ -42,9 +42,11 @@ def check(secret: str, now: datetime, code: str | None) -> str:
     if not code:
         return MISSING
     w = _window(now)
-    if any(hmac.compare_digest(code, _code(secret, w - i)) for i in range(ACCEPTED_WINDOWS_BACK + 1)):
+    candidate = code.encode()  # compare_digest pe str refuză non-ASCII (TypeError); comparăm octeți
+    if any(hmac.compare_digest(candidate, _code(secret, w - i).encode())
+           for i in range(ACCEPTED_WINDOWS_BACK + 1)):
         return OK
-    if any(hmac.compare_digest(code, _code(secret, w - i))
+    if any(hmac.compare_digest(candidate, _code(secret, w - i).encode())
            for i in range(ACCEPTED_WINDOWS_BACK + 1, EXPIRED_LOOKBACK)):
         return EXPIRED
     return INVALID
