@@ -4,12 +4,14 @@ Cookie-ul de sesiune, verificarea `Origin` și limitarea încercărilor sunt cel
 O cerere fără sesiune primește 401; SPA-ul duce atunci la login."""
 
 import sqlite3
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from gym_control import auth, employees, enrollment, journal, network
+from gym_control import auth, employees, enrollment, incidents, journal, network
+from gym_control.clocktime import local_iso
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -183,3 +185,74 @@ def revoke_device(
     )
     db.commit()
     return Response(status_code=204)
+
+
+class IncidentOut(BaseModel):
+    """Un Incident, cu orele în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`); `status` e `open` sau `closed`."""
+
+    id: int
+    start: str
+    end: str
+    note: str
+    status: Literal["open", "closed"]
+    created_by: str
+    closed_at: str | None = None
+    closed_by: str | None = None
+
+
+class IncidentIn(BaseModel):
+    """Orele vin ca în `datetime-local` (`AAAA-LL-ZZTHH:MM`), în ora locală."""
+
+    start: str = ""
+    end: str = ""
+    note: str = ""
+
+
+def _incident_out(row, tz: str) -> IncidentOut:
+    closed = row["closed_at"] is not None
+    return IncidentOut(
+        id=row["id"], start=local_iso(row["start_at"], tz), end=local_iso(row["end_at"], tz),
+        note=row["note"], status="closed" if closed else "open", created_by=row["created_by"],
+        closed_at=local_iso(row["closed_at"], tz) if closed else None, closed_by=row["closed_by"],
+    )
+
+
+@router.get("/incidents", response_model=list[IncidentOut], responses={401: {"model": ErrorResponse}})
+def list_incidents(
+    request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    tz = request.app.state.settings.timezone
+    return [_incident_out(row, tz) for row in incidents.list_all(db)]
+
+
+@router.post(
+    "/incidents", status_code=201, response_model=IncidentOut,
+    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+)
+def create_incident(
+    body: IncidentIn, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    tz = request.app.state.settings.timezone
+    try:
+        incident_id = incidents.mark(db, request.app.state.clock(), tz, admin, body.start, body.end, body.note)
+    except incidents.InvalidIncident as exc:
+        db.rollback()
+        return JSONResponse(status_code=400, content={"detail": str(exc), "field": exc.field})
+    db.commit()
+    return _incident_out(db.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,)).fetchone(), tz)
+
+
+@router.post(
+    "/incidents/{incident_id}/close", response_model=IncidentOut,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def close_incident(
+    incident_id: int, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    tz = request.app.state.settings.timezone
+    if not incidents.close(db, request.app.state.clock(), tz, admin, incident_id):
+        raise HTTPException(status_code=404, detail="Incident inexistent sau deja închis")
+    db.commit()
+    return _incident_out(db.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,)).fetchone(), tz)

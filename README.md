@@ -131,7 +131,7 @@ curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcat�
 
 ## Incidente și retenție
 
-Ecranul Incidente (`/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
+Ecranul Incidente (SPA la `/admin/incidents`, API `/api/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
 mai târziu; ambele acțiuni apar în Jurnal cu autorul. Jobul de retenție (`retention.purge_job`, rulat de `tick`)
 șterge Sesiunile (cu Anomaliile lor) și rândurile din Jurnal (de orice fel) mai vechi de perioada de retenție
 (Setări, implicit 12 luni; `GYM_RETENTION_MONTHS` ca valoare inițială). Nu se șterg Angajații și conturile Admin.
