@@ -78,8 +78,8 @@ describe("Sesiuni manuale", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     // Jurnalul s-a reîncărcat: rândul manual apare, marcat, cu autorul
     const mark = await screen.findByTestId("manual-mark");
-    const row = within(mark.closest("tr")!);
-    expect(row.getByText("admin")).toBeInTheDocument();
+    const row = within(mark.closest("li")!);
+    expect(row.getByText("Făcut de admin")).toBeInTheDocument();
     expect(row.getByText(/Telefon stricat/)).toBeInTheDocument();
   });
 
