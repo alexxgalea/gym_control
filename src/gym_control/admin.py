@@ -5,7 +5,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import auth, employees, enrollment, journal, runtime_settings
+from gym_control import anomalies, auth, employees, enrollment, journal, runtime_settings
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
@@ -230,4 +230,17 @@ def journal_page(
     return templates.TemplateResponse(
         request, "journal.html", {"admin": admin, "entries": journal.recent(db), "nav": "journal",
          "tz": request.app.state.settings.timezone}
+    )
+
+
+@router.get("/anomalies", response_class=HTMLResponse)
+def anomalies_page(
+    request: Request,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    return templates.TemplateResponse(
+        request, "anomalies.html",
+        {"admin": admin, "nav": "anomalies", "rows": anomalies.list_unresolved(db),
+         "labels": anomalies.LABELS, "tz": request.app.state.settings.timezone},
     )

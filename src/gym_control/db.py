@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS devices (
 );
 -- Sesiunea: o Intrare și (opțional) Ieșirea ei. Deschisă = exit_at IS NULL.
 -- Orele sunt UTC (ISO 8601, aceeași formă ca în Jurnal).
--- Un Angajat are cel mult o Sesiune deschisă (index unic parțial).
+-- Invariant (în cod, `presence`): cel mult o Sesiune deschisă fără Anomalia `missing_exit`;
+-- o Sesiune veche rămasă deschisă e marcată Anomalie și nu mai blochează Intrarea.
 -- Tichetele următoare adaugă coloane/tabele (Anomalii pe Sesiune, ș.a.).
 -- Raportul de prezență: suprapunere = entry_at < Y AND (exit_at IS NULL OR exit_at > X).
 CREATE TABLE IF NOT EXISTS sessions (
@@ -57,8 +58,18 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS sessions_employee ON sessions(employee_id, entry_at);
 CREATE INDEX IF NOT EXISTS sessions_entry ON sessions(entry_at);
-CREATE UNIQUE INDEX IF NOT EXISTS sessions_one_open
-    ON sessions(employee_id) WHERE exit_at IS NULL;
+DROP INDEX IF EXISTS sessions_one_open;   -- înlocuit de invariantul din `presence` (#8)
+CREATE INDEX IF NOT EXISTS sessions_open ON sessions(employee_id) WHERE exit_at IS NULL;
+-- Anomaliile pe Sesiune (#8; refolosit de #9 open_at_closing, #11, #12 resolved_at).
+-- code: 'missing_exit' | 'outside_hours' | 'open_at_closing'; at: UTC; resolved_at NULL = nerezolvată.
+CREATE TABLE IF NOT EXISTS session_anomalies (
+    id INTEGER PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES sessions(id),
+    code TEXT NOT NULL,
+    at TEXT NOT NULL,
+    resolved_at TEXT,
+    UNIQUE (session_id, code)
+);
 -- Jurnalul: un singur tabel pentru Intrări, Ieșiri, Anomalii și acțiuni Admin.
 -- kind: 'admin_action' | 'entry' | 'exit' | 'anomaly' | ... (tichetele următoare)
 CREATE TABLE IF NOT EXISTS journal (
