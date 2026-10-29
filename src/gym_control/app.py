@@ -43,7 +43,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app.state.settings = settings
     app.state.clock = clock
     app.state.db = db.connect(settings.database)
-    app.state.db_lock = threading.RLock()
+    app.state.db_lock = threading.Lock()  # nu RLock: dependența `get_db` poate elibera din alt thread
     app.state.tick = lambda now: scheduler.tick(app, now)
     app.state.totp_secret = totp.load_secret(app.state.db, settings.totp_secret)
     auth.ensure_bootstrap_admin(

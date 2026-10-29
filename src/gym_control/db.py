@@ -114,7 +114,11 @@ def connect(path: str) -> sqlite3.Connection:
 
 
 def get_db(request: Request) -> Iterator[sqlite3.Connection]:
-    """Dependență FastAPI: conexiunea unică, serializată printr-un lock."""
-    lock: threading.RLock = request.app.state.db_lock
+    """Dependență FastAPI: conexiunea unică, serializată printr-un lock.
+
+    FastAPI poate rula setup-ul și teardown-ul acestui generator în thread-uri diferite; de aceea
+    lock-ul e un `threading.Lock` (se poate elibera din alt thread), nu un `RLock` (legat de thread).
+    Lock-ul nu e reentrant: codul sub `get_db` nu trebuie să ia din nou `db_lock`."""
+    lock: threading.Lock = request.app.state.db_lock
     with lock:
         yield request.app.state.db
