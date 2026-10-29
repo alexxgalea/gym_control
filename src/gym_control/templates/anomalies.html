@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Anomalii{% endblock %}
+{% block content %}
+<h1>Anomalii</h1>
+<p><a class="btn" href="/admin/sessions/new">Sesiune manuală nouă</a></p>
+<p class="muted">Situații care cer verificare umană. Orele sunt în ora locală.</p>
+<table class="table stackable">
+  <thead><tr><th>Angajat</th><th>Tip</th><th>Moment</th><th>Intrare</th><th>Acțiuni</th></tr></thead>
+  <tbody>
+  {% for a in rows %}
+    <tr>
+      <td data-label="Angajat">{{ a.employee_name }}</td>
+      <td data-label="Tip">{{ labels[a.code] }}</td>
+      <td data-label="Moment"><time>{{ a.at | local_iso(tz) }}</time></td>
+      <td data-label="Intrare">{{ a.entry_at | local_iso(tz) }}</td>
+      <td data-label="Acțiuni">{% if a.exit_at is none %}<a class="btn btn-secondary" href="/admin/sessions/{{ a.session_id }}/correct">Corectează</a>{% endif %}{% if a.code == "outside_hours" %}<form method="post" action="/admin/anomalies/{{ a.id }}/dismiss" style="display:inline"><button class="btn btn-secondary" type="submit">Marchează verificată</button></form>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">Nu există Anomalii.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

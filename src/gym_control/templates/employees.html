@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Angajați{% endblock %}
+{% block content %}
+<h1>Angajați</h1>
+<p><a class="btn" href="/admin/sessions/new">Sesiune manuală nouă</a></p>
+
+{% if import_fatal %}<p class="alert alert-error" role="alert">{{ import_fatal }}</p>{% endif %}
+{% if result %}
+  <div class="alert {{ 'alert-ok' if not result.errors else 'alert-error' }}" role="status">
+    <strong>{{ result.created }} Angajați importați.</strong>
+    {% if result.errors %}{{ result.errors|length }} rânduri respinse:{% endif %}
+    {% if result.errors %}<ul>{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+{% endif %}
+
+<section class="card">
+  <h2>Angajat nou</h2>
+  {% if form_error %}<p class="alert alert-error" role="alert">{{ form_error }}</p>{% endif %}
+  <form method="post" action="/admin/employees" class="stack">
+    <label>Nume <input name="name" value="{{ form.name if form else '' }}" required></label>
+    <label>Email <input name="email" type="email" value="{{ form.email if form else '' }}" required></label>
+    <button type="submit" class="btn">Adaugă</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Import CSV</h2>
+  <p class="muted">Fișier cu antetul <code>nume,email</code> (și <code>;</code> este acceptat).</p>
+  <form method="post" action="/admin/employees/import" enctype="multipart/form-data" class="stack">
+    <label>Fișier CSV <input type="file" name="file" accept=".csv,text/csv" required></label>
+    <button type="submit" class="btn">Importă</button>
+  </form>
+</section>
+
+{% if issued %}
+<section class="card alert-ok" role="status">
+  <h2>Link de înrolare pentru {{ issued.name }}</h2>
+  <p>Trimite-l Angajatului; se deschide pe telefonul lui, o singură dată, în {{ issued.hours }} de ore. Nu va mai fi afișat.</p>
+  <p><code id="enroll-link">{{ issued.link }}</code></p>
+</section>
+{% endif %}
+
+<h2>Lista ({{ employees|length }})</h2>
+<table class="table stackable">
+  <thead><tr><th>Nume</th><th>Email</th><th>Dispozitiv</th><th>Acțiuni</th></tr></thead>
+  <tbody>
+  {% for e in employees %}
+    <tr data-employee-id="{{ e.id }}" data-email="{{ e.email }}">
+      <td data-label="Nume">{{ e.name }}</td>
+      <td data-label="Email">{{ e.email }}</td>
+      <td data-label="Dispozitiv">{{ "Înrolat" if e.id in enrolled_ids else "Neînrolat" }}</td>
+      <td data-label="Acțiuni" class="actions">
+        <form method="post" action="/admin/employees/{{ e.id }}/enroll-link">
+          <button type="submit" class="btn">{{ "Re-înrolează" if e.id in enrolled_ids else "Generează link" }}</button>
+        </form>
+        {% if e.id in enrolled_ids %}
+        <form method="post" action="/admin/employees/{{ e.id }}/revoke">
+          <button type="submit" class="btn btn-secondary">Revocă</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">Niciun Angajat încă.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Raport de prezență (tipărit){% endblock %}
+{% block content %}
+<div class="print-report">
+<h1>Raport de prezență</h1>
+<p><strong>Interval (ora locală):</strong> {{ x | local_iso(tz) }} – {{ y | local_iso(tz) }}<br>
+<strong>Generat de:</strong> {{ admin.username }}, {{ generated_at | local_iso(tz) }}</p>
+<p class="alert alert-ok disclaimer">{{ disclaimer }}</p>
+<p class="no-print"><button type="button" class="btn" onclick="window.print()">Tipărește</button>
+  <a class="btn btn-secondary" href="/admin/reports?{{ query }}">Înapoi</a></p>
+{% include "_report_table.html" %}
+</div>
+{% endblock %}

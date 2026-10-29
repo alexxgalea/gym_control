@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Setări{% endblock %}
+{% block content %}
+<h1>Setări</h1>
+{% if saved %}<p class="alert alert-ok" role="status">Setările au fost salvate.</p>{% endif %}
+{% if errors %}
+<div class="alert alert-error" role="alert">
+  {% for e in errors %}<p>{{ e }}</p>{% endfor %}
+</div>
+{% endif %}
+<form method="post" action="/admin/settings" class="card stack">
+  <label>Subrețeaua Sălii (CIDR)
+    <input name="hall_subnet" value="{{ form.hall_subnet }}" inputmode="decimal" required>
+  </label>
+  <label>Ora de deschidere (program, HH:MM)
+    <input name="opening_time" value="{{ form.opening_time }}" inputmode="numeric" placeholder="06:00" required>
+  </label>
+  <label>Ora de închidere (HH:MM)
+    <input name="closing_time" value="{{ form.closing_time }}" inputmode="numeric" placeholder="22:00" required>
+  </label>
+  <label>Perioada de retenție (luni)
+    <input name="retention_months" value="{{ form.retention_months }}" inputmode="numeric" required>
+  </label>
+  <p class="muted">Sesiunile și rândurile din Jurnal mai vechi de atât se șterg automat, în afara celor din Incidentele deschise.</p>
+  <button type="submit" class="btn">Salvează</button>
+</form>
+{% endblock %}
