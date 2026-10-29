@@ -6,11 +6,10 @@ imediat (setările se citesc la fiecare cerere) și apare în Jurnal cu autorul.
 import sqlite3
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from gym_control import auth, runtime_settings
-from gym_control.admin_api import ErrorResponse
+from gym_control.admin_common import UNAUTHORIZED, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -53,7 +52,7 @@ def _out(s: runtime_settings.RuntimeSettings) -> SettingsOut:
     )
 
 
-@router.get("/settings", response_model=SettingsOut, responses={401: {"model": ErrorResponse}})
+@router.get("/settings", response_model=SettingsOut, responses=UNAUTHORIZED)
 def get_settings(
     request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
 ):
@@ -62,7 +61,7 @@ def get_settings(
 
 @router.put(
     "/settings", response_model=SettingsOut,
-    responses={400: {"model": SettingsErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": SettingsErrorResponse}, **UNAUTHORIZED},
 )
 def save_settings(
     body: SettingsIn, request: Request,
@@ -76,9 +75,7 @@ def save_settings(
     })
     if new is None:
         items = [{"field": field, "detail": detail} for field, detail in errors]
-        return JSONResponse(
-            status_code=400, content={"detail": items[0]["detail"], "field": items[0]["field"], "errors": items},
-        )
+        return field_error(db, items[0]["detail"], items[0]["field"], errors=items)
     runtime_settings.save(db, request.app.state.clock(), admin, old, new)
     db.commit()
     return _out(new)

@@ -61,6 +61,7 @@ def test_report_lists_overlapping_sessions_including_straddling_ones(harness):
     assert body["date_from"] == "2026-01-05 10:00" and body["date_to"] == "2026-01-05 12:00"
     assert body["generated_by"] == "admin"
     assert "listă credibilă de persoane" in body["disclaimer"]
+    assert "ora de închidere" in body["scope_text"]
     assert body["open_text"] == "deschisă"
 
 
