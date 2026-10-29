@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Raport de prezență{% endblock %}
+{% block content %}
+<h1>Raport de prezență</h1>
+<form method="get" action="/admin/reports" class="card filters no-print">
+  <div>
+    <label for="r-from">De la</label>
+    <input id="r-from" type="datetime-local" name="from" value="{{ date_from }}" required>
+  </div>
+  <div>
+    <label for="r-to">Până la</label>
+    <input id="r-to" type="datetime-local" name="to" value="{{ date_to }}" required>
+  </div>
+  <div class="filters-actions">
+    <button type="submit" class="btn">Generează Raportul</button>
+  </div>
+</form>
+<p class="muted">Ora locală. Include toate Sesiunile care se suprapun intervalului, inclusiv cele care încep înainte sau se termină după el. Sesiunile deschise sunt considerate prezente până la ora de închidere a zilei Intrării și sunt marcate „{{ open_text }}”.</p>
+{% if error %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endif %}
+{% if rows is not none %}
+<p class="alert alert-ok">{{ disclaimer }}</p>
+<p class="actions no-print">
+  <a class="btn btn-secondary" href="/admin/reports.csv?{{ query }}">Export CSV</a>
+  <a class="btn btn-secondary" href="/admin/reports/print?{{ query }}">Versiune pentru tipărit</a>
+</p>
+{% include "_report_table.html" %}
+{% endif %}
+{% endblock %}
