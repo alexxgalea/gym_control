@@ -172,3 +172,10 @@ def test_open_at_closing_is_listed_and_cannot_be_dismissed(harness):
     [row] = admin.get("/api/admin/anomalies").json()
     assert row["label"] == "Sesiune deschisă la ora de închidere" and row["exit_at"] is None
     assert admin.post(f"/api/admin/anomalies/{row['id']}/dismiss").status_code == 404  # nu se închide cu "verificată"
+
+
+def test_anomalies_api_names_the_hall_timezone_so_the_screen_can_format_local_times(harness):
+    _outside_hours_session(harness)
+    [row] = harness.admin_client().get("/api/admin/anomalies").json()
+    assert row["at"] == "2026-01-05 23:30"
+    assert row["timezone"] == "Europe/Bucharest"

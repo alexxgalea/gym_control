@@ -30,13 +30,24 @@ function partsInZone(date: Date, timeZone: string): Parts {
 const dayNumber = (p: Parts) => Math.round(Date.UTC(p.year, p.month - 1, p.day) / 86_400_000);
 const two = (n: number) => String(n).padStart(2, "0");
 
-export function formatDateTime(iso: string, timeZone: string, now: Date = new Date()): string {
-  const at = partsInZone(new Date(iso), timeZone);
-  const today = partsInZone(now, timeZone);
+function render(at: Parts, today: Parts): string {
   const time = `${two(at.hour)}:${two(at.minute)}`;
   const daysAgo = dayNumber(today) - dayNumber(at);
   if (daysAgo === 0) return `azi, ${time}`;
   if (daysAgo === 1) return `ieri, ${time}`;
   const date = `${at.day} ${MONTHS[at.month - 1]}`;
   return at.year === today.year ? `${date}, ${time}` : `${date} ${at.year}, ${time}`;
+}
+
+/** Un moment (ISO cu fus) scris în ora Sălii. */
+export function formatDateTime(iso: string, timeZone: string, now: Date = new Date()): string {
+  return render(partsInZone(new Date(iso), timeZone), partsInZone(now, timeZone));
+}
+
+/** Un moment deja în ora Sălii (`AAAA-LL-ZZ HH:MM`, cum îl dau Anomaliile); fusul e doar pentru „azi”/„ieri”. */
+export function formatLocalDateTime(local: string, timeZone: string, now: Date = new Date()): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(local);
+  if (!match) return local;
+  const [year, month, day, hour, minute] = match.slice(1).map(Number) as [number, number, number, number, number];
+  return render({ year, month, day, hour, minute }, partsInZone(now, timeZone));
 }

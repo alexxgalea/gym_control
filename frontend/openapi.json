@@ -15,7 +15,7 @@
         "type": "object"
       },
       "AnomalyOut": {
-        "description": "O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).\n`exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).",
+        "description": "O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).\n`exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).\n`timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii.",
         "properties": {
           "at": {
             "title": "At",
@@ -55,6 +55,10 @@
           "session_id": {
             "title": "Session Id",
             "type": "integer"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
@@ -65,7 +69,8 @@
           "employee_name",
           "at",
           "entry_at",
-          "exit_at"
+          "exit_at",
+          "timezone"
         ],
         "title": "AnomalyOut",
         "type": "object"
