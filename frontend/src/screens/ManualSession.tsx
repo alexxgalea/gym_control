@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { formatLocalDateTime } from "@/lib/format";
-import { ANOMALIES_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
+import { ANOMALIES_KEY, IN_HALL_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
 
 type Field = "employee_id" | "entry_at" | "exit_at" | "reason";
 type Errors = Partial<Record<Field | "form", string>>;
@@ -55,6 +55,7 @@ function useRefreshAfterSession() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: JOURNAL_KEY }),
       queryClient.invalidateQueries({ queryKey: ANOMALIES_KEY }),
+      queryClient.invalidateQueries({ queryKey: IN_HALL_KEY }),
     ]);
   };
 }

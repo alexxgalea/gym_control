@@ -278,6 +278,56 @@
         "title": "ImportReport",
         "type": "object"
       },
+      "InHallOut": {
+        "properties": {
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/InHallPerson"
+            },
+            "title": "People",
+            "type": "array"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "people",
+          "timezone"
+        ],
+        "title": "InHallOut",
+        "type": "object"
+      },
+      "InHallPerson": {
+        "description": "`entry_at` e în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`); `minutes` e durata de la Intrare, după ceasul serverului.",
+        "properties": {
+          "employee_name": {
+            "title": "Employee Name",
+            "type": "string"
+          },
+          "entry_at": {
+            "title": "Entry At",
+            "type": "string"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "integer"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "employee_name",
+          "entry_at",
+          "minutes"
+        ],
+        "title": "InHallPerson",
+        "type": "object"
+      },
       "IncidentIn": {
         "description": "Orele vin ca în `datetime-local` (`AAAA-LL-ZZTHH:MM`), în ora locală.",
         "properties": {
@@ -1251,6 +1301,37 @@
           }
         },
         "summary": "Revoke Device",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/in-hall": {
+      "get": {
+        "operationId": "in_hall_api_admin_in_hall_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InHallOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "In Hall",
         "tags": [
           "admin"
         ]

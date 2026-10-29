@@ -5,6 +5,8 @@ export type LoginRequest = components["schemas"]["LoginRequest"];
 export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
 export type Anomaly = components["schemas"]["AnomalyOut"];
+export type InHall = components["schemas"]["InHallOut"];
+export type InHallPerson = components["schemas"]["InHallPerson"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
 export type Incident = components["schemas"]["IncidentOut"];
 export type IncidentInput = components["schemas"]["IncidentIn"];
@@ -97,6 +99,8 @@ export const adminApi = {
     correct: (id: number, body: SessionCorrectionInput) =>
       api<void>(`/api/admin/sessions/${id}/correct`, { method: "POST", body }),
   },
+  /** „Acum în Sală”: Sesiunile de azi fără Ieșire. */
+  inHall: () => api<InHall>("/api/admin/in-hall"),
   anomalies: {
     list: () => api<Anomaly[]>("/api/admin/anomalies"),
     dismiss: (id: number) => api<void>(`/api/admin/anomalies/${id}/dismiss`, { method: "POST" }),

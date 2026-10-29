@@ -44,6 +44,26 @@ def open_session(db: sqlite3.Connection, employee_id: int) -> OpenSession | None
     return OpenSession(row["id"], datetime.fromisoformat(row["entry_at"])) if row else None
 
 
+@dataclass(frozen=True)
+class Inside:
+    session_id: int
+    employee_name: str
+    entry_at: datetime
+
+
+def inside_today(db: sqlite3.Connection, now: datetime, tz: str) -> list[Inside]:
+    """„Acum în Sală”: Sesiunile începute în ziua locală de azi, fără Ieșire. Cele vechi nu apar (sunt Anomalii)."""
+    rows = db.execute(
+        "SELECT s.id, s.entry_at, e.name FROM sessions s JOIN employees e ON e.id = s.employee_id"
+        " WHERE s.exit_at IS NULL ORDER BY s.entry_at, s.id",
+    ).fetchall()
+    today = local_day(now, tz)
+    return [
+        Inside(r["id"], r["name"], datetime.fromisoformat(r["entry_at"]))
+        for r in rows if local_day(r["entry_at"], tz) == today
+    ]
+
+
 def is_old(session: OpenSession, now: datetime, tz: str) -> bool:
     """Regula „veche”: Sesiunea a fost deschisă într-o zi locală anterioară. Singurul loc al regulii."""
     return local_day(session.entry_at, tz) < local_day(now, tz)

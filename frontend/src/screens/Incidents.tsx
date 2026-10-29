@@ -16,7 +16,7 @@ import { StatusBadge } from "@/design/StatusBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const INCIDENTS_KEY = ["admin", "incidents"] as const;
+import { INCIDENTS_KEY } from "@/lib/queryKeys";
 
 export function Incidents() {
   const toast = useToast();

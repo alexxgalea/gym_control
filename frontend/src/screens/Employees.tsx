@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Plus, Upload, Users } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport } from "@/api/client";
 import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
@@ -22,7 +23,12 @@ export function Employees() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const employees = useQuery({ queryKey: EMPLOYEES_KEY, queryFn: adminApi.employees.list });
-  const [adding, setAdding] = useState(false);
+  // „Adaugă un Angajat nou” din pagina de gestiune deschide direct foaia (`/employees?nou`)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [adding, setAdding] = useState(searchParams.has("nou"));
+  useEffect(() => {
+    if (searchParams.has("nou")) setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
   const [importing, setImporting] = useState(false);
   const [addingSession, setAddingSession] = useState(false);
   const [issued, setIssued] = useState<EnrollLink | null>(null);

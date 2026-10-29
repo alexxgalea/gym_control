@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/in-hall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** In Hall */
+        get: operations["in_hall_api_admin_in_hall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/incidents": {
         parameters: {
             query?: never;
@@ -579,6 +596,27 @@ export interface components {
             created: number;
             /** Errors */
             errors: string[];
+        };
+        /** InHallOut */
+        InHallOut: {
+            /** People */
+            people: components["schemas"]["InHallPerson"][];
+            /** Timezone */
+            timezone: string;
+        };
+        /**
+         * InHallPerson
+         * @description `entry_at` e în ora locală a Sălii (`AAAA-LL-ZZ HH:MM`); `minutes` e durata de la Intrare, după ceasul serverului.
+         */
+        InHallPerson: {
+            /** Employee Name */
+            employee_name: string;
+            /** Entry At */
+            entry_at: string;
+            /** Minutes */
+            minutes: number;
+            /** Session Id */
+            session_id: number;
         };
         /**
          * IncidentIn
@@ -1152,6 +1190,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    in_hall_api_admin_in_hall_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InHallOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
