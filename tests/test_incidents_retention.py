@@ -181,24 +181,23 @@ def test_session_overlapping_open_incident_is_kept(harness):
 # --- perioada configurabilă ------------------------------------------------------------
 
 def _save(admin, months):
-    return admin.post("/admin/settings", follow_redirects=False, data={
+    return admin.put("/api/admin/settings", json={
         "hall_subnet": "192.168.10.0/24", "opening_time": "06:00", "closing_time": "22:00",
         "retention_months": months})
 
 
 def test_settings_show_default_retention(harness):
-    page = harness.admin_client().get("/admin/settings").text
-    assert 'name="retention_months"' in page and 'value="12"' in page
+    assert harness.admin_client().get("/api/admin/settings").json()["retention_months"] == 12
 
 
 def test_longer_retention_keeps_data_and_shorter_deletes(harness):
     _enter(harness)
     admin = harness.admin_client()
-    assert _save(admin, "24").status_code == 303
+    assert _save(admin, "24").status_code == 200
     harness.clock.set(FAR)  # ~13 luni
     harness.tick()
     assert "Intrare: Ana Pop" in _journal(harness)
-    assert _save(harness.admin_client(), "6").status_code == 303
+    assert _save(harness.admin_client(), "6").status_code == 200
     harness.tick()
     assert "Intrare: Ana Pop" not in _journal(harness)
 
@@ -213,7 +212,7 @@ def test_invalid_retention_is_rejected(harness):
     admin = harness.admin_client()
     for bad in ("0", "-3", "abc", "1.5"):
         assert _save(admin, bad).status_code == 400, bad
-    assert 'value="12"' in admin.get("/admin/settings").text
+    assert admin.get("/api/admin/settings").json()["retention_months"] == 12
 
 
 def test_retention_from_environment_configuration(make_harness):

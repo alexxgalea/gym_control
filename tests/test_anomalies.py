@@ -89,10 +89,9 @@ def test_entry_before_opening_is_flagged_and_within_hours_is_not(harness):
 
 def test_outside_hours_follows_runtime_settings(harness):
     admin = harness.admin_client()
-    r = admin.post("/admin/settings", data={
-        "hall_subnet": "192.168.10.0/24", "opening_time": "12:00", "closing_time": "20:00"},
-        follow_redirects=False)
-    assert r.status_code == 303
+    r = admin.put("/api/admin/settings", json={
+        "hall_subnet": "192.168.10.0/24", "opening_time": "12:00", "closing_time": "20:00"})
+    assert r.status_code == 200
     harness.enrolled_client("Ana Pop").post("/me/entry", data=totp(harness))  # 10:12 local, în afara programului
     assert "în afara programului" in _anomalies(harness)
 

@@ -7,65 +7,17 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import anomalies, auth, employees, incidents, journal, runtime_settings
+from gym_control import anomalies, auth, employees, incidents, journal
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
 
 router = APIRouter(prefix="/admin", dependencies=[Depends(auth.require_same_origin)])
-KEEP = "\x00keep"  # valoare implicită a câmpurilor de formular lipsă (golul "" e valoare reală)
 
 
 def _parse_day(value: str) -> date | None:
     value = value.strip()
     return date.fromisoformat(value) if value else None
-
-
-
-def _settings_response(request, admin, db, form, status_code=200, **extra):
-    return templates.TemplateResponse(
-        request, "settings.html", {"admin": admin, "nav": "settings", "form": form, **extra},
-        status_code=status_code,
-    )
-
-
-def _form_values(s: runtime_settings.RuntimeSettings) -> dict[str, str]:
-    return {"hall_subnet": s.hall_subnet, "opening_time": s.opening_time.strftime("%H:%M"),
-            "closing_time": s.closing_time.strftime("%H:%M"),
-            "retention_months": str(s.retention_months)}
-
-
-@router.get("/settings", response_class=HTMLResponse)
-def settings_page(
-    request: Request,
-    admin: Admin = Depends(require_admin),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    current = runtime_settings.current(db, request.app.state.settings)
-    return _settings_response(request, admin, db, _form_values(current))
-
-
-@router.post("/settings")
-def save_settings(
-    request: Request,
-    hall_subnet: str = Form(""),
-    opening_time: str = Form(""),
-    closing_time: str = Form(""),
-    retention_months: str = Form(KEEP),
-    admin: Admin = Depends(require_admin),
-    db: sqlite3.Connection = Depends(get_db),
-):
-    if retention_months == KEEP:  # câmp lipsă din formular: rămâne valoarea curentă
-        retention_months = str(runtime_settings.current(db, request.app.state.settings).retention_months)
-    form = {"hall_subnet": hall_subnet, "opening_time": opening_time, "closing_time": closing_time,
-            "retention_months": retention_months}
-    new, errors = runtime_settings.validate(form)
-    if errors:
-        return _settings_response(request, admin, db, form, status_code=400, errors=errors)
-    old = runtime_settings.current(db, request.app.state.settings)
-    runtime_settings.save(db, request.app.state.clock(), admin, old, new)
-    db.commit()
-    return RedirectResponse("/admin/settings", status_code=303)
 
 
 @router.get("/jurnal", response_class=HTMLResponse)

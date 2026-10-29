@@ -5,7 +5,7 @@ folosește configurația din mediu (`Settings`). Se citesc la fiecare cerere, de
 o schimbare se aplică imediat. Retenția (#13) se adaugă ca un câmp nou aici:
 în `LABELS`, în `RuntimeSettings`, în `current` și în `validate`.
 
-API: `current(db, defaults)` -> `RuntimeSettings`; `validate(form)` -> (valori, erori);
+API: `current(db, defaults)` -> `RuntimeSettings`; `validate(form)` -> (valori, erori `(câmp, mesaj)`);
 `save(db, now, admin, old, new)` scrie valorile și Jurnalul (fără commit).
 """
 
@@ -58,25 +58,26 @@ def _parse_time(raw: str) -> time | None:
         return None
 
 
-def validate(form: dict[str, str]) -> tuple[RuntimeSettings | None, list[str]]:
-    errors: list[str] = []
+def validate(form: dict[str, str]) -> tuple[RuntimeSettings | None, list[tuple[str, str]]]:
+    """Erorile sunt perechi `(numele câmpului, mesaj în română)`."""
+    errors: list[tuple[str, str]] = []
     subnet = form.get("hall_subnet", "").strip()
     try:
         subnet = str(ipaddress.ip_network(subnet, strict=False))
     except ValueError:
-        errors.append("Subrețea invalidă: folosește notația CIDR, de exemplu 192.168.10.0/24.")
+        errors.append(("hall_subnet", "Subrețea invalidă: folosește notația CIDR, de exemplu 192.168.10.0/24."))
     opening = _parse_time(form.get("opening_time", ""))
     if opening is None:
-        errors.append("Ora de deschidere invalidă: folosește formatul HH:MM, de exemplu 06:00.")
+        errors.append(("opening_time", "Ora de deschidere invalidă: folosește formatul HH:MM, de exemplu 06:00."))
     closing = _parse_time(form.get("closing_time", ""))
     if closing is None:
-        errors.append("Ora de închidere invalidă: folosește formatul HH:MM, de exemplu 22:00.")
+        errors.append(("closing_time", "Ora de închidere invalidă: folosește formatul HH:MM, de exemplu 22:00."))
     if opening and closing and opening >= closing:
-        errors.append("Ora de deschidere trebuie să fie înainte de ora de închidere.")
+        errors.append(("closing_time", "Ora de deschidere trebuie să fie înainte de ora de închidere."))
     months_raw = form.get("retention_months", "").strip()
     months = int(months_raw) if months_raw.isascii() and months_raw.isdigit() else 0
     if months < 1:
-        errors.append("Perioada de retenție invalidă: introdu un număr întreg pozitiv de luni, de exemplu 12.")
+        errors.append(("retention_months", "Perioada de retenție invalidă: introdu un număr întreg pozitiv de luni, de exemplu 12."))
     if errors:
         return None, errors
     return RuntimeSettings(subnet, opening, closing, months), []
