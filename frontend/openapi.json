@@ -352,6 +352,10 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
           }
         },
         "required": [
@@ -360,7 +364,8 @@
           "end",
           "note",
           "status",
-          "created_by"
+          "created_by",
+          "timezone"
         ],
         "title": "IncidentOut",
         "type": "object"
@@ -527,6 +532,44 @@
           }
         },
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "NetworkSuggestion": {
+        "description": "Sugestia calculată din conexiunea curentă a Adminului. Pentru o adresă fără sugestie, `network` e\n`null`, iar `message` spune pe înțeles de ce. Nu se salvează nimic.",
+        "properties": {
+          "address": {
+            "title": "Address",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Network"
+          }
+        },
+        "required": [
+          "address",
+          "network",
+          "message"
+        ],
+        "title": "NetworkSuggestion",
         "type": "object"
       },
       "ReportOut": {
@@ -1980,6 +2023,37 @@
           }
         },
         "summary": "Save Settings",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/settings/network-suggestion": {
+      "get": {
+        "operationId": "network_suggestion_api_admin_settings_network_suggestion_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetworkSuggestion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Network Suggestion",
         "tags": [
           "admin"
         ]

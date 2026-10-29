@@ -51,7 +51,7 @@ def purge(db: sqlite3.Connection, now: datetime, months: int) -> tuple[int, int]
     if sessions or rows:
         journal.write(
             db, now, kind="retention", action="retention.purge",
-            summary=f"Retenție: șterse {sessions} Sesiuni și {rows} rânduri din Jurnal "
+            summary=f"Păstrarea datelor: șterse {sessions} Sesiuni și {rows} rânduri din Jurnal "
                     f"mai vechi de {months} luni",
             detail={"sessions": sessions, "journal_rows": rows, "months": months,
                     "cutoff": args["cutoff"]},
