@@ -46,7 +46,7 @@ def test_add_without_reason_is_refused_and_changes_nothing(harness):
         r = _add(admin, eid, "2026-01-05T08:00", "2026-01-05T09:00", reason)
         assert r.status_code == 400
         assert "motiv" in r.text.lower()
-    report = admin.get("/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
+    report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Ana Pop" not in report
     assert "Sesiune manuală" not in admin.get("/admin/jurnal").text
 
@@ -61,7 +61,7 @@ def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(ha
     assert "Introdus manual" in jurnal
     assert "Telefonul de la ușă nu a funcționat" in jurnal
     assert ADMIN_USER in jurnal
-    report = admin.get("/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
+    report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Ana Pop" in report and "Sesiune manuală" in report
     assert "2026-01-05 08:00" in report and "2026-01-05 09:30" in report
 
@@ -114,7 +114,7 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
     jurnal = admin.get("/admin/jurnal").text
     assert "Ieșire uitată" in jurnal and "Introdus manual" in jurnal and ADMIN_USER in jurnal
-    report = admin.get("/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
+    report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Sesiune manuală" in report and "2026-01-05 18:00" in report
 
 
