@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, auth, db, enrollment, presence
+from gym_control import admin, auth, db, door, enrollment, presence, totp
 from gym_control.settings import Settings
 from gym_control.templates import templates as _templates
 
@@ -27,6 +27,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app.state.clock = clock
     app.state.db = db.connect(settings.database)
     app.state.db_lock = threading.RLock()
+    app.state.totp_secret = totp.load_secret(app.state.db, settings.totp_secret)
     auth.ensure_bootstrap_admin(
         app.state.db, clock(),
         settings.bootstrap_admin_username, settings.bootstrap_admin_password,
@@ -35,6 +36,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app.include_router(admin.router)
     app.include_router(enrollment.router)
     app.include_router(presence.router)
+    app.include_router(door.router)
     app.add_exception_handler(enrollment.EnrollmentRequired, enrollment.enrollment_required_handler)
 
     @app.get("/status", response_class=HTMLResponse)

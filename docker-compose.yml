@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     environment:
       GYM_HALL_SUBNET: ${GYM_HALL_SUBNET:-192.168.10.0/24}
+      GYM_KIOSK_TOKEN: ${GYM_KIOSK_TOKEN:-}
+      GYM_TOTP_SECRET: ${GYM_TOTP_SECRET:-}
       GYM_ADMIN_USER: ${GYM_ADMIN_USER:-}
       GYM_ADMIN_PASSWORD: ${GYM_ADMIN_PASSWORD:-}
     volumes:

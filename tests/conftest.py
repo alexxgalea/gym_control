@@ -19,6 +19,7 @@ HALL_IP = "192.168.10.25"
 OUTSIDE_IP = "10.0.0.5"
 ADMIN_USER = "admin"
 ADMIN_PASSWORD = "parola-de-test-1"
+KIOSK_TOKEN = "token-kiosk-de-test"
 
 
 class FakeClock:
@@ -57,6 +58,23 @@ class Harness:
         )
         assert r.status_code == 303, r.text
         return c
+
+    def kiosk_client(self, ip: str = HALL_IP) -> TestClient:
+        """Telefonul de la ușă: tokenul de kiosk setat o singură dată (`/door?k=...`)."""
+        c = self.client(ip)
+        r = c.get(f"/door?k={KIOSK_TOKEN}", follow_redirects=True)
+        assert r.status_code == 200, r.text
+        return c
+
+    def door_url(self) -> str:
+        """Calea `/me?t=<TOTP>` codificată acum în QR-ul de la ușă (citită din pagina /door)."""
+        m = re.search(r'data-qr-url="([^"]+)"', self.kiosk_client().get("/door").text)
+        assert m, "pagina /door nu expune URL-ul din QR"
+        return m.group(1).replace("&amp;", "&")
+
+    def current_totp(self) -> str:
+        """TOTP-ul din QR-ul afișat acum la ușă (după ceasul injectat)."""
+        return re.search(r"[?&]t=([^&]+)", self.door_url()).group(1)
 
     def create_employee(self, name: str, email: str | None = None) -> int:
         """Creează un Angajat ca Admin și întoarce id-ul lui (citit din ecranul Angajați)."""
@@ -109,6 +127,8 @@ def make_harness(clock):
             database=":memory:",
             bootstrap_admin_username=ADMIN_USER,
             bootstrap_admin_password=ADMIN_PASSWORD,
+            kiosk_token=KIOSK_TOKEN,
+            totp_secret="secret-totp-de-test",
         )
         settings = Settings(**{**defaults, **overrides})
         app = create_app(settings=settings, clock=clock)

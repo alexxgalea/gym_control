@@ -17,6 +17,10 @@ class Settings:
     # Primul Admin: creat la pornire dacă nu există (vezi README).
     bootstrap_admin_username: str = ""
     bootstrap_admin_password: str = ""
+    # Kiosk (#6): tokenul telefonului de la ușă (gol = /door refuzat) și secretul TOTP
+    # (gol = generat o dată și păstrat în baza de date).
+    kiosk_token: str = ""
+    totp_secret: str = ""
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -30,4 +34,6 @@ class Settings:
             timezone=env.get("GYM_TIMEZONE", cls.timezone),
             bootstrap_admin_username=env.get("GYM_ADMIN_USER", ""),
             bootstrap_admin_password=env.get("GYM_ADMIN_PASSWORD", ""),
+            kiosk_token=env.get("GYM_KIOSK_TOKEN", ""),
+            totp_secret=env.get("GYM_TOTP_SECRET", ""),
         )

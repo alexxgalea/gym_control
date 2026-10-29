@@ -56,3 +56,17 @@ mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana P
 
 Angajatul înrolat deschide `/me`: vede starea („în Sală din 10:12” / „în afara Sălii”) și doar butonul valid.
 Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`). Încă fără QR/validare de rețea.
+
+## Kiosk la ușă (QR TOTP)
+
+Pe telefonul de la ușă deschide o singură dată `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se
+păstrează în cookie, iar `/door` afișează un QR care se reînnoiește singur la 30 s (SVG generat pe server, fără CDN).
+Fără token valid `/door` este refuzat (și rămâne refuzat dacă `GYM_KIOSK_TOKEN` nu e setat).
+
+- `GYM_KIOSK_TOKEN`: tokenul kiosk (secret lung, ales de Admin).
+- `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
+
+QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /me/entry|exit`) cer câmpul `totp`, validat pe ceasul
+serverului (fereastra curentă și cea anterioară, 30 s); nu e de unică folosință, iar orice timestamp trimis de client
+e ignorat. Metoda de validare `qr_totp` apare în Sesiune și în Jurnal. În teste: `harness.current_totp()`,
+`harness.kiosk_client()`.
