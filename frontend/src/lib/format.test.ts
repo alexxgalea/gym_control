@@ -1,4 +1,4 @@
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatLocalDateTime } from "@/lib/format";
 
 const HALL = "Europe/Bucharest"; // iarna UTC+2, vara UTC+3
 
@@ -50,5 +50,21 @@ describe("formatarea datelor și orelor", () => {
     expect(formatDateTime("2026-12-31T22:30:00Z", HALL, newYear)).toBe("azi, 00:30");
     expect(formatDateTime("2026-12-31T21:30:00Z", HALL, newYear)).toBe("ieri, 23:30");
     expect(formatDateTime("2026-12-30T10:00:00Z", HALL, newYear)).toBe("30 dec. 2026, 12:00");
+  });
+});
+
+describe("formatarea momentelor deja în ora Sălii", () => {
+  const now = new Date("2026-03-10T10:00:00Z"); // 12:00 în ora Sălii
+
+  it("scrie azi, ieri și data scurtă, cu anul doar dacă diferă", () => {
+    expect(formatLocalDateTime("2026-03-10 10:12", HALL, now)).toBe("azi, 10:12");
+    expect(formatLocalDateTime("2026-03-09 18:40", HALL, now)).toBe("ieri, 18:40");
+    expect(formatLocalDateTime("2026-01-05 10:12", HALL, now)).toBe("5 ian., 10:12");
+    expect(formatLocalDateTime("2025-12-31 23:30", HALL, now)).toBe("31 dec. 2025, 23:30");
+  });
+
+  it("socotește „azi” în ora Sălii, nu în UTC", () => {
+    // 22:30 UTC pe 9 martie e deja 10 martie în Sală
+    expect(formatLocalDateTime("2026-03-10 00:30", HALL, new Date("2026-03-09T22:30:00Z"))).toBe("azi, 00:30");
   });
 });

@@ -8,7 +8,7 @@ type Body = Record<string, unknown>;
 
 const missing = {
   id: 2, session_id: 11, code: "missing_exit", label: "Ieșire lipsă",
-  employee_name: "Ion Vasile", at: "2026-01-06 10:12", entry_at: "2026-01-05 10:12", exit_at: null,
+  employee_name: "Ion Vasile", at: "2026-01-06 10:12", entry_at: "2026-01-05 10:12", exit_at: null, timezone: "Europe/Bucharest",
 };
 
 /** API simulat: Jurnalul și Anomaliile se schimbă după o scriere reușită; erorile sunt cele ale serverului. */
@@ -68,7 +68,7 @@ describe("Sesiuni manuale", () => {
     fireEvent.change(form.getByLabelText("Intrare"), { target: { value: "2026-01-05T08:00" } });
     fireEvent.change(form.getByLabelText("Ieșire"), { target: { value: "2026-01-05T09:30" } });
     await user.type(form.getByLabelText("Motiv"), "Telefon stricat");
-    await user.click(form.getByRole("button", { name: "Adaugă Sesiunea" }));
+    await user.click(form.getByRole("button", { name: "Salvează Sesiunea" }));
 
     expect(await screen.findByText("Sesiune manuală adăugată")).toBeInTheDocument();
     expect(posts).toEqual([{
@@ -96,7 +96,7 @@ describe("Sesiuni manuale", () => {
     await user.click(await screen.findByRole("button", { name: "Sesiune manuală nouă" }));
     const form = within(await dialog());
     fireEvent.change(form.getByLabelText("Intrare"), { target: { value: "2026-01-05T08:00" } });
-    await user.click(form.getByRole("button", { name: "Adaugă Sesiunea" }));
+    await user.click(form.getByRole("button", { name: "Salvează Sesiunea" }));
 
     const reason = await form.findByLabelText("Motiv");
     expect(reason).toHaveAccessibleDescription(/Motivul este obligatoriu/);
@@ -114,7 +114,7 @@ describe("Sesiuni manuale", () => {
     renderApp("/journal");
     await user.click(await screen.findByRole("button", { name: "Sesiune manuală nouă" }));
     const form = within(await dialog());
-    await user.click(form.getByRole("button", { name: "Adaugă Sesiunea" }));
+    await user.click(form.getByRole("button", { name: "Salvează Sesiunea" }));
     expect(await form.findByLabelText(label)).toHaveAccessibleDescription(detail);
   });
 
@@ -124,7 +124,7 @@ describe("Sesiuni manuale", () => {
     renderApp("/journal");
     await user.click(await screen.findByRole("button", { name: "Sesiune manuală nouă" }));
     const form = within(await dialog());
-    await user.click(form.getByRole("button", { name: "Adaugă Sesiunea" }));
+    await user.click(form.getByRole("button", { name: "Salvează Sesiunea" }));
     expect(await form.findByRole("alert")).toHaveTextContent("Intervalul se suprapune cu o altă Sesiune.");
   });
 
@@ -133,28 +133,27 @@ describe("Sesiuni manuale", () => {
     const user = userEvent.setup();
     renderApp("/anomalies");
 
-    const rowEl = await screen.findByRole("row", { name: /Ion Vasile/ });
-    await user.click(within(rowEl).getByRole("button", { name: "Corectează" }));
+    await user.click(await screen.findByRole("button", { name: "Completează Ieșirea" }));
     const form = within(await dialog());
     fireEvent.change(form.getByLabelText("Ieșire"), { target: { value: "2026-01-05T18:00" } });
     await user.type(form.getByLabelText("Motiv"), "Ieșire uitată");
-    await user.click(form.getByRole("button", { name: "Corectează" }));
+    await user.click(form.getByRole("button", { name: "Salvează Ieșirea" }));
 
     expect(await screen.findByText("Sesiune corectată")).toBeInTheDocument();
     expect(posts).toEqual([{
       path: "/api/admin/sessions/11/correct",
       body: { exit_at: "2026-01-05T18:00", reason: "Ieșire uitată" },
     }]);
-    expect(await screen.findByText("Nu există Anomalii.")).toBeInTheDocument();
+    expect(await screen.findByText("Nicio Anomalie de verificat")).toBeInTheDocument();
   });
 
   it("corectarea fără motiv arată eroarea lângă câmpul Motiv", async () => {
     mockApi({ correctError: { status: 400, body: { detail: "Motivul este obligatoriu.", field: "reason" } } });
     const user = userEvent.setup();
     renderApp("/anomalies");
-    await user.click(await screen.findByRole("button", { name: "Corectează" }));
+    await user.click(await screen.findByRole("button", { name: "Completează Ieșirea" }));
     const form = within(await dialog());
-    await user.click(form.getByRole("button", { name: "Corectează" }));
+    await user.click(form.getByRole("button", { name: "Salvează Ieșirea" }));
     expect(await form.findByLabelText("Motiv")).toHaveAccessibleDescription("Motivul este obligatoriu.");
   });
 
@@ -162,9 +161,9 @@ describe("Sesiuni manuale", () => {
     mockApi({ correctError: { status: 409, body: { detail: "Sesiunea e deja închisă." } } });
     const user = userEvent.setup();
     renderApp("/anomalies");
-    await user.click(await screen.findByRole("button", { name: "Corectează" }));
+    await user.click(await screen.findByRole("button", { name: "Completează Ieșirea" }));
     const form = within(await dialog());
-    await user.click(form.getByRole("button", { name: "Corectează" }));
+    await user.click(form.getByRole("button", { name: "Salvează Ieșirea" }));
     expect(await form.findByRole("alert")).toHaveTextContent("Sesiunea e deja închisă.");
   });
 

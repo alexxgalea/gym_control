@@ -216,7 +216,8 @@ def revoke_device(
 
 class AnomalyOut(BaseModel):
     """O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
-    `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta)."""
+    `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).
+    `timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii."""
 
     id: int
     session_id: int
@@ -226,6 +227,7 @@ class AnomalyOut(BaseModel):
     at: str
     entry_at: str
     exit_at: str | None
+    timezone: str
 
 
 @router.get("/anomalies", response_model=list[AnomalyOut], responses=UNAUTHORIZED)
@@ -238,7 +240,7 @@ def list_anomalies(
             id=a["id"], session_id=a["session_id"], code=a["code"],
             label=anomalies.LABELS.get(a["code"], a["code"]), employee_name=a["employee_name"],
             at=clocktime.local_iso(a["at"], tz), entry_at=clocktime.local_iso(a["entry_at"], tz),
-            exit_at=clocktime.local_iso(a["exit_at"], tz) if a["exit_at"] else None,
+            exit_at=clocktime.local_iso(a["exit_at"], tz) if a["exit_at"] else None, timezone=tz,
         )
         for a in anomalies.list_unresolved(db)
     ]

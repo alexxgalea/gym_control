@@ -446,6 +446,7 @@ export interface components {
          * AnomalyOut
          * @description O Anomalie nerezolvată; `at` și `entry_at` sunt în ora locală (`AAAA-LL-ZZ HH:MM`).
          *     `exit_at` e `null` cât Sesiunea e deschisă (atunci Adminul o poate corecta).
+         *     `timezone` e fusul Sălii, ca interfața să poată scrie „azi”/„ieri” în ora Sălii.
          */
         AnomalyOut: {
             /** At */
@@ -464,6 +465,8 @@ export interface components {
             label: string;
             /** Session Id */
             session_id: number;
+            /** Timezone */
+            timezone: string;
         };
         /** Body_entry_me_entry_post */
         Body_entry_me_entry_post: {
