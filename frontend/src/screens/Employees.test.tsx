@@ -29,7 +29,7 @@ function mockApi(initial: Row[] = [], options: { listDelay?: number } = {}) {
       calls.push({ method: "POST", path: `/api/admin/employees/${params.id}/enroll-link` });
       const row = rows.find((r) => r.id === Number(params.id));
       if (!row) return HttpResponse.json({ detail: "Angajat inexistent" }, { status: 404 });
-      return HttpResponse.json({ name: row.name, link: "http://localhost/enroll/tok123", hours: 48 });
+      return HttpResponse.json({ name: row.name, link: "http://localhost/enroll/tok123", qr_svg: "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>", hours: 48 });
     }),
     http.post("/api/admin/employees/:id/revoke", ({ params }) => {
       calls.push({ method: "POST", path: `/api/admin/employees/${params.id}/revoke` });
@@ -44,26 +44,29 @@ function mockApi(initial: Row[] = [], options: { listDelay?: number } = {}) {
 const ana: Row = { id: 1, name: "Ana Pop", email: "ana@firma.ro", enrolled: true };
 const ion: Row = { id: 2, name: "Ion Vasile", email: "ion@firma.ro", enrolled: false };
 
-/** Rândul din tabel al unui Angajat (așteaptă încărcarea listei). */
+/** Rândul din listă al unui Angajat (așteaptă încărcarea listei). */
 async function rowOf(name: string) {
-  return within(await screen.findByRole("row", { name: new RegExp(name) }));
+  const items = await screen.findAllByRole("listitem");
+  return within(items.find((item) => item.textContent?.includes(name))!);
 }
 
 describe("ecranul Angajați", () => {
-  it("arată stare de încărcare, apoi tabelul cu starea dispozitivului și acțiunile potrivite", async () => {
+  it("arată antetul cu explicație, scheletul, apoi lista cu starea telefonului și acțiunile potrivite", async () => {
     mockApi([ana, ion], { listDelay: 20 });
     renderApp("/employees");
 
-    expect(await screen.findByText("Se încarcă…")).toBeInTheDocument();
+    expect(await screen.findByRole("status", { name: "Se încarcă" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Angajați" })).toBeInTheDocument();
+    expect(screen.getByText(/activezi telefonul/)).toBeInTheDocument();
     expect(await screen.findByText("Ana Pop")).toBeInTheDocument();
     expect((await rowOf("Ana Pop")).getByText("ana@firma.ro")).toBeInTheDocument();
-    expect((await rowOf("Ana Pop")).getByText("Înrolat")).toBeInTheDocument();
-    expect((await rowOf("Ana Pop")).getByRole("button", { name: "Re-înrolează" })).toBeInTheDocument();
-    expect((await rowOf("Ana Pop")).getByRole("button", { name: "Revocă" })).toBeInTheDocument();
-    expect((await rowOf("Ion Vasile")).getByText("Neînrolat")).toBeInTheDocument();
-    expect((await rowOf("Ion Vasile")).getByRole("button", { name: "Generează link" })).toBeInTheDocument();
-    expect((await rowOf("Ion Vasile")).queryByRole("button", { name: "Revocă" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Angajați/ })).toBeInTheDocument();
+    expect((await rowOf("Ana Pop")).getByText("Telefon activat")).toBeInTheDocument();
+    expect((await rowOf("Ana Pop")).getByRole("button", { name: "Activează alt telefon" })).toBeInTheDocument();
+    expect((await rowOf("Ana Pop")).getByRole("button", { name: "Scoate telefonul din uz" })).toBeInTheDocument();
+    expect((await rowOf("Ion Vasile")).getByText("Telefon neactivat")).toBeInTheDocument();
+    expect((await rowOf("Ion Vasile")).getByRole("button", { name: "Activează telefonul" })).toBeInTheDocument();
+    expect((await rowOf("Ion Vasile")).queryByRole("button", { name: "Scoate telefonul din uz" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/dispozitiv|înrol/i)).not.toBeInTheDocument();
   });
 
   it("arată starea de listă goală", async () => {
@@ -90,65 +93,63 @@ describe("ecranul Angajați", () => {
     expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 
-  it("adaugă un Angajat dintr-un dialog, îl arată în listă și confirmă cu toast", async () => {
+  it("după ce salvează un Angajat nou, continuă direct cu Activare telefon, cu QR, valabilitate și copiere", async () => {
     const calls = mockApi([ana]);
     const user = userEvent.setup();
     renderApp("/employees");
-    await user.click(await screen.findByRole("button", { name: "Adaugă Angajat" }));
+    await user.click(await screen.findByRole("button", { name: "Adaugă un Angajat nou" }));
 
-    const dialog = await screen.findByRole("dialog");
-    await user.type(within(dialog).getByLabelText("Nume"), "Maria Dinu");
-    await user.type(within(dialog).getByLabelText("Email"), "maria@firma.ro");
-    await user.click(within(dialog).getByRole("button", { name: "Adaugă" }));
+    const sheet = await screen.findByRole("dialog", { name: "Angajat nou" });
+    await user.type(within(sheet).getByLabelText("Nume"), "Maria Dinu");
+    await user.type(within(sheet).getByLabelText("Email"), "maria@firma.ro");
+    await user.click(within(sheet).getByRole("button", { name: "Salvează și activează telefonul" }));
 
-    expect(await screen.findByText("maria@firma.ro")).toBeInTheDocument();
+    const activation = await screen.findByRole("dialog", { name: /Activare telefon pentru Maria Dinu/ });
+    expect(within(activation).getByRole("img", { name: /Cod QR de activare pentru Maria Dinu/ })).toBeInTheDocument();
+    expect(within(activation).getByText("Linkul expiră în 48 de ore și merge o singură dată")).toBeInTheDocument();
+    expect(within(activation).queryByText(/enroll\/tok123/)).not.toBeInTheDocument(); // linkul nu apare ca text
+
+    await user.click(within(activation).getByRole("button", { name: "Copiază linkul" }));
+    expect(await navigator.clipboard.readText()).toBe("http://localhost/enroll/tok123");
+    expect(await within(activation).findByRole("status")).toHaveTextContent("Link copiat");
     expect(calls).toEqual([
       { method: "POST", path: "/api/admin/employees", body: { name: "Maria Dinu", email: "maria@firma.ro" } },
+      { method: "POST", path: "/api/admin/employees/2/enroll-link" },
     ]);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent("Angajat adăugat");
+    expect(await screen.findByText("maria@firma.ro")).toBeInTheDocument(); // lista s-a reîncărcat
   });
 
   it("arată eroarea serverului lângă câmpul vizat și păstrează ce a scris Adminul", async () => {
     mockApi([]);
     const user = userEvent.setup();
     renderApp("/employees");
-    await user.click(await screen.findByRole("button", { name: "Adaugă Angajat" }));
+    await user.click(await screen.findByRole("button", { name: "Adaugă un Angajat nou" }));
     const dialog = await screen.findByRole("dialog");
 
     await user.type(within(dialog).getByLabelText("Nume"), "Maria Dinu");
     await user.type(within(dialog).getByLabelText("Email"), "nu-e-email");
-    await user.click(within(dialog).getByRole("button", { name: "Adaugă" }));
+    await user.click(within(dialog).getByRole("button", { name: "Salvează și activează telefonul" }));
 
     const email = within(dialog).getByLabelText("Email");
     await waitFor(() => expect(email).toHaveAccessibleDescription("Email invalid"));
-    expect(within(dialog).getByLabelText("Nume")).not.toHaveAccessibleDescription("Numele lipsește");
     expect(within(dialog).getByLabelText("Nume")).toHaveValue("Maria Dinu");
     expect(email).toHaveValue("nu-e-email");
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
 
     await user.clear(within(dialog).getByLabelText("Nume"));
     await user.clear(email);
     await user.type(email, "maria@firma.ro");
-    await user.click(within(dialog).getByRole("button", { name: "Adaugă" }));
+    await user.click(within(dialog).getByRole("button", { name: "Salvează și activează telefonul" }));
     await waitFor(() => expect(within(dialog).getByLabelText("Nume")).toHaveAccessibleDescription("Numele lipsește"));
   });
 
-  it("generează linkul de înrolare, îl arată cu valabilitatea și îl copiază dintr-un click", async () => {
+  it("activează telefonul unui Angajat neactivat fără confirmare", async () => {
     const calls = mockApi([ion]);
     const user = userEvent.setup();
     renderApp("/employees");
-    await user.click((await rowOf("Ion Vasile")).getByRole("button", { name: "Generează link" }));
+    await user.click((await rowOf("Ion Vasile")).getByRole("button", { name: "Activează telefonul" }));
 
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText(/Link de înrolare pentru Ion Vasile/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/48 de ore/)).toBeInTheDocument();
-    expect(within(dialog).getByText("http://localhost/enroll/tok123")).toBeInTheDocument();
-
-    await user.click(within(dialog).getByRole("button", { name: "Copiază linkul" }));
-    expect(await navigator.clipboard.readText()).toBe("http://localhost/enroll/tok123");
-    expect(await screen.findByRole("status")).toHaveTextContent("Link copiat");
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog", { name: /Activare telefon pentru Ion Vasile/ });
+    expect(within(dialog).getByRole("img", { name: /Cod QR/ })).toBeInTheDocument();
     expect(calls).toEqual([{ method: "POST", path: "/api/admin/employees/2/enroll-link" }]);
   });
 
@@ -156,35 +157,52 @@ describe("ecranul Angajați", () => {
     mockApi([ion]);
     const user = userEvent.setup();
     renderApp("/employees");
-    // un alt Admin l-a șters între timp: simulăm prin id necunoscut în server
     server.use(
       http.post("/api/admin/employees/:id/enroll-link", () =>
         HttpResponse.json({ detail: "Angajat inexistent" }, { status: 404 }),
       ),
     );
-    await user.click((await rowOf("Ion Vasile")).getByRole("button", { name: "Generează link" }));
+    await user.click((await rowOf("Ion Vasile")).getByRole("button", { name: "Activează telefonul" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Angajat inexistent");
   });
 
-  it("revocă doar după confirmare explicită; anularea nu face nimic", async () => {
+  it("„Activează alt telefon” cere confirmare care spune că telefonul vechi nu va mai funcționa; anularea nu face nimic", async () => {
     const calls = mockApi([ana]);
     const user = userEvent.setup();
     renderApp("/employees");
-    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Revocă" }));
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Activează alt telefon" }));
+
+    let dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("nu va mai funcționa");
+    await user.click(within(dialog).getByRole("button", { name: "Anulează" }));
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(calls).toEqual([]);
+
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Activează alt telefon" }));
+    dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Activează alt telefon" }));
+    expect(await screen.findByRole("dialog", { name: /Activare telefon pentru Ana Pop/ })).toBeInTheDocument();
+    expect(calls).toEqual([{ method: "POST", path: "/api/admin/employees/1/enroll-link" }]);
+  });
+
+  it("scoate telefonul din uz doar după confirmare; anularea nu face nimic", async () => {
+    const calls = mockApi([ana]);
+    const user = userEvent.setup();
+    renderApp("/employees");
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Scoate telefonul din uz" }));
 
     let dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("Ana Pop");
     await user.click(within(dialog).getByRole("button", { name: "Anulează" }));
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(calls).toEqual([]);
-    expect((await rowOf("Ana Pop")).getByText("Înrolat")).toBeInTheDocument();
 
-    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Revocă" }));
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Scoate telefonul din uz" }));
     dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "Revocă dispozitivul" }));
+    await user.click(within(dialog).getByRole("button", { name: "Scoate telefonul din uz" }));
 
-    await waitFor(async () => expect((await rowOf("Ana Pop")).getByText("Neînrolat")).toBeInTheDocument());
+    await waitFor(async () => expect((await rowOf("Ana Pop")).getByText("Telefon neactivat")).toBeInTheDocument());
     expect(calls).toEqual([{ method: "POST", path: "/api/admin/employees/1/revoke" }]);
-    expect(screen.getByRole("status")).toHaveTextContent("Dispozitiv revocat");
+    expect(screen.getByRole("status")).toHaveTextContent("Telefon scos din uz");
   });
 });

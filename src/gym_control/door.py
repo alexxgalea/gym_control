@@ -33,11 +33,16 @@ def qr_url(request: Request) -> str:
     return f"{str(request.base_url).rstrip('/')}/me?t={code}"
 
 
+def qr_svg(text: str) -> str:
+    """Codul QR al unui text, ca SVG (folosit și la Activare telefon)."""
+    buf = io.BytesIO()
+    segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True)
+    return buf.getvalue().decode()
+
+
 def _qr_context(request: Request) -> dict:
     url = qr_url(request)
-    buf = io.BytesIO()
-    segno.make(url, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True)
-    return {"qr_url": url, "svg": buf.getvalue().decode()}
+    return {"qr_url": url, "svg": qr_svg(url)}
 
 
 @router.get("/door", response_class=HTMLResponse)

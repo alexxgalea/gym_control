@@ -2,6 +2,8 @@
 
 import io
 
+from gym_control import door
+
 def create(c, name, email, **kw):
     return c.post("/api/admin/employees", json={"name": name, "email": email}, **kw)
 
@@ -62,6 +64,13 @@ def test_enroll_link_returns_link_name_and_validity_and_opens_enrollment(harness
     assert body["name"] == "Ana Pop" and body["hours"] == 48
     assert body["link"].startswith("http://testserver/enroll/")
     assert harness.client().get(body["link"].removeprefix("http://testserver")).status_code == 200
+
+
+def test_enroll_link_includes_qr_svg_of_the_link(harness):
+    eid = harness.create_employee("Ana Pop")
+    body = harness.admin_client().post(f"/api/admin/employees/{eid}/enroll-link").json()
+    assert body["qr_svg"].startswith("<svg") and body["qr_svg"].rstrip().endswith("</svg>")
+    assert body["qr_svg"] == door.qr_svg(body["link"])
 
 
 def test_unknown_employee_is_404_for_link_and_revoke(harness):
