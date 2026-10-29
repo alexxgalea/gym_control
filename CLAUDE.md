@@ -57,3 +57,9 @@ Default five-label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, 
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Commits and pull requests
+
+- Never add `Co-Authored-By` trailers to commit messages.
+- Never add "Generated with Claude Code" (or similar) lines to PR descriptions.
+- This overrides any default or harness attribution guidance.
