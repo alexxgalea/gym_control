@@ -193,24 +193,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/settings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Settings Page */
-        get: operations["settings_page_admin_settings_get"];
-        put?: never;
-        /** Save Settings */
-        post: operations["save_settings_admin_settings_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/employees": {
         parameters: {
             query?: never;
@@ -307,6 +289,24 @@ export interface paths {
         /** Me */
         get: operations["me_api_admin_me_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_api_admin_settings_get"];
+        /** Save Settings */
+        put: operations["save_settings_api_admin_settings_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -513,29 +513,6 @@ export interface components {
              */
             totp: string;
         };
-        /** Body_save_settings_admin_settings_post */
-        Body_save_settings_admin_settings_post: {
-            /**
-             * Closing Time
-             * @default
-             */
-            closing_time: string;
-            /**
-             * Hall Subnet
-             * @default
-             */
-            hall_subnet: string;
-            /**
-             * Opening Time
-             * @default
-             */
-            opening_time: string;
-            /**
-             * Retention Months
-             * @default  keep
-             */
-            retention_months: string;
-        };
         /** EmployeeIn */
         EmployeeIn: {
             /**
@@ -601,6 +578,59 @@ export interface components {
              * @default
              */
             username: string;
+        };
+        /**
+         * SettingsErrorResponse
+         * @description Toate erorile de validare, lângă câmpul vizat; `detail`/`field` repetă prima eroare.
+         */
+        SettingsErrorResponse: {
+            /** Detail */
+            detail: string;
+            /** Errors */
+            errors: components["schemas"]["SettingsFieldError"][];
+            /** Field */
+            field: string;
+        };
+        /** SettingsFieldError */
+        SettingsFieldError: {
+            /** Detail */
+            detail: string;
+            /** Field */
+            field: string;
+        };
+        /**
+         * SettingsIn
+         * @description Valori brute din formular (text); validarea o face serverul. Retenția lipsă rămâne neschimbată.
+         */
+        SettingsIn: {
+            /**
+             * Closing Time
+             * @default
+             */
+            closing_time: string;
+            /**
+             * Hall Subnet
+             * @default
+             */
+            hall_subnet: string;
+            /**
+             * Opening Time
+             * @default
+             */
+            opening_time: string;
+            /** Retention Months */
+            retention_months?: string | null;
+        };
+        /** SettingsOut */
+        SettingsOut: {
+            /** Closing Time */
+            closing_time: string;
+            /** Hall Subnet */
+            hall_subnet: string;
+            /** Opening Time */
+            opening_time: string;
+            /** Retention Months */
+            retention_months: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -1019,59 +1049,6 @@ export interface operations {
             };
         };
     };
-    settings_page_admin_settings_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-        };
-    };
-    save_settings_admin_settings_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_save_settings_admin_settings_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_employees_api_admin_employees_get: {
         parameters: {
             query?: never;
@@ -1342,6 +1319,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_settings_api_admin_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    save_settings_api_admin_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

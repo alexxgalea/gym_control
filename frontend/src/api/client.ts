@@ -5,6 +5,9 @@ export type LoginRequest = components["schemas"]["LoginRequest"];
 export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
+export type HallSettings = components["schemas"]["SettingsOut"];
+export type HallSettingsInput = components["schemas"]["SettingsIn"];
+export type SettingsFieldError = components["schemas"]["SettingsFieldError"];
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
@@ -12,6 +15,7 @@ export class ApiError extends Error {
     public status: number,
     public detail: string,
     public field: string | null = null,
+    public errors: SettingsFieldError[] = [],
   ) {
     super(detail);
   }
@@ -27,14 +31,16 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   if (!response.ok) {
     let detail = "A apărut o eroare. Încearcă din nou.";
     let field: string | null = null;
+    let errors: SettingsFieldError[] = [];
     try {
       const data = await response.json();
       if (typeof data?.detail === "string") detail = data.detail;
       if (typeof data?.field === "string") field = data.field;
+      if (Array.isArray(data?.errors)) errors = data.errors;
     } catch {
       // corp non-JSON: rămâne mesajul implicit
     }
-    throw new ApiError(response.status, detail, field);
+    throw new ApiError(response.status, detail, field, errors);
   }
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
@@ -47,6 +53,10 @@ export const adminApi = {
     create: (body: EmployeeInput) => api<Employee>("/api/admin/employees", { method: "POST", body }),
     enrollLink: (id: number) => api<EnrollLink>(`/api/admin/employees/${id}/enroll-link`, { method: "POST" }),
     revoke: (id: number) => api<void>(`/api/admin/employees/${id}/revoke`, { method: "POST" }),
+  },
+  settings: {
+    get: () => api<HallSettings>("/api/admin/settings"),
+    save: (body: HallSettingsInput) => api<HallSettings>("/api/admin/settings", { method: "PUT", body }),
   },
   /** Contul curent, sau `null` dacă nu există sesiune (401). */
   me: async (): Promise<AdminAccount | null> => {
