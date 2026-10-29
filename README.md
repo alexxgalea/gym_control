@@ -69,9 +69,11 @@ doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET 
 
 ## Import Angajați (CSV)
 
-Încă nu are ecran în SPA (tichetul #19); ruta HTML veche a fost ștearsă odată cu ecranul Angajați.
-Parsarea (`employees.parse_csv`, `ImportResult`) rămâne în `employees.py`. Formatul: antetul `nume,email`
-(și `;` ca separator); rândurile valide se importă, cele invalide sunt listate cu numărul rândului.
+Pe ecranul Angajați, butonul „Importă CSV” deschide un dialog cu încărcare de fișier. API:
+`POST /api/admin/employees/import` (`multipart`, câmpul `file`) întoarce `{created, errors}`; rândurile invalide apar
+ca `"Rândul N: ..."`, iar un antet greșit dă 400 `{detail}`. Formatul: antetul `nume,email` (și `;` ca separator, BOM
+acceptat); rândurile valide se importă. Parsarea rămâne în `employees.parse_csv`. Fiecare Angajat importat și
+rezumatul „Import CSV: N importați, M respinse” apar în Jurnal, cu autorul.
 
 ## Teste
 

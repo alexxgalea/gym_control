@@ -11,6 +11,7 @@ export type IncidentInput = components["schemas"]["IncidentIn"];
 export type HallSettings = components["schemas"]["SettingsOut"];
 export type HallSettingsInput = components["schemas"]["SettingsIn"];
 export type SettingsFieldError = components["schemas"]["SettingsFieldError"];
+export type ImportReport = components["schemas"]["ImportReport"];
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
@@ -28,8 +29,9 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   const response = await fetch(new URL(path, window.location.origin), {
     method: init.method ?? "GET",
     credentials: "same-origin",
-    headers: init.body === undefined ? undefined : { "Content-Type": "application/json" },
-    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    // FormData: browserul pune singur Content-Type multipart cu delimitatorul
+    headers: init.body === undefined || init.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
+    body: init.body === undefined || init.body instanceof FormData ? (init.body as FormData | undefined) : JSON.stringify(init.body),
   });
   if (!response.ok) {
     let detail = "A apărut o eroare. Încearcă din nou.";
@@ -54,6 +56,11 @@ export const adminApi = {
   employees: {
     list: () => api<Employee[]>("/api/admin/employees"),
     create: (body: EmployeeInput) => api<Employee>("/api/admin/employees", { method: "POST", body }),
+    importCsv: (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      return api<ImportReport>("/api/admin/employees/import", { method: "POST", body });
+    },
     enrollLink: (id: number) => api<EnrollLink>(`/api/admin/employees/${id}/enroll-link`, { method: "POST" }),
     revoke: (id: number) => api<void>(`/api/admin/employees/${id}/revoke`, { method: "POST" }),
   },

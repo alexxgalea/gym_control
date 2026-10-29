@@ -134,6 +134,20 @@
         "title": "Body_exit__me_exit_post",
         "type": "object"
       },
+      "Body_import_employees_api_admin_employees_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_employees_api_admin_employees_import_post",
+        "type": "object"
+      },
       "EmployeeIn": {
         "properties": {
           "email": {
@@ -250,6 +264,27 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImportReport": {
+        "properties": {
+          "created": {
+            "title": "Created",
+            "type": "integer"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created",
+          "errors"
+        ],
+        "title": "ImportReport",
         "type": "object"
       },
       "IncidentIn": {
@@ -1068,6 +1103,67 @@
           }
         },
         "summary": "Create Employee",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/employees/import": {
+      "post": {
+        "operationId": "import_employees_api_admin_employees_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_employees_api_admin_employees_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Employees",
         "tags": [
           "admin"
         ]

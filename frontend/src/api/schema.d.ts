@@ -176,6 +176,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/employees/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Employees */
+        post: operations["import_employees_api_admin_employees_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/employees/{employee_id}/enroll-link": {
         parameters: {
             query?: never;
@@ -518,6 +535,11 @@ export interface components {
              */
             totp: string;
         };
+        /** Body_import_employees_api_admin_employees_import_post */
+        Body_import_employees_api_admin_employees_import_post: {
+            /** File */
+            file: string;
+        };
         /** EmployeeIn */
         EmployeeIn: {
             /**
@@ -570,6 +592,13 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImportReport */
+        ImportReport: {
+            /** Created */
+            created: number;
+            /** Errors */
+            errors: string[];
         };
         /**
          * IncidentIn
@@ -1099,6 +1128,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FieldErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_employees_api_admin_employees_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_employees_api_admin_employees_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportReport"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unauthorized */
