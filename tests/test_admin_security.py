@@ -34,7 +34,7 @@ def test_cross_origin_post_is_refused_on_every_admin_router(harness):
     evil = {"Origin": "http://evil.example"}
     assert admin.post("/api/admin/logout", headers=evil).status_code == 403
     assert admin.post("/api/admin/employees", json={}, headers=evil).status_code == 403
-    assert admin.post("/admin/sessions", data={}, headers=evil).status_code == 403
+    assert admin.post("/api/admin/sessions", json={}, headers=evil).status_code == 403
     assert admin.post("/api/admin/incidents", json={}, headers=evil).status_code == 403
     assert _login(harness.client(), headers=evil).status_code == 403
 

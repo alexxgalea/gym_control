@@ -70,10 +70,19 @@ Vechea rută `/admin/jurnal` redirecționează (307) la `/admin/journal`, păstr
 
 ## Anomalii (SPA)
 
-Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (spre
-ecranul HTML al Sesiunii manuale, încă nemigrat) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
+Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (dialog,
+Sesiunea manuală, vezi mai jos) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
 doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET /api/admin/anomalies`,
 `POST /api/admin/anomalies/{id}/dismiss` (204; 404 dacă nu există, e deja rezolvată sau nu e `outside_hours`).
+
+## Sesiuni manuale (SPA)
+
+Dialoguri, fără rută proprie: „Sesiune manuală nouă” (în Jurnal, Anomalii și Angajați) și „Corectează” (în Anomalii,
+pentru Sesiuni deschise). Motivul e obligatoriu; erorile apar lângă câmp (`employee_id`, `entry_at`, `exit_at`,
+`reason`); orele sunt în ora locală a Sălii. Rezultatul apare în Jurnal ca Sesiune manuală, cu autorul; corectarea
+rezolvă Anomaliile `missing_exit` și `open_at_closing`. API: `POST /api/admin/sessions` (201 `{id}`; 400
+`{detail, field}`) și `POST /api/admin/sessions/{id}/correct` (204; 400 `{detail, field}`, 404, 409 dacă Sesiunea e
+deja închisă).
 ## Raport de prezență (SPA)
 
 Ecranul Rapoarte (`/admin/reports`) generează Raportul pe un interval orar; varianta tipărită e ruta SPA

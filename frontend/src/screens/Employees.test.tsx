@@ -90,13 +90,6 @@ describe("ecranul Angajați", () => {
     expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
   });
 
-  it("trimite spre Sesiune manuală nouă (ecran încă pe HTML)", async () => {
-    mockApi([ana]);
-    renderApp("/employees");
-    const link = await screen.findByRole("link", { name: "Sesiune manuală nouă" });
-    expect(link).toHaveAttribute("href", "/admin/sessions/new");
-  });
-
   it("adaugă un Angajat dintr-un dialog, îl arată în listă și confirmă cu toast", async () => {
     const calls = mockApi([ana]);
     const user = userEvent.setup();

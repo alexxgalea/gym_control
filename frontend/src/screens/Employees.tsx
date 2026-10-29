@@ -5,6 +5,7 @@ import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport }
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AddSessionDialog } from "@/screens/ManualSession";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -18,6 +19,7 @@ export function Employees() {
   const employees = useQuery({ queryKey: EMPLOYEES_KEY, queryFn: adminApi.employees.list });
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [addingSession, setAddingSession] = useState(false);
   const [issued, setIssued] = useState<EnrollLink | null>(null);
   const [revoking, setRevoking] = useState<Employee | null>(null);
 
@@ -47,9 +49,8 @@ export function Employees() {
           Angajați{employees.data ? ` (${employees.data.length})` : ""}
         </h1>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            {/* ecran încă pe HTML (se migrează în #22): navigare completă, în afara router-ului */}
-            <a href="/admin/sessions/new">Sesiune manuală nouă</a>
+          <Button variant="outline" onClick={() => setAddingSession(true)}>
+            Sesiune manuală nouă
           </Button>
           <Button variant="outline" onClick={() => setImporting(true)}>
             <Upload className="size-4" aria-hidden /> Importă CSV
@@ -128,6 +129,7 @@ export function Employees() {
           await refresh();
         }}
       />
+      <AddSessionDialog open={addingSession} onClose={() => setAddingSession(false)} />
       <ImportCsvDialog open={importing} onClose={() => setImporting(false)} onImported={refresh} />
       <EnrollLinkDialog link={issued} onClose={() => setIssued(null)} />
       <Dialog open={revoking !== null} onOpenChange={(open) => !open && setRevoking(null)}>

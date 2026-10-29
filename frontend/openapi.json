@@ -70,48 +70,6 @@
         "title": "AnomalyOut",
         "type": "object"
       },
-      "Body_correct_admin_sessions__session_id__correct_post": {
-        "properties": {
-          "exit_at": {
-            "default": "",
-            "title": "Exit At",
-            "type": "string"
-          },
-          "reason": {
-            "default": "",
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "title": "Body_correct_admin_sessions__session_id__correct_post",
-        "type": "object"
-      },
-      "Body_create_admin_sessions_post": {
-        "properties": {
-          "employee_id": {
-            "default": "",
-            "title": "Employee Id",
-            "type": "string"
-          },
-          "entry_at": {
-            "default": "",
-            "title": "Entry At",
-            "type": "string"
-          },
-          "exit_at": {
-            "default": "",
-            "title": "Exit At",
-            "type": "string"
-          },
-          "reason": {
-            "default": "",
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "title": "Body_create_admin_sessions_post",
-        "type": "object"
-      },
       "Body_entry_me_entry_post": {
         "properties": {
           "totp": {
@@ -634,6 +592,67 @@
         "title": "ReportRowOut",
         "type": "object"
       },
+      "SessionCorrection": {
+        "properties": {
+          "exit_at": {
+            "default": "",
+            "title": "Exit At",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "SessionCorrection",
+        "type": "object"
+      },
+      "SessionIn": {
+        "properties": {
+          "employee_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Id"
+          },
+          "entry_at": {
+            "default": "",
+            "title": "Entry At",
+            "type": "string"
+          },
+          "exit_at": {
+            "default": "",
+            "title": "Exit At",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "SessionIn",
+        "type": "object"
+      },
+      "SessionOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
       "SettingsErrorResponse": {
         "description": "Toate erorile de validare, lângă câmpul vizat; `detail`/`field` repetă prima eroare.",
         "properties": {
@@ -788,168 +807,6 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/admin/sessions": {
-      "post": {
-        "operationId": "create_admin_sessions_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_create_admin_sessions_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create"
-      }
-    },
-    "/admin/sessions/new": {
-      "get": {
-        "operationId": "new_form_admin_sessions_new_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "employee",
-            "required": false,
-            "schema": {
-              "default": "",
-              "title": "Employee",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "New Form"
-      }
-    },
-    "/admin/sessions/{session_id}/correct": {
-      "get": {
-        "operationId": "correct_form_admin_sessions__session_id__correct_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Correct Form"
-      },
-      "post": {
-        "operationId": "correct_admin_sessions__session_id__correct_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_correct_admin_sessions__session_id__correct_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Correct"
-      }
-    },
     "/api/admin/anomalies": {
       "get": {
         "operationId": "list_anomalies_api_admin_anomalies_get",
@@ -1851,6 +1708,152 @@
         "summary": "Export Report Csv",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/api/admin/sessions": {
+      "post": {
+        "operationId": "create_api_admin_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create",
+        "tags": [
+          "sessions"
+        ]
+      }
+    },
+    "/api/admin/sessions/{session_id}/correct": {
+      "post": {
+        "operationId": "correct_api_admin_sessions__session_id__correct_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCorrection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Correct",
+        "tags": [
+          "sessions"
         ]
       }
     },

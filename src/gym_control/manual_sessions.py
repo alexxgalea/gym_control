@@ -16,38 +16,51 @@ Reguli:
 import sqlite3
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
-from gym_control import anomalies, employees, journal, reports
+from gym_control import anomalies, journal, reports
 from gym_control import auth
-from gym_control.auth import Admin, require_admin
+from gym_control.admin_api import ErrorResponse, FieldErrorResponse
+from gym_control.auth import Admin, require_admin_api
 from gym_control.clocktime import local_iso, parse_local
 from gym_control.db import get_db
-from gym_control.templates import templates
 
-router = APIRouter(prefix="/admin", dependencies=[Depends(auth.require_same_origin)])
+router = APIRouter(prefix="/api/admin/sessions", tags=["sessions"],
+                   dependencies=[Depends(auth.require_same_origin)])
 
 METHOD_MANUAL = "manual"
 KIND = "manual_session"
 
 
 class InvalidManualSession(ValueError):
-    """Mesajul (în română) este afișat Adminului."""
+    """Mesajul (în română) este afișat Adminului; `field` e câmpul din formular vizat (dacă e cazul)."""
+
+    def __init__(self, message: str, field: str | None = None):
+        super().__init__(message)
+        self.field = field
+
+
+def _parse(raw: str, label: str, tz: str, field: str) -> datetime:
+    try:
+        return parse_local(raw, label, tz, reports.InvalidInterval)
+    except reports.InvalidInterval as exc:
+        raise InvalidManualSession(str(exc), field) from exc
 
 
 def _reason(raw: str) -> str:
     reason = " ".join((raw or "").split())
     if not reason:
-        raise InvalidManualSession("Motivul este obligatoriu. Spune de ce se introduce manual această Sesiune.")
+        raise InvalidManualSession("Motivul este obligatoriu. Spune de ce se introduce manual această Sesiune.", "reason")
     return reason
 
 
 def _check_interval(db, tz, now, employee_id, entry: datetime, exit_: datetime, ignore_id=None):
     if exit_ <= entry:
-        raise InvalidManualSession("Ieșirea trebuie să fie după Intrare.")
+        raise InvalidManualSession("Ieșirea trebuie să fie după Intrare.", "exit_at")
     if exit_ > now:
-        raise InvalidManualSession("Ieșirea nu poate fi în viitor.")
+        raise InvalidManualSession("Ieșirea nu poate fi în viitor.", "exit_at")
     clash = db.execute(
         "SELECT entry_at, exit_at FROM sessions WHERE employee_id = ? AND id IS NOT ?"
         " AND entry_at < ? AND (exit_at IS NULL OR exit_at > ?) ORDER BY entry_at LIMIT 1",
@@ -58,18 +71,20 @@ def _check_interval(db, tz, now, employee_id, entry: datetime, exit_: datetime, 
             local_iso(clash["exit_at"], tz) if clash["exit_at"] else "deschisă")
         raise InvalidManualSession(
             f"Intervalul se suprapune cu o altă Sesiune a Angajatului ({other}). "
-            "Alege un interval care nu se suprapune.")
+            "Alege un interval care nu se suprapune.", "entry_at")
 
 
-def add_session(db, now, tz, admin: Admin, employee_id: int, raw_entry: str, raw_exit: str,
+def add_session(db, now, tz, admin: Admin, employee_id: int | None, raw_entry: str, raw_exit: str,
                 raw_reason: str) -> int:
     """Adaugă o Sesiune manuală închisă. Ridică InvalidManualSession; apelantul comite."""
     reason = _reason(raw_reason)
+    if employee_id is None:
+        raise InvalidManualSession("Alege un Angajat.", "employee_id")
     employee = db.execute("SELECT id, name FROM employees WHERE id = ?", (employee_id,)).fetchone()
     if employee is None:
-        raise InvalidManualSession("Angajatul ales nu există.")
-    entry = parse_local(raw_entry, "Intrare", tz, reports.InvalidInterval)
-    exit_ = parse_local(raw_exit, "Ieșire", tz, reports.InvalidInterval)
+        raise InvalidManualSession("Angajatul ales nu există.", "employee_id")
+    entry = _parse(raw_entry, "Intrare", tz, "entry_at")
+    exit_ = _parse(raw_exit, "Ieșire", tz, "exit_at")
     _check_interval(db, tz, now, employee_id, entry, exit_)
     session_id = db.execute(
         "INSERT INTO sessions (employee_id, entry_at, exit_at, entry_method, exit_method,"
@@ -100,7 +115,7 @@ def open_session_row(db, session_id: int):
 def correct_session(db, now, tz, admin: Admin, row, raw_exit: str, raw_reason: str) -> None:
     """Închide o Sesiune deschisă cu o Ieșire manuală și îi rezolvă Anomaliile. Apelantul comite."""
     reason = _reason(raw_reason)
-    exit_ = parse_local(raw_exit, "Ieșire", tz, reports.InvalidInterval)
+    exit_ = _parse(raw_exit, "Ieșire", tz, "exit_at")
     entry = datetime.fromisoformat(row["entry_at"])
     _check_interval(db, tz, now, row["employee_id"], entry, exit_, ignore_id=row["id"])
     journal.write(
@@ -120,57 +135,58 @@ def correct_session(db, now, tz, admin: Admin, row, raw_exit: str, raw_reason: s
         anomalies.resolve(db, row["id"], code, now)
 
 
-def _page(request, admin, db, status_code=200, **extra):
-    ctx = {"admin": admin, "nav": "sessions", "employees": employees.list_all(db),
-           "tz": request.app.state.settings.timezone, "error": None, "form": {}, "session": None,
-           **extra}
-    return templates.TemplateResponse(request, "manual_session.html", ctx, status_code=status_code)
+class SessionIn(BaseModel):
+    employee_id: int | None = None
+    entry_at: str = ""  # ora locală a Sălii: AAAA-LL-ZZTHH:MM
+    exit_at: str = ""
+    reason: str = ""
 
 
-@router.get("/sessions/new", response_class=HTMLResponse)
-def new_form(request: Request, employee: str = "", admin: Admin = Depends(require_admin),
-             db: sqlite3.Connection = Depends(get_db)):
-    return _page(request, admin, db, form={"employee_id": employee})
+class SessionCorrection(BaseModel):
+    exit_at: str = ""
+    reason: str = ""
 
 
-@router.post("/sessions", response_class=HTMLResponse)
-def create(request: Request, employee_id: str = Form(""), entry_at: str = Form(""),
-           exit_at: str = Form(""), reason: str = Form(""),
-           admin: Admin = Depends(require_admin), db: sqlite3.Connection = Depends(get_db)):
-    form = {"employee_id": employee_id, "entry_at": entry_at, "exit_at": exit_at, "reason": reason}
+class SessionOut(BaseModel):
+    id: int
+
+
+def _invalid(exc: InvalidManualSession) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": str(exc), "field": exc.field})
+
+
+@router.post(
+    "", status_code=201, response_model=SessionOut,
+    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+)
+def create(body: SessionIn, request: Request, admin: Admin = Depends(require_admin_api),
+           db: sqlite3.Connection = Depends(get_db)):
     try:
-        if not employee_id.strip().isdigit():
-            raise InvalidManualSession("Alege un Angajat.")
-        add_session(db, request.app.state.clock(), request.app.state.settings.timezone, admin,
-                    int(employee_id), entry_at, exit_at, reason)
-    except (InvalidManualSession, reports.InvalidInterval) as exc:
+        session_id = add_session(
+            db, request.app.state.clock(), request.app.state.settings.timezone, admin,
+            body.employee_id, body.entry_at, body.exit_at, body.reason)
+    except InvalidManualSession as exc:
         db.rollback()
-        return _page(request, admin, db, 400, error=str(exc), form=form)
+        return _invalid(exc)
     db.commit()
-    return RedirectResponse("/admin/jurnal", status_code=303)
+    return SessionOut(id=session_id)
 
 
-@router.get("/sessions/{session_id}/correct", response_class=HTMLResponse)
-def correct_form(request: Request, session_id: int, admin: Admin = Depends(require_admin),
-                 db: sqlite3.Connection = Depends(get_db)):
+@router.post(
+    "/{session_id}/correct", status_code=204,
+    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse},
+               404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+)
+def correct(session_id: int, body: SessionCorrection, request: Request,
+            admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db)):
     row = open_session_row(db, session_id)
     if row["exit_at"] is not None:
-        return _page(request, admin, db, 409, session=row, error="Sesiunea e deja închisă.")
-    return _page(request, admin, db, session=row)
-
-
-@router.post("/sessions/{session_id}/correct", response_class=HTMLResponse)
-def correct(request: Request, session_id: int, exit_at: str = Form(""), reason: str = Form(""),
-            admin: Admin = Depends(require_admin), db: sqlite3.Connection = Depends(get_db)):
-    row = open_session_row(db, session_id)
-    if row["exit_at"] is not None:
-        return _page(request, admin, db, 409, session=row, error="Sesiunea e deja închisă.")
+        raise HTTPException(status_code=409, detail="Sesiunea e deja închisă.")
     try:
         correct_session(db, request.app.state.clock(), request.app.state.settings.timezone,
-                        admin, row, exit_at, reason)
-    except (InvalidManualSession, reports.InvalidInterval) as exc:
+                        admin, row, body.exit_at, body.reason)
+    except InvalidManualSession as exc:
         db.rollback()
-        return _page(request, admin, db, 400, session=row, error=str(exc),
-                     form={"exit_at": exit_at, "reason": reason})
+        return _invalid(exc)
     db.commit()
-    return RedirectResponse("/admin/anomalies", status_code=303)
+    return Response(status_code=204)
