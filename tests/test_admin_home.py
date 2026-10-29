@@ -3,7 +3,7 @@
 
 def _enter(harness, name):
     phone = harness.enrolled_client(name)
-    assert phone.post("/me/entry", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 200
     return phone
 
 
@@ -29,7 +29,7 @@ def test_in_hall_excludes_closed_sessions(harness):
     phone = _enter(harness, "Ana Pop")
     _enter(harness, "Dan Ene")
     harness.clock.advance(minutes=10)
-    assert phone.post("/me/exit", data={"totp": harness.current_totp()}).status_code == 200
+    assert phone.post("/api/employee/exit", json={"totp": harness.current_totp()}).status_code == 200
     people = harness.admin_client().get("/api/admin/in-hall").json()["people"]
     assert [p["employee_name"] for p in people] == ["Dan Ene"]
 
