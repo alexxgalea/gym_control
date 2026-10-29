@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sesiune manuală{% endblock %}
+{% block content %}
+{% if session %}
+<h1>Corectează Sesiunea</h1>
+<p class="muted">{{ session.employee_name }} · Intrare {{ session.entry_at | local_iso(tz) }}. Setează Ieșirea: Sesiunea se închide și Anomaliile ei se rezolvă. Orele sunt în ora locală.</p>
+{% else %}
+<h1>Sesiune manuală nouă</h1>
+<p class="muted">Pentru perioade în care serverul sau telefonul de la ușă nu a funcționat. Orele sunt în ora locală.</p>
+{% endif %}
+{% if error %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endif %}
+{% if not session or session.exit_at is none %}
+<form method="post" action="{{ '/admin/sessions/%d/correct' % session.id if session else '/admin/sessions' }}" class="card stack">
+  {% if not session %}
+  <label>Angajat
+    <select name="employee_id" required>
+      <option value="">Alege…</option>
+      {% for e in employees %}<option value="{{ e.id }}" {% if form.employee_id|string == e.id|string %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Intrare <input type="datetime-local" name="entry_at" value="{{ form.entry_at or '' }}" required></label>
+  {% endif %}
+  <label>Ieșire <input type="datetime-local" name="exit_at" value="{{ form.exit_at or '' }}" required></label>
+  <label>Motiv (obligatoriu) <input name="reason" value="{{ form.reason or '' }}" required maxlength="500"></label>
+  <button type="submit" class="btn">{{ "Închide Sesiunea" if session else "Adaugă Sesiunea" }}</button>
+</form>
+{% endif %}
+{% endblock %}
