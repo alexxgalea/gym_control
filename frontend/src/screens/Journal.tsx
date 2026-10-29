@@ -256,7 +256,7 @@ function JournalRow({ entry, timeZone }: { entry: JournalEntry; timeZone: string
         ) : (
           <StatusBadge>{entry.kind_label}</StatusBadge>
         )}
-        {entry.method_label && <span className="text-sm text-muted-foreground">{entry.method_label}</span>}
+        {entry.method_label && entry.method_label !== entry.kind_label && <span className="text-sm text-muted-foreground">{entry.method_label}</span>}
       </div>
       {entry.anomalies.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">

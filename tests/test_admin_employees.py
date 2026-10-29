@@ -96,8 +96,8 @@ def test_admin_actions_appear_in_jurnal_with_author(harness):
     c.post(f"/api/admin/employees/{eid}/revoke")
     page = c.get("/api/admin/journal").text
     assert "Angajat creat: Ana Pop" in page
-    assert "Link de înrolare generat pentru Ana Pop" in page
-    assert "Dispozitiv revocat pentru Ana Pop" in page
+    assert "Activare telefon: link generat pentru Ana Pop" in page
+    assert "Telefon scos din uz: Ana Pop" in page
     assert page.count("admin") >= 3  # autorul apare pe linii
     assert "2026-01-05T08:12:00+00:00" in page  # ceasul injectat, UTC
 

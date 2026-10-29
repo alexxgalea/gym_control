@@ -17,7 +17,7 @@ class Settings:
     # Primul Admin: creat la pornire dacă nu există (vezi README).
     bootstrap_admin_username: str = ""
     bootstrap_admin_password: str = ""
-    # Kiosk (#6): tokenul telefonului de la ușă (gol = /door refuzat) și secretul TOTP
+    # Ecranul de la ușă (#6): tokenul telefonului de la ușă (gol = /door refuzat) și secretul TOTP
     # (gol = generat o dată și păstrat în baza de date).
     kiosk_token: str = ""
     totp_secret: str = ""

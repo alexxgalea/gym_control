@@ -55,8 +55,8 @@ describe("ecranul Angajați", () => {
     mockApi([ana, ion], { listDelay: 20 });
     renderApp("/employees");
 
-    expect(await screen.findByRole("status", { name: "Se încarcă" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Angajați" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Angajați" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Se încarcă" })).toBeInTheDocument();
     expect(screen.getByText(/activezi telefonul/)).toBeInTheDocument();
     expect(await screen.findByText("Ana Pop")).toBeInTheDocument();
     expect((await rowOf("Ana Pop")).getByText("ana@firma.ro")).toBeInTheDocument();

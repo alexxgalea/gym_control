@@ -42,7 +42,7 @@ describe("ecranul Setări", () => {
     expect(await screen.findByLabelText("Rețeaua Wi-Fi a Sălii")).toHaveValue("192.168.10.0/24");
     expect(screen.getByLabelText("Ora de deschidere")).toHaveValue("06:00");
     expect(screen.getByLabelText("Ora de închidere")).toHaveValue("22:00");
-    expect(screen.getByLabelText("Păstrează datele")).toHaveValue("12");
+    expect(screen.getByLabelText("Perioadă de păstrare")).toHaveValue("12");
     expect(screen.getByRole("heading", { name: "Setări" })).toBeInTheDocument();
     for (const title of ["Programul Sălii", "Păstrarea datelor", "Avansat"]) {
       expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe("ecranul Setări", () => {
 
     await waitFor(() => expect(subnet).toHaveAccessibleDescription("Rețeaua Wi-Fi a Sălii nu e validă."));
     expect(subnet).toHaveValue("nu-e-ip");
-    expect(screen.getByLabelText("Păstrează datele")).toHaveAccessibleDescription("Păstrarea datelor nu e validă.");
+    expect(screen.getByLabelText("Perioadă de păstrare")).toHaveAccessibleDescription("Păstrarea datelor nu e validă.");
     expect(screen.getByLabelText("Ora de deschidere")).not.toHaveAccessibleDescription(/./);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -123,7 +123,7 @@ describe("ecranul Setări", () => {
       const puts = mockApi();
       const user = userEvent.setup();
       renderApp("/settings");
-      const months = await screen.findByLabelText("Păstrează datele");
+      const months = await screen.findByLabelText("Perioadă de păstrare");
       await user.clear(months);
       await user.type(months, "6");
       await user.click(screen.getByRole("button", { name: "Salvează" }));
@@ -146,7 +146,7 @@ describe("ecranul Setări", () => {
       const puts = mockApi();
       const user = userEvent.setup();
       renderApp("/settings");
-      const months = await screen.findByLabelText("Păstrează datele");
+      const months = await screen.findByLabelText("Perioadă de păstrare");
       await user.clear(months);
       await user.type(months, "24");
       await user.click(screen.getByRole("button", { name: "Salvează" }));
@@ -159,7 +159,7 @@ describe("ecranul Setări", () => {
       const puts = mockApi();
       const user = userEvent.setup();
       renderApp("/settings");
-      const months = await screen.findByLabelText("Păstrează datele");
+      const months = await screen.findByLabelText("Perioadă de păstrare");
       await user.clear(months);
       await user.type(months, "6");
       await user.click(screen.getByRole("button", { name: "Salvează" }));

@@ -1,10 +1,23 @@
 /*
  * Ecranul de la ușă: CSS simplu, scris pentru un telefon vechi (ADR-0003, „Ținta de build”).
  * Reguli: fără `gap` pe flex, `inset`, `aspect-ratio`, `min()`/`clamp()`, `:is()`, imbricare, `dvh`, `oklch`;
- * dimensiuni în `vmin`, culori hex, animații doar cu `transform`/`opacity`/`stroke-dashoffset`.
+ * dimensiuni în `vmin`, culori hex în variabile CSS (`var()`, Chrome 49+) definite mai jos, animații doar cu `transform`/`opacity`/`stroke-dashoffset`.
  * Tema e fixă și luminoasă, indiferent de sistem; QR-ul e negru pe alb. Nu depinde de Tailwind (care cere un
  * browser modern): își face singur resetările și acoperă tot ecranul.
  */
+
+.door-screen {
+  /* Valori aliniate cu design/theme.css (tema luminoasă); scrise de mână, fără import. */
+  --door-surface: #ffffff;
+  --door-fg: #0f1222;
+  --door-brand: #0b1f4d;
+  --door-muted: #4a4d5c;
+  --door-track: #e1e4ee;
+  --door-accent: #2563eb;
+  --door-stopped: #b3b6c4;
+  --door-warning-bg: #fdecea;
+  --door-warning-fg: #b00020;
+}
 
 .door-screen,
 .door-screen * {
@@ -24,8 +37,8 @@
   justify-content: center;
   padding: 16px;
   margin: 0;
-  background: #ffffff;
-  color: #0f1222;
+  background: var(--door-surface);
+  color: var(--door-fg);
   color-scheme: light;
   text-align: center;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -37,7 +50,7 @@
   align-items: center;
   font-size: 20px;
   font-weight: 600;
-  color: #0b1f4d;
+  color: var(--door-brand);
 }
 
 .door-brand img {
@@ -57,7 +70,7 @@
   max-width: 460px;
   font-size: 17px;
   line-height: 1.45;
-  color: #4a4d5c;
+  color: var(--door-muted);
 }
 
 /* Inelul-cronometru: un cerc SVG ale cărui margini se „golesc” într-o perioadă a codului. */
@@ -83,11 +96,11 @@
 }
 
 .door-ring-track {
-  stroke: #e1e4ee;
+  stroke: var(--door-track);
 }
 
 .door-ring-progress {
-  stroke: #2563eb;
+  stroke: var(--door-accent);
   stroke-linecap: round;
   stroke-dasharray: 653.45; /* 2 * pi * 104 */
   stroke-dashoffset: 0;
@@ -103,7 +116,7 @@
 /* Reîmprospătarea pică: inelul stă pe loc și se face gri. */
 .door-ring-box[data-state="stopped"] .door-ring-progress {
   animation-play-state: paused;
-  stroke: #b3b6c4;
+  stroke: var(--door-stopped);
 }
 
 @keyframes door-ring-drain {
@@ -122,7 +135,7 @@
   left: 9%;
   width: 82%;
   height: 82%;
-  background: #ffffff;
+  background: var(--door-surface);
   animation: door-qr-in 0.35s ease-out;
 }
 
@@ -150,8 +163,8 @@
   max-width: 520px;
   padding: 14px 18px;
   border-radius: 14px;
-  background: #fdecea;
-  color: #b00020;
+  background: var(--door-warning-bg);
+  color: var(--door-warning-fg);
   font-size: 20px;
   font-weight: 600;
   line-height: 1.35;

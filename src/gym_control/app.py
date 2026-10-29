@@ -59,7 +59,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
 
     app.add_exception_handler(network.NotInHallNetwork, network.not_in_hall_handler)
 
-    # Catch-all-ul SPA se înregistrează ultimul: rutele Angajatului și kioskului au prioritate.
+    # Catch-all-ul SPA se înregistrează ultimul: rutele Angajatului și ale Ecranului de la ușă au prioritate.
     spa.mount(app, settings.frontend_dist)
 
     return app
