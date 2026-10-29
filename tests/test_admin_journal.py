@@ -57,8 +57,8 @@ def test_kinds_lists_every_type_with_romanian_labels(harness):
     kinds = {k["value"]: k["label"] for k in harness.admin_client().get(f"{URL}/kinds").json()}
     assert kinds == {
         "entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
-        "manual_session": "Sesiune manuală", "retention": "Retenție", "anomaly": "Anomalie",
-        "enrollment": "Înrolare",
+        "manual_session": "Sesiune manuală", "retention": "Păstrarea datelor", "anomaly": "Anomalie",
+        "enrollment": "Activare telefon",
     }
 
 
@@ -181,7 +181,7 @@ def test_anomalies_and_methods_in_detail_are_labelled(harness):
     rows = {e["summary"]: e for e in _journal(harness.admin_client())["entries"]}
     assert rows["Intrare: Ana Pop"]["method_label"] == "Cod QR"
     assert rows["Intrare: Ana Pop"]["anomalies"] == ["Intrare în afara programului", "Altceva"]
-    assert rows["Ieșire: Ana Pop"]["method_label"] == "Introdus manual"
+    assert rows["Ieșire: Ana Pop"]["method_label"] == "Sesiune manuală"
     assert rows["Intrare veche: Ana Pop"]["method_label"] is None  # lipsă tolerată
 
 
@@ -197,7 +197,7 @@ def test_anomaly_codes_and_kinds_use_romanian_labels(harness):
     assert any("Intrare în afara programului" in e["anomalies"] for e in rows)
     anomaly = next(e for e in rows if e["kind"] == "anomaly")
     assert anomaly["kind_label"] == "Anomalie" and anomaly["anomalies"] == ["Ieșire lipsă"]
-    assert any(e["kind_label"] == "Înrolare" for e in rows)
+    assert any(e["kind_label"] == "Activare telefon" for e in rows)
 
 
 def test_manual_session_is_marked_with_author_and_reason(harness):
@@ -207,7 +207,7 @@ def test_manual_session_is_marked_with_author_and_reason(harness):
            detail={"method": "manual", "reason": "Telefon stricat"})
     row = next(e for e in _journal(harness.admin_client())["entries"] if e["kind"] == "manual_session")
     assert row["manual"] is True and row["kind_label"] == "Sesiune manuală"
-    assert row["method_label"] == "Introdus manual" and "Telefon stricat" in row["summary"]
+    assert row["method_label"] == "Sesiune manuală" and "Telefon stricat" in row["summary"]
 
 
 def test_spa_takes_over_journal_path_on_direct_load(make_harness, tmp_path):

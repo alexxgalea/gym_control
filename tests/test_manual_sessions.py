@@ -71,7 +71,7 @@ def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(ha
     assert isinstance(r.json()["id"], int)
     [entry] = _manual_entries(admin)
     assert entry["kind_label"] == "Sesiune manuală"
-    assert entry["method_label"] == "Introdus manual"
+    assert entry["method_label"] == "Sesiune manuală"
     assert "Telefonul de la ușă nu a funcționat" in entry["summary"]
     assert entry["author"] == ADMIN_USER
     assert entry["employee_name"] == "Ana Pop"
@@ -134,7 +134,7 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
     [entry] = _manual_entries(admin)
     assert "Ieșire uitată" in entry["summary"]
-    assert entry["method_label"] == "Introdus manual" and entry["author"] == ADMIN_USER
+    assert entry["method_label"] == "Sesiune manuală" and entry["author"] == ADMIN_USER
     report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
     assert "Sesiune manuală" in report and "2026-01-05 18:00" in report
 
