@@ -3,9 +3,10 @@ import { useState } from "react";
 import { ApiError, adminApi, type Anomaly } from "@/api/client";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
+import { ANOMALIES_KEY } from "@/lib/queryKeys";
+import { AddSessionDialog, CorrectSessionDialog } from "@/screens/ManualSession";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-const ANOMALIES_KEY = ["admin", "anomalies"] as const;
 const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
 const errorText = (error: unknown) => (error instanceof ApiError ? error.detail : GENERIC_ERROR);
 
@@ -17,6 +18,8 @@ export function Anomalies() {
   const queryClient = useQueryClient();
   const anomalies = useQuery({ queryKey: ANOMALIES_KEY, queryFn: adminApi.anomalies.list });
   const [dismissing, setDismissing] = useState<Anomaly | null>(null);
+  const [correcting, setCorrecting] = useState<Anomaly | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const dismiss = useMutation({
     mutationFn: (anomaly: Anomaly) => adminApi.anomalies.dismiss(anomaly.id),
@@ -36,9 +39,8 @@ export function Anomalies() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Anomalii</h1>
-        <Button variant="outline" asChild>
-          {/* ecran încă pe HTML: navigare completă, în afara router-ului */}
-          <a href="/admin/sessions/new">Sesiune manuală nouă</a>
+        <Button variant="outline" onClick={() => setAdding(true)}>
+          Sesiune manuală nouă
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
@@ -82,9 +84,8 @@ export function Anomalies() {
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       {anomaly.exit_at === null && (
-                        <Button size="sm" variant="outline" asChild>
-                          {/* ecran încă pe HTML: navigare completă */}
-                          <a href={`/admin/sessions/${anomaly.session_id}/correct`}>Corectează</a>
+                        <Button size="sm" variant="outline" onClick={() => setCorrecting(anomaly)}>
+                          Corectează
                         </Button>
                       )}
                       {isDismissible(anomaly) && (
@@ -101,6 +102,8 @@ export function Anomalies() {
         </div>
       )}
 
+      <AddSessionDialog open={adding} onClose={() => setAdding(false)} />
+      <CorrectSessionDialog anomaly={correcting} onClose={() => setCorrecting(null)} />
       <Dialog open={dismissing !== null} onOpenChange={(open) => !open && setDismissing(null)}>
         <DialogContent role="alertdialog">
           <DialogTitle>Marchezi Anomalia ca verificată?</DialogTitle>

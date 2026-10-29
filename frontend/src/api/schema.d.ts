@@ -4,58 +4,6 @@
  */
 
 export interface paths {
-    "/admin/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create */
-        post: operations["create_admin_sessions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/sessions/new": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** New Form */
-        get: operations["new_form_admin_sessions_new_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/admin/sessions/{session_id}/correct": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Correct Form */
-        get: operations["correct_form_admin_sessions__session_id__correct_get"];
-        put?: never;
-        /** Correct */
-        post: operations["correct_admin_sessions__session_id__correct_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/admin/anomalies": {
         parameters: {
             query?: never;
@@ -313,6 +261,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create */
+        post: operations["create_api_admin_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/sessions/{session_id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct */
+        post: operations["correct_api_admin_sessions__session_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/settings": {
         parameters: {
             query?: never;
@@ -482,42 +464,6 @@ export interface components {
             label: string;
             /** Session Id */
             session_id: number;
-        };
-        /** Body_correct_admin_sessions__session_id__correct_post */
-        Body_correct_admin_sessions__session_id__correct_post: {
-            /**
-             * Exit At
-             * @default
-             */
-            exit_at: string;
-            /**
-             * Reason
-             * @default
-             */
-            reason: string;
-        };
-        /** Body_create_admin_sessions_post */
-        Body_create_admin_sessions_post: {
-            /**
-             * Employee Id
-             * @default
-             */
-            employee_id: string;
-            /**
-             * Entry At
-             * @default
-             */
-            entry_at: string;
-            /**
-             * Exit At
-             * @default
-             */
-            exit_at: string;
-            /**
-             * Reason
-             * @default
-             */
-            reason: string;
         };
         /** Body_entry_me_entry_post */
         Body_entry_me_entry_post: {
@@ -738,6 +684,44 @@ export interface components {
             /** Open */
             open: boolean;
         };
+        /** SessionCorrection */
+        SessionCorrection: {
+            /**
+             * Exit At
+             * @default
+             */
+            exit_at: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** SessionIn */
+        SessionIn: {
+            /** Employee Id */
+            employee_id?: number | null;
+            /**
+             * Entry At
+             * @default
+             */
+            entry_at: string;
+            /**
+             * Exit At
+             * @default
+             */
+            exit_at: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /** Id */
+            id: number;
+        };
         /**
          * SettingsErrorResponse
          * @description Toate erorile de validare, lângă câmpul vizat; `detail`/`field` repetă prima eroare.
@@ -813,136 +797,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    create_admin_sessions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_create_admin_sessions_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    new_form_admin_sessions_new_get: {
-        parameters: {
-            query?: {
-                employee?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    correct_form_admin_sessions__session_id__correct_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    correct_admin_sessions__session_id__correct_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_correct_admin_sessions__session_id__correct_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_anomalies_api_admin_anomalies_get: {
         parameters: {
             query?: never;
@@ -1637,6 +1491,126 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_admin_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_api_admin_sessions__session_id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionCorrection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

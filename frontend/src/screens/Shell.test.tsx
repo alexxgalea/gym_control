@@ -8,7 +8,17 @@ const signedIn = http.get("/api/admin/me", () => HttpResponse.json({ username: "
 
 describe("shell-ul", () => {
   // ecranul Angajați (rută implicită) își cere lista; aici nu e obiectul testelor
-  beforeEach(() => server.use(http.get("/api/admin/employees", () => HttpResponse.json([]))));
+  // la fel ecranele către care navighează testele (Incidente, Jurnal)
+  beforeEach(() =>
+    server.use(
+      http.get("/api/admin/employees", () => HttpResponse.json([])),
+      http.get("/api/admin/incidents", () => HttpResponse.json([])),
+      http.get("/api/admin/journal/kinds", () => HttpResponse.json([])),
+      http.get("/api/admin/journal", () =>
+        HttpResponse.json({ entries: [], page: 1, has_next: false, has_prev: false, timezone: "Europe/Bucharest" }),
+      ),
+    ),
+  );
 
   it("are navigare către toate ecranele și marchează ecranul activ", async () => {
     server.use(signedIn);

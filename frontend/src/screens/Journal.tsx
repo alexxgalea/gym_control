@@ -1,4 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError, adminApi, type JournalEntry, type JournalFilters } from "@/api/client";
@@ -7,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { formatDateTime } from "@/lib/format";
+import { JOURNAL_KEY } from "@/lib/queryKeys";
+import { AddSessionDialog } from "@/screens/ManualSession";
 
-/** Prefix al cheilor de cache ale Jurnalului: un ecran care scrie în Jurnal (ex. Sesiuni manuale) îl invalidează. */
-export const JOURNAL_KEY = ["admin", "journal"] as const;
+export { JOURNAL_KEY };
 
 const COLUMNS = ["Moment", "Angajat", "Tip", "Validare", "Anomalii", "Autor", "Descriere"] as const;
 
@@ -42,12 +44,19 @@ export function Journal() {
   const employees = useQuery({ queryKey: ["admin", "employees"], queryFn: adminApi.employees.list });
   const kinds = useQuery({ queryKey: [...JOURNAL_KEY, "kinds"], queryFn: adminApi.journal.kinds, staleTime: Infinity });
 
+  const [adding, setAdding] = useState(false);
   const go = (next: JournalFilters) => setSearchParams(paramsOf(next));
   const { page: _page, ...withoutPage } = filters;
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Jurnal</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Jurnal</h1>
+        <Button onClick={() => setAdding(true)}>
+          <Plus className="size-4" aria-hidden /> Sesiune manuală nouă
+        </Button>
+      </div>
+      <AddSessionDialog open={adding} onClose={() => setAdding(false)} />
 
       <FilterForm
         key={paramsOf(withoutPage).toString()}

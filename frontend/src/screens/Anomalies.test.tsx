@@ -64,28 +64,16 @@ describe("ecranul Anomalii", () => {
     expect((await rowOf("Maria Dinu")).getByText("Sesiune deschisă la ora de închidere")).toBeInTheDocument();
   });
 
-  it("oferă Corectează doar Sesiunilor deschise (spre ecranul HTML) și Marchează verificată doar pentru outside_hours", async () => {
+  it("oferă Corectează doar Sesiunilor deschise și Marchează verificată doar pentru outside_hours", async () => {
     mockApi([outside, missing, closing]);
     renderApp("/anomalies");
     const ana = await rowOf("Ana Pop");
-    expect(ana.queryByRole("link", { name: "Corectează" })).not.toBeInTheDocument();
+    expect(ana.queryByRole("button", { name: "Corectează" })).not.toBeInTheDocument();
     expect(ana.getByRole("button", { name: "Marchează verificată" })).toBeInTheDocument();
     const ion = await rowOf("Ion Vasile");
-    expect(ion.getByRole("link", { name: "Corectează" })).toHaveAttribute("href", "/admin/sessions/11/correct");
+    expect(ion.getByRole("button", { name: "Corectează" })).toBeInTheDocument();
     expect(ion.queryByRole("button", { name: "Marchează verificată" })).not.toBeInTheDocument();
-    expect((await rowOf("Maria Dinu")).getByRole("link", { name: "Corectează" })).toHaveAttribute(
-      "href",
-      "/admin/sessions/12/correct",
-    );
-  });
-
-  it("trimite spre Sesiune manuală nouă (ecran încă pe HTML)", async () => {
-    mockApi([]);
-    renderApp("/anomalies");
-    expect(await screen.findByRole("link", { name: "Sesiune manuală nouă" })).toHaveAttribute(
-      "href",
-      "/admin/sessions/new",
-    );
+    expect((await rowOf("Maria Dinu")).getByRole("button", { name: "Corectează" })).toBeInTheDocument();
   });
 
   it("arată starea de listă goală", async () => {

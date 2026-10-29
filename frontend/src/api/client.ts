@@ -16,6 +16,8 @@ export type Report = components["schemas"]["ReportOut"];
 export type JournalEntry = components["schemas"]["JournalEntryOut"];
 export type JournalPage = components["schemas"]["JournalPageOut"];
 export type JournalKind = components["schemas"]["KindOption"];
+export type ManualSessionInput = components["schemas"]["SessionIn"];
+export type SessionCorrectionInput = components["schemas"]["SessionCorrection"];
 /** Filtrele Jurnalului (zilele `AAAA-LL-ZZ`, în ora Sălii); câmpurile goale sau lipsă nu filtrează. */
 export type JournalFilters = { employee?: string; from?: string; to?: string; kind?: string; page?: number };
 
@@ -81,6 +83,13 @@ export const adminApi = {
       return api<JournalPage>(`/api/admin/journal${text ? `?${text}` : ""}`);
     },
     kinds: () => api<JournalKind[]>("/api/admin/journal/kinds"),
+  },
+  sessions: {
+    /** Sesiune manuală nouă (închisă); orele în ora locală a Sălii (`YYYY-MM-DDTHH:MM`). */
+    create: (body: ManualSessionInput) => api<{ id: number }>("/api/admin/sessions", { method: "POST", body }),
+    /** Închide o Sesiune deschisă cu o Ieșire manuală. */
+    correct: (id: number, body: SessionCorrectionInput) =>
+      api<void>(`/api/admin/sessions/${id}/correct`, { method: "POST", body }),
   },
   anomalies: {
     list: () => api<Anomaly[]>("/api/admin/anomalies"),
