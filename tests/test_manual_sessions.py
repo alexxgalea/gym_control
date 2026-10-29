@@ -1,6 +1,5 @@
 """Sesiuni manuale (#12). Ceasul de test: 2026-01-05 08:12 UTC = 10:12 local (UTC+2)."""
 
-import re
 
 from tests.conftest import ADMIN_USER
 
@@ -25,10 +24,9 @@ def _forgotten_exit(harness):
     phone.post("/me/entry", data=_totp(harness))
     harness.clock.advance(days=1)
     phone.post("/me/entry", data=_totp(harness))
-    page = harness.admin_client().get("/admin/anomalies").text
-    m = re.search(r'href="(/admin/sessions/(\d+)/correct)"', page)
-    assert m, page
-    return phone, m.group(1)
+    [row] = harness.admin_client().get("/api/admin/anomalies").json()
+    assert row["exit_at"] is None
+    return phone, f"/admin/sessions/{row['session_id']}/correct"
 
 
 def test_new_session_screen_requires_admin_and_is_narrow_friendly(harness):
@@ -107,7 +105,7 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     r = admin.post(link, data={"exit_at": "2026-01-05T18:00", "reason": "Ieșire uitată"},
                    follow_redirects=False)
     assert r.status_code == 303, r.text
-    assert "Ieșire lipsă" not in admin.get("/admin/anomalies").text
+    assert admin.get("/api/admin/anomalies").json() == []
     # Ana poate continua normal: Ieșire din Sesiunea curentă, apoi Intrare
     assert phone.post("/me/exit", data=_totp(harness)).status_code == 200
     assert phone.post("/me/exit", data=_totp(harness)).status_code == 409  # cea veche nu se redeschide
@@ -125,7 +123,7 @@ def test_correct_requires_reason_and_valid_exit(harness):
     assert r.status_code == 400 and "motiv" in r.text.lower()
     assert admin.post(link, data={"exit_at": "2026-01-05T09:00", "reason": "x"}).status_code == 400  # înainte de Intrare
     assert admin.post(link, data={"exit_at": "2026-01-07T09:00", "reason": "x"}).status_code == 400  # în viitor
-    assert "Ieșire lipsă" in admin.get("/admin/anomalies").text
+    assert [a["code"] for a in admin.get("/api/admin/anomalies").json()] == ["missing_exit"]
 
 
 def test_correct_exit_cannot_overlap_the_next_session(harness):
@@ -150,8 +148,8 @@ def test_correct_session_flagged_open_at_closing_resolves_it(harness):
     harness.clock.advance(hours=12)  # 22:12 local, după închidere
     harness.tick()
     admin = harness.admin_client()
-    m = re.search(r'href="(/admin/sessions/\d+/correct)"', admin.get("/admin/anomalies").text)
-    assert m
-    assert admin.post(m.group(1), data={"exit_at": "2026-01-05T18:00", "reason": "Plecat la 18"},
+    [row] = admin.get("/api/admin/anomalies").json()
+    assert row["code"] == "open_at_closing"
+    assert admin.post(f"/admin/sessions/{row['session_id']}/correct", data={"exit_at": "2026-01-05T18:00", "reason": "Plecat la 18"},
                       follow_redirects=False).status_code == 303
-    assert "Ana Pop" not in admin.get("/admin/anomalies").text
+    assert admin.get("/api/admin/anomalies").json() == []

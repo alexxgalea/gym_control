@@ -60,6 +60,13 @@ revocare cu confirmare. API: `GET/POST /api/admin/employees` (eroare de validare
 `POST /api/admin/employees/{id}/enroll-link`, `POST /api/admin/employees/{id}/revoke` (204).
 Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
 
+## Anomalii (SPA)
+
+Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvate (ore locale), „Corectează” (spre
+ecranul HTML al Sesiunii manuale, încă nemigrat) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
+doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET /api/admin/anomalies`,
+`POST /api/admin/anomalies/{id}/dismiss` (204; 404 dacă nu există, e deja rezolvată sau nu e `outside_hours`).
+
 ## Import Angajați (CSV)
 
 Încă nu are ecran în SPA (tichetul #19); ruta HTML veche a fost ștearsă odată cu ecranul Angajați.
