@@ -56,13 +56,16 @@ def test_report_lists_overlapping_sessions_including_straddling_ones(harness):
     body = _report(harness).json()
     assert [r["employee_name"] for r in body["rows"]] == ["Ana Pop", "Eva Stan", "Bob Ionescu"]
     ana_row = body["rows"][0]
-    assert ana_row["entry"] == "2026-01-05 09:00" and ana_row["exit"] == "2026-01-05 10:30"
+    # instante ISO cu fus; interfața le formatează în ora Sălii (09:00 local = 07:00 UTC)
+    assert ana_row["entry"] == "2026-01-05T07:00:00+00:00" and ana_row["exit"] == "2026-01-05T08:30:00+00:00"
     assert ana_row["method_label"] == "Cod QR" and not ana_row["open"]
-    assert body["date_from"] == "2026-01-05 10:00" and body["date_to"] == "2026-01-05 12:00"
+    assert body["date_from"] == "2026-01-05T08:00:00+00:00" and body["date_to"] == "2026-01-05T10:00:00+00:00"
+    assert body["generated_at"] == "2026-01-05T08:45:00+00:00"
+    assert body["timezone"] == "Europe/Bucharest"
     assert body["generated_by"] == "admin"
     assert "listă credibilă de persoane" in body["disclaimer"]
     assert "ora de închidere" in body["scope_text"]
-    assert body["open_text"] == "deschisă"
+    assert body["open_text"] == "Sesiune deschisă"
 
 
 def test_open_session_is_marked_and_present_until_closing(harness):
@@ -119,10 +122,11 @@ def test_csv_export_utf8_bom_columns_and_formula_safety(harness):
     assert r.headers["content-type"].startswith("text/csv")
     assert "attachment" in r.headers["content-disposition"]
     assert r.content.startswith(b"\xef\xbb\xbf")
-    rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig"))))
+    assert b";" in r.content.splitlines()[0] and b"," not in r.content.splitlines()[0]
+    rows = list(csv.reader(io.StringIO(r.content.decode("utf-8-sig")), delimiter=";"))
     assert rows[0] == ["Angajat", "Intrare", "Ieșire", "Eticheta", "Metoda de validare"]
     assert rows[1][0].startswith("'=")
-    assert rows[1][2] == "deschisă"
+    assert rows[1][2] == "Sesiune deschisă"
 
 
 def test_csv_filename_names_the_interval(harness):
@@ -140,5 +144,5 @@ def test_manual_sessions_are_labeled_manual():
     x = datetime(2026, 1, 5, 7, 0, tzinfo=timezone.utc)
     y = datetime(2026, 1, 5, 10, 0, tzinfo=timezone.utc)
     [row] = reports.query(conn, "Europe/Bucharest", time(22, 0), x, y)
-    assert row.manual and "manuală" in row.method_label
+    assert row.manual and row.method_label == "Sesiune manuală"
     assert "Sesiune manuală" in row.label and "Telefon defect" in row.label

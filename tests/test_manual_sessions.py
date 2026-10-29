@@ -75,9 +75,10 @@ def test_manual_session_is_marked_in_jurnal_and_raport_with_author_and_reason(ha
     assert "Telefonul de la ușă nu a funcționat" in entry["summary"]
     assert entry["author"] == ADMIN_USER
     assert entry["employee_name"] == "Ana Pop"
-    report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
-    assert "Ana Pop" in report and "Sesiune manuală" in report
-    assert "2026-01-05 08:00" in report and "2026-01-05 09:30" in report
+    [row] = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").json()["rows"]
+    assert row["employee_name"] == "Ana Pop" and "Sesiune manuală" in row["label"]
+    assert row["method_label"] == "Sesiune manuală"
+    assert row["entry"] == "2026-01-05T06:00:00+00:00" and row["exit"] == "2026-01-05T07:30:00+00:00"
 
 
 def test_add_validation_errors_name_the_field(harness):
@@ -136,7 +137,7 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert "Ieșire uitată" in entry["summary"]
     assert entry["method_label"] == "Sesiune manuală" and entry["author"] == ADMIN_USER
     report = admin.get("/api/admin/reports?from=2026-01-05T00:00&to=2026-01-05T23:59").text
-    assert "Sesiune manuală" in report and "2026-01-05 18:00" in report
+    assert "Sesiune manuală" in report and "2026-01-05T16:00:00+00:00" in report
 
 
 def test_correct_requires_reason_and_valid_exit(harness):

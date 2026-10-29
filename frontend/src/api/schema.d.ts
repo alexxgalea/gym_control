@@ -699,7 +699,10 @@ export interface components {
             /** Network */
             network: string | null;
         };
-        /** ReportOut */
+        /**
+         * ReportOut
+         * @description Toate orele sunt instante ISO (UTC); interfața le formatează în ora Sălii (`timezone`).
+         */
         ReportOut: {
             /** Date From */
             date_from: string;
@@ -717,6 +720,8 @@ export interface components {
             rows: components["schemas"]["ReportRowOut"][];
             /** Scope Text */
             scope_text: string;
+            /** Timezone */
+            timezone: string;
         };
         /** ReportRowOut */
         ReportRowOut: {
