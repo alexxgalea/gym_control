@@ -24,6 +24,9 @@ class Settings:
     # Schedulerul de fundal (#9): dezactivat implicit (testele); producția îl pornește din mediu.
     scheduler_enabled: bool = False
     scheduler_interval: float = 60.0
+    # Backup zilnic (#14): director separat de laptop (share de rețea / USB); gol = backup oprit.
+    backup_dir: str = ""
+    backup_keep_days: int = 30
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -41,4 +44,6 @@ class Settings:
             totp_secret=env.get("GYM_TOTP_SECRET", ""),
             scheduler_enabled=env.get("GYM_SCHEDULER", "1") != "0",
             scheduler_interval=float(env.get("GYM_SCHEDULER_INTERVAL", "60")),
+            backup_dir=env.get("GYM_BACKUP_DIR", ""),
+            backup_keep_days=int(env.get("GYM_BACKUP_KEEP_DAYS", "30")),
         )
