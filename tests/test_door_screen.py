@@ -292,3 +292,20 @@ def test_deactivation_without_an_active_door_screen_is_404_and_not_journaled(har
     assert admin.delete("/api/admin/door-screen").status_code == 404
     entries = admin.get("/api/admin/journal").json()["entries"]
     assert not [e for e in entries if "scos din uz" in e["summary"]]
+
+
+def test_replaced_link_is_invalid_while_the_newer_one_works(harness):
+    old = "/api/employee" + harness.issue_door_link()
+    new = "/api/employee" + harness.issue_door_link()
+    phone = harness.client()
+    assert phone.get(old).status_code == 410
+    r = phone.post(old)
+    assert r.status_code == 410
+    assert r.json()["reason"] == "link_invalid"
+    assert phone.post(new).status_code == 200
+
+
+def test_outside_hall_rejection_tells_to_connect_to_hall_wifi(harness):
+    link = "/api/employee" + harness.issue_door_link()
+    r = harness.client(OUTSIDE_IP).post(link)
+    assert "Wi-Fi" in r.json()["detail"]
