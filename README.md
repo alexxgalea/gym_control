@@ -53,11 +53,18 @@ Ecran nou: endpoint-uri JSON cu modele Pydantic în `src/gym_control/admin_api.p
 `/api/admin`), `npm run gen:api`, ecranul în `frontend/src/screens/` (înregistrat în `SCREENS` din `Shell.tsx` și
 în `App.tsx`), teste Vitest cu MSW și teste backend pe JSON; apoi se șterg ruta Jinja, șablonul și testele HTML vechi.
 
+## Angajați (SPA)
+
+Ecranul Angajați (`/admin/employees`) este în SPA: listă, adăugare din dialog, link de înrolare (copiere dintr-un click),
+revocare cu confirmare. API: `GET/POST /api/admin/employees` (eroare de validare: 400 `{detail, field}`),
+`POST /api/admin/employees/{id}/enroll-link`, `POST /api/admin/employees/{id}/revoke` (204).
+Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
+
 ## Import Angajați (CSV)
 
-Ecranul Angajați acceptă un CSV cu antetul `nume,email` (și `;` ca separator).
-Rândurile valide se importă; cele invalide sunt listate cu numărul rândului.
-Fiecare acțiune a Adminului apare în ecranul Jurnal, cu autorul.
+Încă nu are ecran în SPA (tichetul #19); ruta HTML veche a fost ștearsă odată cu ecranul Angajați.
+Parsarea (`employees.parse_csv`, `ImportResult`) rămâne în `employees.py`. Formatul: antetul `nume,email`
+(și `;` ca separator); rândurile valide se importă, cele invalide sunt listate cu numărul rândului.
 
 ## Teste
 

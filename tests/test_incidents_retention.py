@@ -123,7 +123,7 @@ def test_accounts_survive_retention(harness):
     _enter(harness)
     harness.clock.set(FAR)
     harness.tick()
-    assert "Ana Pop" in harness.admin_client().get("/admin/employees").text
+    assert [e["name"] for e in harness.admin_client().get("/api/admin/employees").json()] == ["Ana Pop"]
 
 
 def test_session_straddling_the_cutoff_is_kept_with_its_journal_rows(harness):

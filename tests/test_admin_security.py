@@ -9,31 +9,31 @@ def _login(client, password=ADMIN_PASSWORD, **kw):
 
 def test_admin_post_from_another_origin_is_refused_and_has_no_effect(harness):
     admin = harness.admin_client()
-    r = admin.post("/admin/employees", data={"name": "Ana Pop", "email": "ana@firma.ro"},
-                   headers={"Origin": "http://evil.example"}, follow_redirects=False)
+    r = admin.post("/api/admin/employees", json={"name": "Ana Pop", "email": "ana@firma.ro"},
+                   headers={"Origin": "http://evil.example"})
     assert r.status_code == 403
-    assert "Ana Pop" not in admin.get("/admin/employees").text
+    assert admin.get("/api/admin/employees").json() == []
 
 
 def test_admin_post_without_origin_or_referer_is_refused(harness):
     admin = harness.admin_client()
-    r = admin.post("/admin/employees", data={"name": "Ana Pop", "email": "ana@firma.ro"},
-                   headers={"Origin": ""}, follow_redirects=False)
+    r = admin.post("/api/admin/employees", json={"name": "Ana Pop", "email": "ana@firma.ro"},
+                   headers={"Origin": ""})
     assert r.status_code == 403
 
 
 def test_referer_from_same_origin_is_accepted_when_origin_is_missing(harness):
     admin = harness.admin_client()
-    r = admin.post("/admin/employees", data={"name": "Ana Pop", "email": "ana@firma.ro"},
-                   headers={"Origin": "", "Referer": "http://testserver/admin/employees"},
-                   follow_redirects=False)
-    assert r.status_code == 303
+    r = admin.post("/api/admin/employees", json={"name": "Ana Pop", "email": "ana@firma.ro"},
+                   headers={"Origin": "", "Referer": "http://testserver/admin/employees"})
+    assert r.status_code == 201
 
 
 def test_cross_origin_post_is_refused_on_every_admin_router(harness):
     admin = harness.admin_client()
     evil = {"Origin": "http://evil.example"}
     assert admin.post("/api/admin/logout", headers=evil).status_code == 403
+    assert admin.post("/api/admin/employees", json={}, headers=evil).status_code == 403
     assert admin.post("/admin/sessions", data={}, headers=evil).status_code == 403
     assert admin.post("/admin/incidents", data={}, headers=evil).status_code == 403
     assert _login(harness.client(), headers=evil).status_code == 403
@@ -41,7 +41,7 @@ def test_cross_origin_post_is_refused_on_every_admin_router(harness):
 
 def test_get_requests_are_not_subject_to_origin_check(harness):
     admin = harness.admin_client()
-    assert admin.get("/admin/employees", headers={"Origin": "http://evil.example"}).status_code == 200
+    assert admin.get("/api/admin/employees", headers={"Origin": "http://evil.example"}).status_code == 200
 
 
 def test_repeated_wrong_passwords_lock_the_account_for_that_ip_and_expire(harness):

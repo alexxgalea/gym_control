@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/server";
@@ -7,6 +7,9 @@ import { renderApp } from "@/test/render";
 const signedIn = http.get("/api/admin/me", () => HttpResponse.json({ username: "admin" }));
 
 describe("shell-ul", () => {
+  // ecranul Angajați (rută implicită) își cere lista; aici nu e obiectul testelor
+  beforeEach(() => server.use(http.get("/api/admin/employees", () => HttpResponse.json([]))));
+
   it("are navigare către toate ecranele și marchează ecranul activ", async () => {
     server.use(signedIn);
     renderApp("/incidents");
@@ -26,7 +29,9 @@ describe("shell-ul", () => {
     server.use(signedIn);
     renderApp("/");
     const nav = await screen.findByRole("navigation");
-    expect(within(nav).getByRole("link", { name: "Angajați" })).toHaveAttribute("aria-current", "page");
+    await waitFor(() =>
+      expect(within(nav).getByRole("link", { name: "Angajați" })).toHaveAttribute("aria-current", "page"),
+    );
   });
 
   it("închide sesiunea la Ieșire cont și duce la login", async () => {

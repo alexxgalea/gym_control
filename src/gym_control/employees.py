@@ -11,7 +11,11 @@ _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 class InvalidEmployee(ValueError):
-    """Mesajul (în română) este afișat Adminului."""
+    """Mesajul (în română) este afișat Adminului; `field` numește câmpul vizat (`name` sau `email`)."""
+
+    def __init__(self, message: str, field: str | None = None):
+        super().__init__(message)
+        self.field = field
 
 
 @dataclass
@@ -29,16 +33,16 @@ def add(db: sqlite3.Connection, now: datetime, name: str, email: str) -> int:
     name = " ".join(name.split())
     email = email.strip().lower()
     if not name:
-        raise InvalidEmployee("numele lipsește")
+        raise InvalidEmployee("numele lipsește", "name")
     if not _EMAIL.match(email):
-        raise InvalidEmployee("email invalid")
+        raise InvalidEmployee("email invalid", "email")
     try:
         cur = db.execute(
             "INSERT INTO employees (name, email, created_at) VALUES (?,?,?)",
             (name, email, now.isoformat()),
         )
     except sqlite3.IntegrityError:
-        raise InvalidEmployee("email deja existent") from None
+        raise InvalidEmployee("email deja existent", "email") from None
     return cur.lastrowid
 
 

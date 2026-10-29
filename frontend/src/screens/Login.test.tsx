@@ -74,6 +74,7 @@ describe("sesiunea", () => {
   it("duce la login când un ecran primește 401 după ce sesiunea a expirat", async () => {
     let expired = false;
     server.use(
+      http.get("/api/admin/employees", () => HttpResponse.json([])),
       http.get("/api/admin/me", () =>
         expired ? HttpResponse.json({ detail: "x" }, { status: 401 }) : HttpResponse.json({ username: "admin" }),
       ),
