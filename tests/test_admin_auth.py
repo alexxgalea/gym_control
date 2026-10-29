@@ -73,6 +73,3 @@ def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path
     assert c.get("/admin/login").text == "<html>SPA</html>"
     assert c.get("/admin/assets/app.js").text == "console.log(1)"
     assert c.get("/admin/assets/lipsa.js").status_code == 404
-    # redirecționarea vechii rute a Jurnalului are prioritate față de catch-all
-    r = c.get("/admin/jurnal", follow_redirects=False)
-    assert r.status_code == 307 and r.headers["location"] == "/admin/journal"

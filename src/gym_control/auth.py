@@ -88,14 +88,6 @@ def _session_admin(request: Request, db: sqlite3.Connection) -> Admin | None:
     return None
 
 
-def require_admin(request: Request, db: sqlite3.Connection = Depends(get_db)) -> Admin:
-    """Dependență pentru ecranele Admin HTML; fără sesiune valabilă redirecționează la login."""
-    admin = _session_admin(request, db)
-    if admin is None:
-        raise HTTPException(status_code=303, headers={"Location": "/admin/login"})
-    return admin
-
-
 def require_admin_api(request: Request, db: sqlite3.Connection = Depends(get_db)) -> Admin:
     """Dependență pentru endpoint-urile JSON ale Adminului; fără sesiune valabilă răspunde 401."""
     admin = _session_admin(request, db)

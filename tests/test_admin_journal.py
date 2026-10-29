@@ -31,12 +31,6 @@ def test_requires_login(harness):
     assert c.get(f"{URL}/kinds").status_code == 401
 
 
-def test_old_html_route_redirects_to_the_spa_route_keeping_filters(harness):
-    r = harness.admin_client().get("/admin/jurnal?from=2026-01-05&page=2", follow_redirects=False)
-    assert r.status_code in (301, 307, 308)
-    assert r.headers["location"] == "/admin/journal?from=2026-01-05&page=2"
-
-
 def test_entry_row_has_employee_utc_moment_type_and_method(harness):
     _event(harness, harness.enrolled_client("Ana Pop"), "entry")
     page = _journal(harness.admin_client())
@@ -220,5 +214,3 @@ def test_spa_takes_over_journal_path_on_direct_load(make_harness, tmp_path):
     (tmp_path / "index.html").write_text("<html>SPA</html>")
     c = make_harness(frontend_dist=str(tmp_path)).admin_client()
     assert c.get("/admin/journal").text == "<html>SPA</html>"
-    r = c.get("/admin/jurnal", follow_redirects=True)  # ruta veche duce în SPA
-    assert r.text == "<html>SPA</html>"

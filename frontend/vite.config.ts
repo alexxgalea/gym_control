@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": { target: "http://localhost:8000", changeOrigin: false },
-      // Ecranele Admin nemigrate încă (HTML pe server) și restul paginilor aplicației.
+      // CSS-ul paginilor servite de aplicație.
       "/static": "http://localhost:8000",
     },
   },
