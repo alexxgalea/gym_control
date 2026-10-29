@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, auth, db
+from gym_control import admin, auth, db, enrollment
 from gym_control.settings import Settings
 from gym_control.templates import templates as _templates
 
@@ -33,6 +33,8 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     )
     app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     app.include_router(admin.router)
+    app.include_router(enrollment.router)
+    app.add_exception_handler(enrollment.EnrollmentRequired, enrollment.enrollment_required_handler)
 
     @app.get("/status", response_class=HTMLResponse)
     def status(request: Request):

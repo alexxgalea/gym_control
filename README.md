@@ -43,3 +43,11 @@ fixture-uri: `harness.clock.advance(...)`, `harness.client(ip)`,
 `make_harness(**setări)`. Fără `sleep`.
 `harness.admin_client()` întoarce un client deja autentificat ca Admin
 (contul de bootstrap din `tests/conftest.py`).
+
+## Înrolarea dispozitivului
+
+În ecranul Angajați, Adminul apasă „Generează link” și îi trimite Angajatului linkul
+(`/enroll/<token>`, valabil 48 de ore, o singură folosire). Angajatul îl deschide pe telefonul
+personal și confirmă; telefonul primește un cookie de lungă durată. Un singur telefon este activ:
+re-înrolarea sau „Revocă” invalidează telefonul vechi. Fără înrolare, `/me` afișează
+mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana Pop")`.

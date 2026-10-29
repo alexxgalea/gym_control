@@ -51,3 +51,6 @@ input[type=file] { display: block; width: 100%; margin-top: .25rem; }
   .stackable td[colspan]::before { content: none; }
   .topbar { padding: .5rem; }
 }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.actions form { margin: 0; }
+code { word-break: break-all; }

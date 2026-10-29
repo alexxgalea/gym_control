@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Înrolare{% endblock %}
+{% block content %}
+<h1>Înrolare dispozitiv</h1>
+<section class="card stack">
+  <p>Vei înrola acest telefon pentru <strong>{{ name }}</strong>. Un eventual telefon înrolat anterior nu va mai funcționa.</p>
+  <form method="post"><button type="submit" class="btn">Înrolează acest telefon</button></form>
+</section>
+{% endblock %}

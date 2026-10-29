@@ -24,6 +24,20 @@ CREATE TABLE IF NOT EXISTS employees (
     email TEXT NOT NULL UNIQUE,   -- normalizat: litere mici
     created_at TEXT NOT NULL
 );
+-- Înrolarea: un link cu folosire unică per emitere; un singur dispozitiv activ per Angajat.
+-- Se păstrează doar hash-ul tokenurilor.
+CREATE TABLE IF NOT EXISTS enroll_links (
+    token_hash TEXT PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id),
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT                   -- NULL = încă nefolosit
+);
+CREATE TABLE IF NOT EXISTS devices (
+    token_hash TEXT PRIMARY KEY,   -- hash-ul cookie-ului de dispozitiv
+    employee_id INTEGER NOT NULL UNIQUE REFERENCES employees(id),
+    enrolled_at TEXT NOT NULL
+);
 -- Jurnalul: un singur tabel pentru Intrări, Ieșiri, Anomalii și acțiuni Admin.
 -- kind: 'admin_action' | 'entry' | 'exit' | 'anomaly' | ... (tichetele următoare)
 CREATE TABLE IF NOT EXISTS journal (

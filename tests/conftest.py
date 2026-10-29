@@ -5,6 +5,7 @@ Baza de date este SQLite în memorie. Testele nu importă module interne,
 doar `create_app` și `Settings` prin acest fișier.
 """
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -56,6 +57,41 @@ class Harness:
         )
         assert r.status_code == 303, r.text
         return c
+
+    def create_employee(self, name: str, email: str | None = None) -> int:
+        """Creează un Angajat ca Admin și întoarce id-ul lui (citit din ecranul Angajați)."""
+        email = email or f"{name.lower().replace(' ', '.')}@firma.ro"
+        admin = self.admin_client()
+        r = admin.post("/admin/employees", data={"name": name, "email": email},
+                       follow_redirects=False)
+        assert r.status_code == 303, r.text
+        page = admin.get("/admin/employees").text
+        m = re.search(rf'data-employee-id="(\d+)"[^>]*data-email="{re.escape(email.lower())}"', page)
+        assert m, page
+        return int(m.group(1))
+
+    def issue_enroll_link(self, employee_id: int, admin: TestClient | None = None) -> str:
+        """Admin generează linkul de înrolare; întoarce calea (`/enroll/<token>`)."""
+        admin = admin or self.admin_client()
+        r = admin.post(f"/admin/employees/{employee_id}/enroll-link")
+        assert r.status_code == 200, r.text
+        m = re.search(r"/enroll/[\w-]+", r.text)
+        assert m, r.text
+        return m.group(0)
+
+    def enroll(self, link: str, ip: str = HALL_IP) -> TestClient:
+        """Deschide linkul pe un client nou (telefonul Angajatului) și confirmă înrolarea."""
+        c = self.client(ip)
+        assert c.get(link).status_code == 200
+        r = c.post(link, follow_redirects=False)
+        assert r.status_code == 303, r.text
+        return c
+
+    def enrolled_client(self, name: str = "Ana Pop", email: str | None = None,
+                        ip: str = HALL_IP) -> TestClient:
+        """Client (telefon) deja înrolat ca Angajatul `name`, cu cookie-ul de dispozitiv."""
+        employee_id = self.create_employee(name, email)
+        return self.enroll(self.issue_enroll_link(employee_id), ip)
 
 
 @pytest.fixture

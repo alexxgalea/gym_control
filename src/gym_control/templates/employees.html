@@ -31,14 +31,36 @@
   </form>
 </section>
 
+{% if issued %}
+<section class="card alert-ok" role="status">
+  <h2>Link de înrolare pentru {{ issued.name }}</h2>
+  <p>Trimite-l Angajatului; se deschide pe telefonul lui, o singură dată, în {{ issued.hours }} de ore. Nu va mai fi afișat.</p>
+  <p><code id="enroll-link">{{ issued.link }}</code></p>
+</section>
+{% endif %}
+
 <h2>Lista ({{ employees|length }})</h2>
 <table class="table stackable">
-  <thead><tr><th>Nume</th><th>Email</th></tr></thead>
+  <thead><tr><th>Nume</th><th>Email</th><th>Dispozitiv</th><th>Acțiuni</th></tr></thead>
   <tbody>
   {% for e in employees %}
-    <tr><td data-label="Nume">{{ e.name }}</td><td data-label="Email">{{ e.email }}</td></tr>
+    <tr data-employee-id="{{ e.id }}" data-email="{{ e.email }}">
+      <td data-label="Nume">{{ e.name }}</td>
+      <td data-label="Email">{{ e.email }}</td>
+      <td data-label="Dispozitiv">{{ "Înrolat" if e.id in enrolled_ids else "Neînrolat" }}</td>
+      <td data-label="Acțiuni" class="actions">
+        <form method="post" action="/admin/employees/{{ e.id }}/enroll-link">
+          <button type="submit" class="btn">{{ "Re-înrolează" if e.id in enrolled_ids else "Generează link" }}</button>
+        </form>
+        {% if e.id in enrolled_ids %}
+        <form method="post" action="/admin/employees/{{ e.id }}/revoke">
+          <button type="submit" class="btn btn-secondary">Revocă</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
   {% else %}
-    <tr><td colspan="2">Niciun Angajat încă.</td></tr>
+    <tr><td colspan="4">Niciun Angajat încă.</td></tr>
   {% endfor %}
   </tbody>
 </table>
