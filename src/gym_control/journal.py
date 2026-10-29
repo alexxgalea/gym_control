@@ -66,7 +66,8 @@ def recent(db: sqlite3.Connection, limit: int = 200) -> list[sqlite3.Row]:
 PAGE_SIZE = 50
 
 KIND_LABELS = {"entry": "Intrare", "exit": "Ieșire", "admin_action": "Acțiune Admin",
-               "manual_session": "Sesiune manuală"}
+               "manual_session": "Sesiune manuală",
+               "retention": "Retenție"}
 METHOD_LABELS = {"none": "Fără validare", "qr_totp": "Cod QR", "manual": "Introdus manual"}
 
 

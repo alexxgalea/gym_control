@@ -83,6 +83,15 @@ Primul job: la/după ora de închidere (setare la runtime, ora locală), fiecare
 curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcată „Ieșire lipsă” primește Anomalia
 `open_at_closing`, plus o linie în Jurnal. Sesiunea rămâne deschisă, fără Ieșire inventată; rulările repetate nu dublează.
 
+## Incidente și retenție
+
+Ecranul Incidente (`/admin/incidents`): Adminul marchează un interval (ora locală, notă opțională) și îl închide
+mai târziu; ambele acțiuni apar în Jurnal cu autorul. Jobul de retenție (`retention.purge_job`, rulat de `tick`)
+șterge Sesiunile (cu Anomaliile lor) și rândurile din Jurnal (de orice fel) mai vechi de perioada de retenție
+(Setări, implicit 12 luni; `GYM_RETENTION_MONTHS` ca valoare inițială). Nu se șterg Angajații și conturile Admin.
+Datele care se suprapun cu un Incident deschis rămân; după închiderea lui reintră în retenția normală.
+O Sesiune care traversează limita rămâne, cu rândurile de Jurnal ale Intrării/Ieșirii ei. O rulare care a șters ceva
+lasă o linie fără autor în Jurnal („Retenție: șterse …”).
 ## Instalare (rezumat)
 
 1. Pe laptop: Docker + Docker Compose. Clonează depozitul.
