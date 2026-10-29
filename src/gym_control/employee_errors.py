@@ -12,6 +12,7 @@ API_PREFIX = "/api/employee/"
 
 NOT_IN_HALL_NETWORK = "not_in_hall_network"
 PHONE_NOT_ACTIVATED = "phone_not_activated"
+LINK_INVALID = "link_invalid"
 
 
 def is_employee_api(request: Request) -> bool:
@@ -32,3 +33,9 @@ def phone_not_activated_response() -> JSONResponse:
     return employee_error(
         401, PHONE_NOT_ACTIVATED,
         "Telefonul tău nu este activat. Cere Adminului un link de activare.")
+
+
+def link_invalid_response() -> JSONResponse:
+    return employee_error(
+        410, LINK_INVALID,
+        "Linkul a fost deja folosit, a expirat sau nu există. Cere Adminului un link nou de activare.")

@@ -206,6 +206,19 @@
         "title": "EnrollLink",
         "type": "object"
       },
+      "EnrollmentOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "EnrollmentOut",
+        "type": "object"
+      },
       "ErrorResponse": {
         "properties": {
           "detail": {
@@ -2065,6 +2078,92 @@
         ]
       }
     },
+    "/api/employee/enroll/{token}": {
+      "get": {
+        "description": "Numele Angajatului din link (nu consumă linkul). Nu cere rețeaua Sălii.",
+        "operationId": "read_link_api_employee_enroll__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "410": {
+            "description": "link_invalid"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Link"
+      },
+      "post": {
+        "operationId": "enroll_api_employee_enroll__token__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "not_in_hall_network"
+          },
+          "410": {
+            "description": "link_invalid"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enroll"
+      }
+    },
     "/api/employee/status": {
       "get": {
         "description": "Verificare conexiune: dacă cererea e în rețeaua Sălii și ora serverului. Nu cere rețeaua Sălii.",
@@ -2149,80 +2248,6 @@
           }
         },
         "summary": "Door Qr"
-      }
-    },
-    "/enroll/{token}": {
-      "get": {
-        "operationId": "enroll_page_enroll__token__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Enroll Page"
-      },
-      "post": {
-        "operationId": "enroll_enroll__token__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "token",
-            "required": true,
-            "schema": {
-              "title": "Token",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Enroll"
       }
     },
     "/me": {

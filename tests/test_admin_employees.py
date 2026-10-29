@@ -63,7 +63,7 @@ def test_enroll_link_returns_link_name_and_validity_and_opens_enrollment(harness
     body = r.json()
     assert body["name"] == "Ana Pop" and body["hours"] == 48
     assert body["link"].startswith("http://testserver/enroll/")
-    assert harness.client().get(body["link"].removeprefix("http://testserver")).status_code == 200
+    assert harness.client().get("/api/employee" + body["link"].removeprefix("http://testserver")).status_code == 200
 
 
 def test_enroll_link_includes_qr_svg_of_the_link(harness):

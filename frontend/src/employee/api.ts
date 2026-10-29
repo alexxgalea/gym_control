@@ -6,6 +6,8 @@ import type { components } from "@/api/schema";
 
 export type ConnectionStatus = components["schemas"]["ConnectionStatus"];
 
+export type Enrollment = components["schemas"]["EnrollmentOut"];
+
 export const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
 
 export class EmployeeApiError extends Error {
@@ -18,8 +20,8 @@ export class EmployeeApiError extends Error {
   }
 }
 
-async function get<T>(path: string): Promise<T> {
-  const response = await fetch(new URL(path, window.location.origin), { credentials: "same-origin" });
+async function request<T>(path: string, method: "GET" | "POST"): Promise<T> {
+  const response = await fetch(new URL(path, window.location.origin), { method, credentials: "same-origin" });
   if (!response.ok) {
     let detail = GENERIC_ERROR;
     let reason: string | null = null;
@@ -35,6 +37,11 @@ async function get<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+const get = <T>(path: string) => request<T>(path, "GET");
+const post = <T>(path: string) => request<T>(path, "POST");
+
 export const employeeApi = {
   status: () => get<ConnectionStatus>("/api/employee/status"),
+  enrollmentLink: (token: string) => get<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),
+  activatePhone: (token: string) => post<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),
 };

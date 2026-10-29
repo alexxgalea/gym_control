@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { Enroll } from "@/employee/screens/Enroll";
 import { ConnectionCheck } from "@/employee/screens/ConnectionCheck";
 
 /**
@@ -9,6 +10,7 @@ export function EmployeeRoutes() {
   return (
     <Routes>
       <Route path="/status" element={<ConnectionCheck />} />
+      <Route path="/enroll/:token" element={<Enroll />} />
     </Routes>
   );
 }
