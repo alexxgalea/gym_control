@@ -3,7 +3,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, GENERIC_ERROR, adminApi, type Anomaly } from "@/api/client";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router-dom";
 import { adminApi, type JournalEntry, type JournalFilters } from "@/api/client";
 import { isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";

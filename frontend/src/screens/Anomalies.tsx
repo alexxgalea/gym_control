@@ -4,7 +4,7 @@ import { adminApi, type Anomaly } from "@/api/client";
 import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { ANOMALIES_KEY } from "@/lib/queryKeys";
 import { AddSessionDialog, CorrectSessionDialog } from "@/screens/ManualSession";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";

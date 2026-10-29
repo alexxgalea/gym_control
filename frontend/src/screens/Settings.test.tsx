@@ -95,6 +95,6 @@ describe("ecranul Setări", () => {
       http.get("/api/admin/settings", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/settings");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });

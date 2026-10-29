@@ -4,7 +4,7 @@ import { ApiError, GENERIC_ERROR, adminApi, type HallSettings } from "@/api/clie
 import { isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 

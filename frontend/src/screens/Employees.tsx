@@ -5,7 +5,7 @@ import { ApiError, adminApi, type Employee, type EnrollLink, type ImportReport }
 import { errorText, isShownError } from "@/lib/errors";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/design/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AddSessionDialog } from "@/screens/ManualSession";
 import { Input } from "@/components/ui/input";

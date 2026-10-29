@@ -79,14 +79,21 @@ function pageOf(entries: Entry[], extra: Partial<{ page: number; has_next: boole
 const rowOf = async (text: RegExp | string) => within(await screen.findByRole("row", { name: text }));
 
 describe("ecranul Jurnal", () => {
+  // formatul datelor depinde de „azi”: înghețăm doar ceasul, nu și temporizatoarele
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-01T10:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it("arată stare de încărcare, apoi rândurile cu momentul local și UTC, Angajatul, tipul, validarea și descrierea", async () => {
     mockApi(() => pageOf([entry({})]), { listDelay: 20 });
     renderApp("/journal");
 
     expect(await screen.findByText("Se încarcă…")).toBeInTheDocument();
     const row = await rowOf(/Intrare: Ana Pop/);
-    expect(row.getByText("05.01.2026, 10:12")).toBeInTheDocument(); // ora Sălii, format românesc
-    expect(row.getByText("05.01.2026, 08:12 UTC")).toBeInTheDocument();
+    expect(row.getByText("5 ian., 10:12")).toBeInTheDocument(); // ora Sălii, format românesc
+    expect(row.getByText("5 ian., 08:12 UTC")).toBeInTheDocument();
     expect(row.getByText("Ana Pop")).toBeInTheDocument();
     expect(row.getByText("Intrare")).toBeInTheDocument();
     expect(row.getByText("Cod QR")).toBeInTheDocument();
@@ -97,7 +104,7 @@ describe("ecranul Jurnal", () => {
     mockApi(() => pageOf([entry({ at: "2026-07-05T08:12:00+00:00", summary: "Intrare vară" })]));
     renderApp("/journal");
     const row = await rowOf(/Intrare vară/);
-    expect(row.getByText("05.07.2026, 11:12")).toBeInTheDocument();
+    expect(row.getByText("5 iul., 11:12")).toBeInTheDocument();
   });
 
   it("arată acțiunile Adminilor cu autorul, Anomaliile ca insigne și lipsa validării ca liniuță", async () => {
@@ -237,6 +244,6 @@ describe("ecranul Jurnal", () => {
       http.get("/api/admin/me", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/journal");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 });

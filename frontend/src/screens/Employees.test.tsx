@@ -87,7 +87,7 @@ describe("ecranul Angajați", () => {
       http.get("/api/admin/employees", () => HttpResponse.json({ detail: "Sesiune lipsă sau expirată." }, { status: 401 })),
     );
     renderApp("/employees");
-    expect(await screen.findByRole("button", { name: "Intră" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Intră în cont" })).toBeInTheDocument();
   });
 
   it("adaugă un Angajat dintr-un dialog, îl arată în listă și confirmă cu toast", async () => {
