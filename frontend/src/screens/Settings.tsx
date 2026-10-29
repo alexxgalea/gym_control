@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { ApiError, adminApi, type HallSettings } from "@/api/client";
+import { ApiError, GENERIC_ERROR, adminApi, type HallSettings } from "@/api/client";
+import { isShownError } from "@/lib/errors";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { useToast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const SETTINGS_KEY = ["admin", "settings"] as const;
-const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
 
 type FieldName = "hall_subnet" | "opening_time" | "closing_time" | "retention_months";
 type Form = Record<FieldName, string>;
@@ -28,10 +29,10 @@ export function Settings() {
     <div className="flex max-w-xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">Setări</h1>
       {settings.isPending && <p className="text-muted-foreground">Se încarcă…</p>}
-      {settings.isError && settings.error instanceof ApiError && settings.error.status !== 401 && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+      {isShownError(settings.error) && (
+        <ErrorAlert>
           {settings.error.detail}
-        </p>
+        </ErrorAlert>
       )}
       {settings.data && <SettingsForm initial={toForm(settings.data)} />}
     </div>
@@ -68,9 +69,9 @@ function SettingsForm({ initial }: { initial: Form }) {
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6">
       {errors.form && (
-        <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <ErrorAlert>
           {errors.form}
-        </p>
+        </ErrorAlert>
       )}
       {FIELDS.map(({ name, label, placeholder, inputMode }) => (
         <div key={name} className="flex flex-col gap-2">

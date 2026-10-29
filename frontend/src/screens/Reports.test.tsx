@@ -6,6 +6,7 @@ import { renderApp } from "@/test/render";
 
 const DISCLAIMER = "Text de neacceptare trimis de server.";
 const OPEN_TEXT = "în curs";
+const SCOPE = "Explicația intervalului trimisă de server.";
 
 const report = {
   date_from: "2026-01-05 10:00",
@@ -13,6 +14,7 @@ const report = {
   generated_at: "2026-01-05 12:30",
   generated_by: "admin",
   disclaimer: DISCLAIMER,
+  scope_text: SCOPE,
   open_text: OPEN_TEXT,
   rows: [
     { employee_name: "Ana Pop", entry: "2026-01-05 09:00", exit: "2026-01-05 10:30", open: false, manual: false, label: "", method_label: "Cod QR" },
@@ -55,6 +57,7 @@ describe("ecranul Rapoarte", () => {
     await generate();
 
     expect(await screen.findByText(DISCLAIMER)).toBeInTheDocument();
+    expect(screen.getByText(SCOPE)).toBeInTheDocument();
     expect(queries).toEqual(["?from=2026-01-05T10%3A00&to=2026-01-05T12%3A00"]);
     const ana = within(screen.getByRole("row", { name: /Ana Pop/ }));
     expect(ana.getByText("2026-01-05 09:00")).toBeInTheDocument();
@@ -121,6 +124,7 @@ describe("varianta tipărită", () => {
     renderApp("/reports/print?from=2026-01-05T10%3A00&to=2026-01-05T12%3A00");
 
     expect(await screen.findByText(DISCLAIMER)).toBeInTheDocument();
+    expect(screen.getByText(SCOPE)).toBeInTheDocument();
     expect(queries).toHaveLength(1);
     expect(screen.getByText(/2026-01-05 10:00 – 2026-01-05 12:00/)).toBeInTheDocument();
     expect(screen.getByText(/admin, 2026-01-05 12:30/)).toBeInTheDocument();

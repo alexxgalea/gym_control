@@ -526,7 +526,7 @@ export interface components {
         };
         /**
          * FieldErrorResponse
-         * @description Eroare de validare în română; `field` indică câmpul din formular (`name` sau `email`).
+         * @description Eroare de validare în română; `field` indică câmpul din formular.
          */
         FieldErrorResponse: {
             /** Detail */
@@ -666,6 +666,8 @@ export interface components {
             open_text: string;
             /** Rows */
             rows: components["schemas"]["ReportRowOut"][];
+            /** Scope Text */
+            scope_text: string;
         };
         /** ReportRowOut */
         ReportRowOut: {

@@ -7,10 +7,10 @@ import sqlite3
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from gym_control import anomalies, auth, clocktime, employees, enrollment, incidents, journal, network
+from gym_control.admin_common import UNAUTHORIZED, ErrorResponse, FieldErrorResponse, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -26,13 +26,9 @@ class AdminAccount(BaseModel):
     username: str
 
 
-class ErrorResponse(BaseModel):
-    detail: str
-
-
 @router.post(
     "/login", response_model=AdminAccount,
-    responses={401: {"model": ErrorResponse}, 429: {"model": ErrorResponse}},
+    responses={**UNAUTHORIZED, 429: {"model": ErrorResponse}},
 )
 def login(
     body: LoginRequest, request: Request, response: Response,
@@ -63,7 +59,7 @@ def login(
     return AdminAccount(username=admin.username)
 
 
-@router.get("/me", response_model=AdminAccount, responses={401: {"model": ErrorResponse}})
+@router.get("/me", response_model=AdminAccount, responses=UNAUTHORIZED)
 def me(admin: Admin = Depends(require_admin_api)):
     return AdminAccount(username=admin.username)
 
@@ -90,20 +86,13 @@ class EmployeeIn(BaseModel):
     email: str = ""
 
 
-class FieldErrorResponse(BaseModel):
-    """Eroare de validare în română; `field` indică câmpul din formular (`name` sau `email`)."""
-
-    detail: str
-    field: str | None = None
-
-
 class EnrollLink(BaseModel):
     name: str
     link: str
     hours: int
 
 
-@router.get("/employees", response_model=list[EmployeeOut], responses={401: {"model": ErrorResponse}})
+@router.get("/employees", response_model=list[EmployeeOut], responses=UNAUTHORIZED)
 def list_employees(admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db)):
     enrolled = enrollment.enrolled_ids(db)
     return [
@@ -114,7 +103,7 @@ def list_employees(admin: Admin = Depends(require_admin_api), db: sqlite3.Connec
 
 @router.post(
     "/employees", status_code=201, response_model=EmployeeOut,
-    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": FieldErrorResponse}, **UNAUTHORIZED},
 )
 def create_employee(
     body: EmployeeIn, request: Request,
@@ -124,10 +113,7 @@ def create_employee(
     try:
         employee_id = employees.add(db, now, body.name, body.email)
     except employees.InvalidEmployee as exc:
-        db.rollback()
-        return JSONResponse(
-            status_code=400, content={"detail": str(exc).capitalize(), "field": exc.field},
-        )
+        return field_error(db, str(exc).capitalize(), exc.field)
     journal.write_admin_action(
         db, now, admin, "employee.create", f"Angajat creat: {' '.join(body.name.split())}",
         employee_id=employee_id,
@@ -144,7 +130,7 @@ class ImportReport(BaseModel):
 
 @router.post(
     "/employees/import", response_model=ImportReport,
-    responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": ErrorResponse}, **UNAUTHORIZED},
 )
 async def import_employees(
     file: UploadFile, request: Request,
@@ -188,7 +174,7 @@ def _employee_or_404(db: sqlite3.Connection, employee_id: int):
 
 @router.post(
     "/employees/{employee_id}/enroll-link", response_model=EnrollLink,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}},
 )
 def create_enroll_link(
     employee_id: int, request: Request,
@@ -211,7 +197,7 @@ def create_enroll_link(
 
 @router.post(
     "/employees/{employee_id}/revoke", status_code=204,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}},
 )
 def revoke_device(
     employee_id: int, request: Request,
@@ -242,7 +228,7 @@ class AnomalyOut(BaseModel):
     exit_at: str | None
 
 
-@router.get("/anomalies", response_model=list[AnomalyOut], responses={401: {"model": ErrorResponse}})
+@router.get("/anomalies", response_model=list[AnomalyOut], responses=UNAUTHORIZED)
 def list_anomalies(
     request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
 ):
@@ -260,7 +246,7 @@ def list_anomalies(
 
 @router.post(
     "/anomalies/{anomaly_id}/dismiss", status_code=204,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}},
 )
 def dismiss_anomaly(
     anomaly_id: int, request: Request,
@@ -308,7 +294,7 @@ def _incident_out(row, tz: str) -> IncidentOut:
     )
 
 
-@router.get("/incidents", response_model=list[IncidentOut], responses={401: {"model": ErrorResponse}})
+@router.get("/incidents", response_model=list[IncidentOut], responses=UNAUTHORIZED)
 def list_incidents(
     request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
 ):
@@ -318,7 +304,7 @@ def list_incidents(
 
 @router.post(
     "/incidents", status_code=201, response_model=IncidentOut,
-    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": FieldErrorResponse}, **UNAUTHORIZED},
 )
 def create_incident(
     body: IncidentIn, request: Request,
@@ -328,15 +314,14 @@ def create_incident(
     try:
         incident_id = incidents.mark(db, request.app.state.clock(), tz, admin, body.start, body.end, body.note)
     except incidents.InvalidIncident as exc:
-        db.rollback()
-        return JSONResponse(status_code=400, content={"detail": str(exc), "field": exc.field})
+        return field_error(db, str(exc), exc.field)
     db.commit()
     return _incident_out(db.execute("SELECT * FROM incidents WHERE id = ?", (incident_id,)).fetchone(), tz)
 
 
 @router.post(
     "/incidents/{incident_id}/close", response_model=IncidentOut,
-    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+    responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}},
 )
 def close_incident(
     incident_id: int, request: Request,

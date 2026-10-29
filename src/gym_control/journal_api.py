@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from gym_control import auth, journal
-from gym_control.admin_api import ErrorResponse
+from gym_control.admin_common import UNAUTHORIZED, ErrorResponse
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -50,14 +50,14 @@ def _parse_day(value: str) -> date | None:
     return date.fromisoformat(value) if value else None
 
 
-@router.get("/kinds", response_model=list[KindOption], responses={401: {"model": ErrorResponse}})
+@router.get("/kinds", response_model=list[KindOption], responses=UNAUTHORIZED)
 def list_kinds(admin: Admin = Depends(require_admin_api)):
     return [KindOption(value=value, label=label) for value, label in journal.KIND_LABELS.items()]
 
 
 @router.get(
     "", response_model=JournalPageOut,
-    responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": ErrorResponse}, **UNAUTHORIZED},
 )
 def read_journal(
     request: Request,

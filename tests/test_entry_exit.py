@@ -1,5 +1,8 @@
 """Intrare/Ieșire de bază. Ceasul de test: 08:12 UTC = 10:12 ora locală (iarna, UTC+2)."""
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 
 def totp(harness):
     return {"totp": harness.current_totp()}
@@ -74,10 +77,16 @@ def test_events_are_in_journal_with_their_utc_moment(harness):
     phone.post("/me/entry", data=totp(harness))
     harness.clock.advance(hours=2)
     phone.post("/me/exit", data=totp(harness))
-    page = harness.admin_client().get("/api/admin/journal").text
-    assert "Intrare: Ana Pop" in page
-    assert "Ieșire: Ana Pop" in page
-    assert "2026-01-05T08:12:00+00:00" in page and "2026-01-05T10:12:00+00:00" in page  # ora locală: în SPA
+    body = harness.admin_client().get("/api/admin/journal").json()
+    local = {
+        e["summary"]: datetime.fromisoformat(e["at"]).astimezone(ZoneInfo(body["timezone"]))
+        for e in body["entries"]
+    }
+    # `at` e UTC, `timezone` e fusul Sălii: SPA-ul afișează ora locală din cele două
+    assert local["Intrare: Ana Pop"].strftime("%Y-%m-%d %H:%M") == "2026-01-05 10:12"
+    assert local["Ieșire: Ana Pop"].strftime("%Y-%m-%d %H:%M") == "2026-01-05 12:12"
+    entry = next(e for e in body["entries"] if e["summary"] == "Intrare: Ana Pop")
+    assert entry["at"] == "2026-01-05T08:12:00+00:00"
 
 
 def test_rejected_events_are_not_journaled(harness):

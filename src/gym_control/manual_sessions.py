@@ -17,12 +17,11 @@ import sqlite3
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from gym_control import anomalies, journal, reports
 from gym_control import auth
-from gym_control.admin_api import ErrorResponse, FieldErrorResponse
+from gym_control.admin_common import UNAUTHORIZED, ErrorResponse, FieldErrorResponse, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.clocktime import local_iso, parse_local
 from gym_control.db import get_db
@@ -151,13 +150,9 @@ class SessionOut(BaseModel):
     id: int
 
 
-def _invalid(exc: InvalidManualSession) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"detail": str(exc), "field": exc.field})
-
-
 @router.post(
     "", status_code=201, response_model=SessionOut,
-    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+    responses={400: {"model": FieldErrorResponse}, **UNAUTHORIZED},
 )
 def create(body: SessionIn, request: Request, admin: Admin = Depends(require_admin_api),
            db: sqlite3.Connection = Depends(get_db)):
@@ -166,15 +161,14 @@ def create(body: SessionIn, request: Request, admin: Admin = Depends(require_adm
             db, request.app.state.clock(), request.app.state.settings.timezone, admin,
             body.employee_id, body.entry_at, body.exit_at, body.reason)
     except InvalidManualSession as exc:
-        db.rollback()
-        return _invalid(exc)
+        return field_error(db, str(exc), exc.field)
     db.commit()
     return SessionOut(id=session_id)
 
 
 @router.post(
     "/{session_id}/correct", status_code=204,
-    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse},
+    responses={400: {"model": FieldErrorResponse}, **UNAUTHORIZED,
                404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
 )
 def correct(session_id: int, body: SessionCorrection, request: Request,
@@ -186,7 +180,6 @@ def correct(session_id: int, body: SessionCorrection, request: Request,
         correct_session(db, request.app.state.clock(), request.app.state.settings.timezone,
                         admin, row, body.exit_at, body.reason)
     except InvalidManualSession as exc:
-        db.rollback()
-        return _invalid(exc)
+        return field_error(db, str(exc), exc.field)
     db.commit()
     return Response(status_code=204)
