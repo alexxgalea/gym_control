@@ -1,11 +1,9 @@
 import threading
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Callable
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
 from gym_control import admin_api, auth, db, door, employee_api, enrollment, journal_api, manual_sessions, network, report_api, scheduler, spa, totp
 from gym_control import admin_home_api, admin_settings_api
@@ -48,7 +46,6 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
         app.state.db, clock(),
         settings.bootstrap_admin_username, settings.bootstrap_admin_password,
     )
-    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
     app.include_router(admin_api.router)
     app.include_router(admin_settings_api.router)
     app.include_router(admin_home_api.router)
@@ -62,7 +59,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
 
     app.add_exception_handler(network.NotInHallNetwork, network.not_in_hall_handler)
 
-    # Catch-all-ul SPA se înregistrează ultimul: rutele HTML ale Angajatului și kioskului au prioritate.
+    # Catch-all-ul SPA se înregistrează ultimul: rutele Angajatului și kioskului au prioritate.
     spa.mount(app, settings.frontend_dist)
 
     return app

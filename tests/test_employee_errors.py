@@ -1,4 +1,4 @@
-"""Forma comună a erorilor Angajatului: `{detail, reason}` pe API, HTML pe paginile vechi."""
+"""Forma comună a erorilor Angajatului: `{detail, reason}` pe API, doar JSON."""
 
 from gym_control import network
 from gym_control.enrollment import EnrollmentRequired
@@ -37,7 +37,7 @@ def test_phone_not_activated_is_json_401_with_reason(harness):
     assert body["detail"]
 
 
-def test_legacy_pages_still_answer_in_html(harness):
+def test_handlers_answer_in_json_outside_the_api_prefix(harness):
     def needs_hall():
         raise network.NotInHallNetwork()
 
@@ -45,4 +45,4 @@ def test_legacy_pages_still_answer_in_html(harness):
     c.app.add_api_route("/_probe/legacy", needs_hall)
     r = c.get("/_probe/legacy")
     assert r.status_code == 403
-    assert "text/html" in r.headers["content-type"]
+    assert r.json()["reason"] == "not_in_hall_network"

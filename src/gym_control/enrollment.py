@@ -17,7 +17,6 @@ from pydantic import BaseModel
 from gym_control import employee_errors, journal
 from gym_control.db import get_db
 from gym_control.network import require_hall_network
-from gym_control.templates import templates
 
 COOKIE = "gc_device"
 LINK_TTL = timedelta(hours=48)
@@ -91,9 +90,7 @@ def require_employee(employee: Employee | None = Depends(current_employee)) -> E
 
 
 def enrollment_required_handler(request: Request, exc: EnrollmentRequired):
-    if employee_errors.is_employee_api(request):
-        return employee_errors.phone_not_activated_response()
-    return templates.TemplateResponse(request, "enroll_required.html", {}, status_code=401)
+    return employee_errors.phone_not_activated_response()
 
 
 class EnrollmentOut(BaseModel):

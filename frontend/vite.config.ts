@@ -21,8 +21,6 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": { target: "http://localhost:8000", changeOrigin: false },
-      // CSS-ul paginilor servite de aplicație.
-      "/static": "http://localhost:8000",
     },
   },
   test: {
