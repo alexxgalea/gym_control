@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from gym_control import journal
 from gym_control.db import get_db
+from gym_control.network import require_hall_network
 from gym_control.templates import templates
 
 COOKIE = "gc_device"
@@ -104,7 +105,7 @@ def enroll_page(request: Request, token: str, db: sqlite3.Connection = Depends(g
     return templates.TemplateResponse(request, "enroll_confirm.html", {"name": link["name"]})
 
 
-@router.post("/enroll/{token}")
+@router.post("/enroll/{token}", dependencies=[Depends(require_hall_network)])
 def enroll(request: Request, token: str, db: sqlite3.Connection = Depends(get_db)):
     now = request.app.state.clock()
     link = _open_link(db, now, token)
