@@ -7,12 +7,12 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from gym_control import anomalies, auth, employees, enrollment, incidents, journal, runtime_settings
+from gym_control import anomalies, auth, network, employees, enrollment, incidents, journal, runtime_settings
 from gym_control.auth import Admin, require_admin
 from gym_control.db import get_db
 from gym_control.templates import templates
 
-router = APIRouter(prefix="/admin")
+router = APIRouter(prefix="/admin", dependencies=[Depends(auth.require_same_origin)])
 KEEP = "\x00keep"  # valoare implicită a câmpurilor de formular lipsă (golul "" e valoare reală)
 
 
@@ -29,11 +29,23 @@ def login(
     db: sqlite3.Connection = Depends(get_db),
 ):
     now = request.app.state.clock()
+    throttle: auth.LoginThrottle = request.app.state.login_throttle
+    key = (network.source_ip(request), username.strip().lower())
+    wait = throttle.retry_after(key, now)
+    if wait is not None:
+        minutes = int(wait.total_seconds() // 60) + 1
+        return templates.TemplateResponse(
+            request, "login.html",
+            {"error": f"Prea multe încercări eșuate. Încearcă din nou peste {minutes} min."},
+            status_code=429,
+        )
     admin = auth.authenticate(db, username, password)
     if admin is None:
+        throttle.record_failure(key, now)
         return templates.TemplateResponse(
             request, "login.html", {"error": "Cont sau parolă greșite."}, status_code=401
         )
+    throttle.record_success(key)
     token = auth.open_session(db, now, admin)
     journal.write_admin_action(db, now, admin, "admin.login", "Autentificare")
     db.commit()

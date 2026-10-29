@@ -5,6 +5,7 @@ import secrets
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from urllib.parse import urlsplit
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
@@ -86,3 +87,54 @@ def require_admin(request: Request, db: sqlite3.Connection = Depends(get_db)) ->
         if row:
             return Admin(row["id"], row["username"])
     raise HTTPException(status_code=303, headers={"Location": "/admin/login"})
+
+
+def require_same_origin(request: Request) -> None:
+    """Protecție CSRF pentru POST-urile Admin: `Origin` (sau, în lipsă, `Referer`) trebuie să fie
+    chiar originea aplicației (`Host`-ul cererii). Browserele trimit `Origin` la orice POST; fără
+    niciunul dintre antete cererea e refuzată. Se aplică doar metodelor care schimbă starea.
+    Alegerea (în locul tokenilor în formulare): fără stare, fără modificări în șabloane; cookie-ul
+    Adminului e și `SameSite=Lax`. Aplicația rulează direct, fără proxy (ADR 0001)."""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    source = request.headers.get("origin") or request.headers.get("referer") or ""
+    host = request.headers.get("host", "")
+    if not source or source == "null" or urlsplit(source).netloc != host:
+        raise HTTPException(status_code=403, detail="Cerere respinsă: origine necunoscută.")
+
+
+class LoginThrottle:
+    """Limitează încercările de login: după `MAX_FAILURES` eșecuri în `WINDOW` pentru perechea
+    (IP, cont), blocare `LOCKOUT`. Ține starea în memorie (se resetează la repornire); ceasul e cel injectat."""
+
+    MAX_FAILURES = 5
+    WINDOW = timedelta(minutes=15)
+    LOCKOUT = timedelta(minutes=15)
+
+    def __init__(self) -> None:
+        self._failures: dict[tuple[str, str], list[datetime]] = {}
+        self._locked_until: dict[tuple[str, str], datetime] = {}
+
+    def retry_after(self, key: tuple[str, str], now: datetime) -> timedelta | None:
+        until = self._locked_until.get(key)
+        if until is not None and until > now:
+            return until - now
+        self._locked_until.pop(key, None)
+        return None
+
+    def record_failure(self, key: tuple[str, str], now: datetime) -> None:
+        self._prune(now)
+        times = [t for t in self._failures.get(key, []) if now - t < self.WINDOW] + [now]
+        self._failures[key] = times
+        if len(times) >= self.MAX_FAILURES:
+            self._locked_until[key] = now + self.LOCKOUT
+            del self._failures[key]
+
+    def record_success(self, key: tuple[str, str]) -> None:
+        self._failures.pop(key, None)
+        self._locked_until.pop(key, None)
+
+    def _prune(self, now: datetime) -> None:
+        self._failures = {k: [t for t in v if now - t < self.WINDOW] for k, v in self._failures.items()}
+        self._failures = {k: v for k, v in self._failures.items() if v}
+        self._locked_until = {k: v for k, v in self._locked_until.items() if v > now}

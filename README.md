@@ -24,6 +24,12 @@ Ecranele Admin sunt la `/admin/login`. Contul se creează în unul din două mod
 
 Parolele sunt păstrate cu hash Argon2. Sesiunea Adminului ține 12 ore.
 
+Protecții pe ecranele Admin:
+- **Limitarea încercărilor de login**: 5 eșecuri în 15 minute pentru aceeași pereche (IP, cont) blochează 15 minute
+  loginul (mesaj „Prea multe încercări eșuate…”, HTTP 429). Starea e în memorie (se resetează la repornire).
+- **CSRF**: orice POST pe `/admin/...` cere `Origin` (sau `Referer`) identic cu originea aplicației; altfel 403.
+  Fără tokeni în formulare. Cookie-ul Adminului este și `SameSite=Lax`. În teste, clienții trimit `Origin: http://testserver`.
+
 ## Import Angajați (CSV)
 
 Ecranul Angajați acceptă un CSV cu antetul `nume,email` (și `;` ca separator).

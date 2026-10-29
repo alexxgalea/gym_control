@@ -20,12 +20,13 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from gym_control import anomalies, employees, journal, reports
+from gym_control import auth
 from gym_control.auth import Admin, require_admin
 from gym_control.clocktime import local_iso, parse_local
 from gym_control.db import get_db
 from gym_control.templates import templates
 
-router = APIRouter(prefix="/admin")
+router = APIRouter(prefix="/admin", dependencies=[Depends(auth.require_same_origin)])
 
 METHOD_MANUAL = "manual"
 KIND = "manual_session"

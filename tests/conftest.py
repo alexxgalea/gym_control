@@ -139,7 +139,8 @@ def make_harness(clock):
         app = create_app(settings=settings, clock=clock)
 
         def factory(ip: str) -> TestClient:
-            c = TestClient(app, client=(ip, 50000))
+            # Ca un browser: POST-urile poartă Origin-ul aplicației (protecția CSRF a ecranelor Admin).
+            c = TestClient(app, client=(ip, 50000), headers={"Origin": "http://testserver"})
             clients.append(c)
             return c
 
