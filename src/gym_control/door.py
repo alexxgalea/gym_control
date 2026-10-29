@@ -51,8 +51,12 @@ def active_since(db: sqlite3.Connection) -> datetime | None:
 
 
 def retire(db: sqlite3.Connection) -> bool:
-    """Scoate din uz Ecranul de la ușă activ (fără commit); False dacă nu era niciunul."""
-    return db.execute("DELETE FROM door_screen WHERE id = 1").rowcount > 0
+    """Scoate din uz Ecranul de la ușă activ și anulează linkurile de Activare nefolosite (fără commit);
+    False dacă nu era niciun Ecran activ."""
+    retired = db.execute("DELETE FROM door_screen WHERE id = 1").rowcount > 0
+    if retired:
+        db.execute("DELETE FROM door_links WHERE used_at IS NULL")
+    return retired
 
 
 def _open_link(db, now, token):
@@ -102,7 +106,13 @@ def activate(request: Request, token: str, db: sqlite3.Connection = Depends(get_
     if link is None:
         return employee_errors.link_invalid_response()
     device_token = secrets.token_urlsafe(32)
-    db.execute("UPDATE door_links SET used_at = ? WHERE token_hash = ?", (now.isoformat(), _digest(token)))
+    consumed = db.execute(  # atomic: dintre două cereri concurente pe același link, doar una consumă
+        "UPDATE door_links SET used_at = ? WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
+        (now.isoformat(), _digest(token), now.isoformat()),
+    )
+    if consumed.rowcount == 0:
+        db.rollback()
+        return employee_errors.link_invalid_response()
     db.execute(
         "INSERT INTO door_screen (id, token_hash, activated_at, activated_by_admin_id) VALUES (1,?,?,?)"
         " ON CONFLICT(id) DO UPDATE SET token_hash = excluded.token_hash,"

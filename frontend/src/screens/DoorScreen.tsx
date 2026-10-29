@@ -11,14 +11,21 @@ import { Skeleton } from "@/design/Skeleton";
 import { StatusBadge } from "@/design/StatusBadge";
 import { errorText, isShownError } from "@/lib/errors";
 import { formatLocalDateTime } from "@/lib/format";
+import { IN_HALL_KEY } from "@/lib/queryKeys";
 
+const POLL_WHILE_ISSUED_MS = 3_000;
 const DOOR_SCREEN_KEY = ["admin", "door-screen"] as const;
 
 /** „Ecranul de la ușă”: starea și Activarea (link cu QR, de unică folosință, pentru telefonul de la ușă). */
 export function DoorScreen() {
   const queryClient = useQueryClient();
-  const status = useQuery({ queryKey: DOOR_SCREEN_KEY, queryFn: adminApi.doorScreen.status });
   const [issued, setIssued] = useState<DoorActivationLink | null>(null);
+  const status = useQuery({
+    queryKey: DOOR_SCREEN_KEY,
+    queryFn: adminApi.doorScreen.status,
+    // cu linkul emis, așteptăm Activarea de pe telefonul de la ușă
+    refetchInterval: issued ? POLL_WHILE_ISSUED_MS : false,
+  });
   const issue = useMutation({
     mutationFn: adminApi.doorScreen.activationLink,
     onSuccess: setIssued,
@@ -28,7 +35,10 @@ export function DoorScreen() {
   const retire = useMutation({
     mutationFn: adminApi.doorScreen.retire,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: DOOR_SCREEN_KEY });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: DOOR_SCREEN_KEY }),
+        queryClient.invalidateQueries({ queryKey: IN_HALL_KEY }),
+      ]);
       setRetiring(false);
     },
     onError: () => setRetiring(false),
@@ -37,6 +47,7 @@ export function DoorScreen() {
   const close = () => {
     setIssued(null);
     void queryClient.invalidateQueries({ queryKey: DOOR_SCREEN_KEY });
+    void queryClient.invalidateQueries({ queryKey: IN_HALL_KEY });
   };
 
   return (

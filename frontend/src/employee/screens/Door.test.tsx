@@ -108,6 +108,10 @@ describe("Ecranul de la ușă (/door)", () => {
     await tick(0);
 
     expect(screen.getByRole("heading", { name: "Acest telefon nu mai este Ecranul de la ușă" })).toBeInTheDocument();
+    // la fel de adevărat dacă telefonul a fost înlocuit sau scos din uz de Admin
+    expect(screen.getByText(/înlocuit sau scos din uz/)).toBeInTheDocument();
+    expect(screen.getByText(/cere adminului un link nou/i)).toBeInTheDocument();
+    expect(screen.queryByText(/alt telefon/)).not.toBeInTheDocument();
   });
 
   it("are logoul GymCtrl", async () => {

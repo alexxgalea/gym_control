@@ -309,3 +309,31 @@ def test_outside_hall_rejection_tells_to_connect_to_hall_wifi(harness):
     link = "/api/employee" + harness.issue_door_link()
     r = harness.client(OUTSIDE_IP).post(link)
     assert "Wi-Fi" in r.json()["detail"]
+
+
+def test_racing_activations_of_one_link_yield_a_single_cookie(harness, monkeypatch):
+    from gym_control import door
+
+    link = harness.issue_door_link()
+    api = "/api/employee" + link
+    real_open_link = door._open_link
+    # Ambele cereri trec de verificarea „link deschis” înainte ca vreuna să-l consume.
+    stale = []
+    monkeypatch.setattr(door, "_open_link", lambda db, now, token: stale[0] if stale else stale.append(
+        real_open_link(db, now, token)) or stale[0])
+    first = harness.client().post(api)
+    second = harness.client().post(api)
+    assert first.status_code == 200
+    assert "gc_door" in first.cookies
+    assert second.status_code == 410
+    assert second.json()["reason"] == "link_invalid"
+    assert "gc_door" not in second.cookies
+
+
+def test_retiring_an_active_screen_cancels_outstanding_activation_links(harness):
+    harness.door_client()
+    admin = harness.admin_client()
+    link = "/api/employee" + harness.issue_door_link(admin)
+    assert admin.delete("/api/admin/door-screen").status_code == 204
+    assert harness.client().get(link).status_code == 410
+    assert harness.client().post(link).status_code == 410

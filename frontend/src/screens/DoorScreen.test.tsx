@@ -1,7 +1,13 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { act, fireEvent, render } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { IN_HALL_KEY } from "@/lib/queryKeys";
+import { createQueryClient } from "@/queryClient";
 import { renderApp } from "@/test/render";
+import { DoorScreen } from "@/screens/DoorScreen";
 import { server } from "@/test/server";
 
 const TZ = "Europe/Bucharest";
@@ -81,5 +87,77 @@ describe("Ecranul de la ușă (Admin)", () => {
 
     await screen.findByText("Neactivat");
     expect(screen.queryByRole("button", { name: "Scoate din uz" })).not.toBeInTheDocument();
+  });
+
+  it("cu linkul emis, verifică periodic starea: Activarea apare fără reîncărcare", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    try {
+      let active = false;
+      server.use(
+        signedIn,
+        http.get("/api/admin/door-screen", () =>
+          HttpResponse.json({ timezone: TZ, active, activated_at: active ? "2026-01-05 10:12" : null }),
+        ),
+        issued,
+      );
+      const settle = async () => {
+        for (let i = 0; i < 5; i += 1) await act(() => vi.advanceTimersByTimeAsync(10));
+      };
+      render(
+        <QueryClientProvider client={createQueryClient()}>
+          <MemoryRouter>
+            <DoorScreen />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      await settle();
+      fireEvent.click(screen.getByRole("button", { name: "Activează" }));
+      await settle();
+      expect(screen.getByRole("img", { name: /cod qr/i })).toBeInTheDocument();
+
+      active = true;
+      await act(() => vi.advanceTimersByTimeAsync(3000));
+      await settle();
+
+      expect(screen.getByText(/Activ din 5 ian.*10:12/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("Activarea și Scoaterea din uz invalidează „Acum în Sală” (avertismentul de pe Acasă)", async () => {
+    let active = false;
+    server.use(
+      signedIn,
+      http.get("/api/admin/door-screen", () =>
+        HttpResponse.json({ timezone: TZ, active, activated_at: active ? "2026-01-05 10:12" : null }),
+      ),
+      http.delete("/api/admin/door-screen", () => {
+        active = false;
+        return new HttpResponse(null, { status: 204 });
+      }),
+      issued,
+    );
+    const client = createQueryClient();
+    client.setQueryData(IN_HALL_KEY, { door_screen_active: false });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <DoorScreen />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Activează" }));
+    await user.click(await screen.findByRole("button", { name: "Gata" }));
+    await vi.waitFor(() => expect(client.getQueryState(IN_HALL_KEY)?.isInvalidated).toBe(true));
+
+    client.setQueryData(IN_HALL_KEY, { door_screen_active: true });
+    active = true;
+    await client.invalidateQueries({ queryKey: ["admin", "door-screen"] });
+    await user.click(await screen.findByRole("button", { name: "Scoate din uz" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Scoate din uz" }));
+    await vi.waitFor(() => expect(client.getQueryState(IN_HALL_KEY)?.isInvalidated).toBe(true));
   });
 });

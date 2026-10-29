@@ -28,13 +28,12 @@ function isBlocked(error: unknown): error is EmployeeApiError & { reason: Blocke
 }
 
 /** Codul curent de la server, reîmprospătat periodic. `stale`: reîmprospătarea nu mai reușește. */
-function useDoorCode(enabled: boolean) {
+function useDoorCode() {
   const [code, setCode] = useState<DoorCode | null>(null);
   const [stale, setStale] = useState(false);
   const [blocked, setBlocked] = useState<Blocked | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
     let alive = true;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -77,7 +76,7 @@ function useDoorCode(enabled: boolean) {
       clearTimeout(pollTimer);
       clearTimeout(staleTimer);
     };
-  }, [enabled]);
+  }, []);
 
   return { code, stale, blocked };
 }
@@ -107,12 +106,12 @@ const RING_RADIUS = 104;
 
 /** `/door`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui; doar pentru telefonul activat. */
 export function Door() {
-  const { code, stale, blocked } = useDoorCode(true);
+  const { code, stale, blocked } = useDoorCode();
 
   if (blocked === "door_token_invalid") {
     return (
       <Explanation title="Acest telefon nu mai este Ecranul de la ușă">
-        Ecranul de la ușă a fost activat pe alt telefon. Cere Adminului să activeze din nou acest telefon, dacă e cazul.
+        Acest telefon a fost înlocuit sau scos din uz. Cere Adminului un link nou de activare, dacă e cazul.
       </Explanation>
     );
   }
