@@ -87,13 +87,14 @@ def test_dst_day_boundaries(make_harness, clock):
     h = make_harness()
     clock.set(datetime(2026, 3, 29, 20, 59, tzinfo=timezone.utc))  # 29 mar 23:59 local (+3)
     phone = h.enrolled_client("Ana Pop")
+    dan = h.enrolled_client("Dan Ionescu")
     _event(h, phone, "entry")
     clock.set(datetime(2026, 3, 29, 21, 0, tzinfo=timezone.utc))   # 30 mar 00:00 local
-    _event(h, phone, "exit")
+    _event(h, dan, "entry")
     admin = h.admin_client()
     page = admin.get("/admin/jurnal?from=2026-03-29&to=2026-03-29").text
     assert "Intrare: Ana Pop" in page
-    assert "Ieșire: Ana Pop" not in page
+    assert "Intrare: Dan Ionescu" not in page
 
 
 def test_invalid_dates_show_error_not_crash(harness):

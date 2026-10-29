@@ -94,3 +94,18 @@ def test_outside_hours_follows_runtime_settings(harness):
     assert r.status_code == 303
     harness.enrolled_client("Ana Pop").post("/me/entry", data=totp(harness))  # 10:12 local, în afara programului
     assert "în afara programului" in _anomalies(harness)
+
+
+def test_exit_on_old_open_session_is_rejected_and_flags_missing_exit(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    phone.post("/me/entry", data=totp(harness))
+    harness.clock.advance(days=1)
+    r = phone.post("/me/exit", data=totp(harness))
+    assert r.status_code == 409
+    assert "Nu ai o Intrare deschisă azi" in r.text
+    assert "Adminul poate corecta" in r.text
+    assert "Ieșire lipsă" in _anomalies(harness)
+    # nu s-a inventat nicio oră de Ieșire: o a doua încercare e tot respinsă, iar Intrarea nouă merge
+    assert phone.post("/me/exit", data=totp(harness)).status_code == 409
+    assert phone.post("/me/entry", data=totp(harness)).status_code == 200
+    assert _anomalies(harness).count("Ieșire lipsă") == 1

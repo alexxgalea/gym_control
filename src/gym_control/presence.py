@@ -64,6 +64,16 @@ def _outside_hours(db, now, tz, defaults) -> bool:
     return t < rs.opening_time or t >= rs.closing_time
 
 
+def _flag_missing_exit(db, now, employee, current: OpenSession) -> None:
+    if anomalies.flag(db, current.id, anomalies.MISSING_EXIT, now):
+        journal.write(
+            db, now, kind="anomaly", action="anomaly.missing_exit",
+            summary=f"Anomalie ({anomalies.LABELS[anomalies.MISSING_EXIT]}): {employee.name}",
+            employee_id=employee.id,
+            detail={"session_id": current.id, "anomalies": [anomalies.MISSING_EXIT]},
+        )
+
+
 def record_entry(db: sqlite3.Connection, now: datetime, tz: str, employee: Employee,
                  defaults: Settings, method: str = METHOD_QR_TOTP) -> str | None:
     """Înregistrează Intrarea. Întoarce None la succes sau mesajul de respingere.
@@ -74,13 +84,7 @@ def record_entry(db: sqlite3.Connection, now: datetime, tz: str, employee: Emplo
     if current is not None:
         if not is_old(current, now, tz):
             return f"Ești deja în Sală din {local_hm(current.entry_at, tz)}. Nu poți face o a doua Intrare."
-        if anomalies.flag(db, current.id, anomalies.MISSING_EXIT, now):
-            journal.write(
-                db, now, kind="anomaly", action="anomaly.missing_exit",
-                summary=f"Anomalie ({anomalies.LABELS[anomalies.MISSING_EXIT]}): {employee.name}",
-                employee_id=employee.id,
-                detail={"session_id": current.id, "anomalies": [anomalies.MISSING_EXIT]},
-            )
+        _flag_missing_exit(db, now, employee, current)
     detail: dict = {"method": method}
     if _outside_hours(db, now, tz, defaults):
         detail["anomalies"] = [anomalies.OUTSIDE_HOURS]
@@ -100,11 +104,20 @@ def record_exit(db: sqlite3.Connection, now: datetime, tz: str, employee: Employ
     current = open_session(db, employee.id)
     if current is None:
         return "Nu ai o Intrare deschisă, deci nu poți face Ieșire. Fă mai întâi Intrare."
+    if is_old(current, now, tz):
+        # Decizie (#8): o Sesiune rămasă deschisă dintr-o zi anterioară este Anomalie `missing_exit`,
+        # nu se închide cu ora curentă (ar inventa o prezență peste noapte în Raport). Adminul o corectează.
+        _flag_missing_exit(db, now, employee, current)
+        db.commit()
+        return ("Nu ai o Intrare deschisă azi (ultima Intrare a rămas fără Ieșire). "
+                "Adminul poate corecta Sesiunea.")
     journal_id = _journal_event(db, now, "exit", employee, {"method": method, "session_id": current.id})
     db.execute(
         "UPDATE sessions SET exit_at = ?, exit_method = ?, exit_journal_id = ? WHERE id = ?",
         (now.isoformat(), method, journal_id, current.id),
     )
+    # Ieșirea normală rezolvă „Sesiune deschisă la închidere” (nu mai e deschisă).
+    anomalies.resolve(db, current.id, anomalies.OPEN_AT_CLOSING, now)
     db.commit()
     return None
 

@@ -127,8 +127,9 @@ def test_accounts_survive_retention(harness):
 
 
 def test_session_straddling_the_cutoff_is_kept_with_its_journal_rows(harness):
-    phone = _enter(harness)  # 5 ian 2026
-    harness.clock.set(datetime(2026, 1, 25, 9, 0, tzinfo=timezone.utc))
+    harness.clock.set(datetime(2026, 1, 15, 11, 0, tzinfo=timezone.utc))
+    phone = _enter(harness)  # înainte de tăietură, în aceeași zi locală cu Ieșirea
+    harness.clock.set(datetime(2026, 1, 15, 13, 0, tzinfo=timezone.utc))
     _exit(harness, phone)
     harness.clock.set(datetime(2027, 1, 15, 12, 0, tzinfo=timezone.utc))  # tăietura: 15 ian 2026
     harness.tick()
