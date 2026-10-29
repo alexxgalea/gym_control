@@ -1,5 +1,6 @@
 import sqlite3
 import threading
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -8,7 +9,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, auth, db, door, enrollment, network, presence, totp
+from gym_control import admin, auth, db, door, enrollment, network, presence, scheduler, totp
 from gym_control import db as db_module
 from gym_control.settings import Settings
 from gym_control.templates import templates as _templates
@@ -23,11 +24,27 @@ def utc_now() -> datetime:
 def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> FastAPI:
     """Fabrica aplicației. Ceasul și configurația sunt injectate din exterior."""
     settings = settings or Settings.from_env()
-    app = FastAPI(title="Gym Control")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        stop = threading.Event()
+        thread = None
+        if settings.scheduler_enabled:
+            thread = threading.Thread(
+                target=scheduler.run_loop, args=(app, stop, settings.scheduler_interval),
+                name="gym-scheduler", daemon=True)
+            thread.start()
+        yield
+        stop.set()
+        if thread:
+            thread.join(timeout=5)
+
+    app = FastAPI(title="Gym Control", lifespan=lifespan)
     app.state.settings = settings
     app.state.clock = clock
     app.state.db = db.connect(settings.database)
     app.state.db_lock = threading.RLock()
+    app.state.tick = lambda now: scheduler.tick(app, now)
     app.state.totp_secret = totp.load_secret(app.state.db, settings.totp_secret)
     auth.ensure_bootstrap_admin(
         app.state.db, clock(),

@@ -70,3 +70,15 @@ QR-ul codifică `/me?t=<TOTP>`. Intrarea/Ieșirea (`POST /me/entry|exit`) cer c�
 serverului (fereastra curentă și cea anterioară, 30 s); nu e de unică folosință, iar orice timestamp trimis de client
 e ignorat. Metoda de validare `qr_totp` apare în Sesiune și în Jurnal. În teste: `harness.current_totp()`,
 `harness.kiosk_client()`.
+
+## `tick` și schedulerul
+
+`scheduler.tick(app, now)` este punctul unic de intrare pentru joburile periodice. Producția pornește o buclă de
+fundal (lifespan) care apelează `tick(clock())` la fiecare 60 s (`GYM_SCHEDULER=0` o oprește,
+`GYM_SCHEDULER_INTERVAL` schimbă intervalul); o excepție dintr-un job este logată și bucla continuă.
+Testele nu pornesc bucla (`Settings.scheduler_enabled=False`) și apelează `harness.tick()` după ce mută ceasul.
+
+Joburile stau în registrul `scheduler.JOBS`, fiecare `def job(app, now)`, idempotent, cu commit propriu.
+Primul job: la/după ora de închidere (setare la runtime, ora locală), fiecare Sesiune deschisă din ziua locală
+curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcată „Ieșire lipsă” primește Anomalia
+`open_at_closing`, plus o linie în Jurnal. Sesiunea rămâne deschisă, fără Ieșire inventată; rulările repetate nu dublează.

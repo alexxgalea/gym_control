@@ -43,10 +43,15 @@ class Harness:
     clock: FakeClock
     settings: Settings
     _client_factory: callable
+    _tick: callable = None
 
     def client(self, ip: str = HALL_IP) -> TestClient:
         """Client HTTP cu IP-ul sursă dat (implicit: în subrețeaua Sălii)."""
         return self._client_factory(ip)
+
+    def tick(self) -> None:
+        """Rulează `tick` la ceasul controlat (aceeași cale ca schedulerul de producție)."""
+        self._tick(self.clock())
 
     def admin_client(self, ip: str = HALL_IP) -> TestClient:
         """Client deja autentificat ca Admin-ul de bootstrap (ADMIN_USER)."""
@@ -138,7 +143,8 @@ def make_harness(clock):
             clients.append(c)
             return c
 
-        return Harness(clock=clock, settings=settings, _client_factory=factory)
+        return Harness(clock=clock, settings=settings, _client_factory=factory,
+                       _tick=app.state.tick)
 
     yield _make
     for c in clients:

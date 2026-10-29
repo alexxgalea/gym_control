@@ -21,6 +21,9 @@ class Settings:
     # (gol = generat o dată și păstrat în baza de date).
     kiosk_token: str = ""
     totp_secret: str = ""
+    # Schedulerul de fundal (#9): dezactivat implicit (testele); producția îl pornește din mediu.
+    scheduler_enabled: bool = False
+    scheduler_interval: float = 60.0
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -36,4 +39,6 @@ class Settings:
             bootstrap_admin_password=env.get("GYM_ADMIN_PASSWORD", ""),
             kiosk_token=env.get("GYM_KIOSK_TOKEN", ""),
             totp_secret=env.get("GYM_TOTP_SECRET", ""),
+            scheduler_enabled=env.get("GYM_SCHEDULER", "1") != "0",
+            scheduler_interval=float(env.get("GYM_SCHEDULER_INTERVAL", "60")),
         )
