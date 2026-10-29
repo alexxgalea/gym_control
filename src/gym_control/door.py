@@ -50,6 +50,11 @@ def active_since(db: sqlite3.Connection) -> datetime | None:
     return datetime.fromisoformat(row["activated_at"]) if row else None
 
 
+def retire(db: sqlite3.Connection) -> bool:
+    """Scoate din uz Ecranul de la ușă activ (fără commit); False dacă nu era niciunul."""
+    return db.execute("DELETE FROM door_screen WHERE id = 1").rowcount > 0
+
+
 def _open_link(db, now, token):
     return db.execute(
         "SELECT l.admin_id, a.username FROM door_links l JOIN admins a ON a.id = l.admin_id"

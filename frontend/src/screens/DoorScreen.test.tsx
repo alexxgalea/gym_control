@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { renderApp } from "@/test/render";
@@ -44,5 +44,42 @@ describe("Ecranul de la ușă (Admin)", () => {
     await user.click(screen.getByRole("button", { name: "Copiază linkul" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Link copiat");
     expect(await navigator.clipboard.readText()).toBe("http://laptop:8000/door/activate/tok");
+  });
+  it("Scoate din uz cere confirmare, apoi trimite cererea și arată Neactivat", async () => {
+    let active = true;
+    let deleted = 0;
+    server.use(
+      signedIn,
+      http.get("/api/admin/door-screen", () =>
+        HttpResponse.json({ timezone: TZ, active, activated_at: active ? "2026-01-05 10:12" : null }),
+      ),
+      http.delete("/api/admin/door-screen", () => {
+        deleted += 1;
+        active = false;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderApp("/door-screen");
+
+    await user.click(await screen.findByRole("button", { name: "Scoate din uz" }));
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(/pierdut|furat/i);
+    expect(deleted).toBe(0);
+    await user.click(screen.getByRole("button", { name: "Anulează" }));
+    expect(deleted).toBe(0);
+
+    await user.click(screen.getByRole("button", { name: "Scoate din uz" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Scoate din uz" }));
+
+    expect(await screen.findByText("Neactivat")).toBeInTheDocument();
+    expect(deleted).toBe(1);
+  });
+
+  it("neactivat: nu oferă Scoate din uz", async () => {
+    server.use(signedIn, status({ active: false, activated_at: null }));
+    renderApp("/door-screen");
+
+    await screen.findByText("Neactivat");
+    expect(screen.queryByRole("button", { name: "Scoate din uz" })).not.toBeInTheDocument();
   });
 });

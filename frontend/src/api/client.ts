@@ -105,6 +105,7 @@ export const adminApi = {
   doorScreen: {
     status: () => api<DoorScreenStatus>("/api/admin/door-screen"),
     activationLink: () => api<DoorActivationLink>("/api/admin/door-screen/activation-link", { method: "POST" }),
+    retire: () => api<void>("/api/admin/door-screen", { method: "DELETE" }),
   },
   /** „Acum în Sală”: Sesiunile de azi fără Ieșire. */
   inHall: () => api<InHall>("/api/admin/in-hall"),

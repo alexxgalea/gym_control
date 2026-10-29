@@ -375,3 +375,16 @@ def create_door_activation_link(
     db.commit()
     link = str(request.base_url).rstrip("/") + f"/door/activate/{token}"
     return DoorActivationLink(link=link, qr_svg=door.qr_svg(link), hours=int(door.LINK_TTL.total_seconds() // 3600))
+
+
+@router.delete("/door-screen", status_code=204, responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}})
+def retire_door_screen(
+    request: Request, admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    """Scoate din uz Ecranul de la ușă fără înlocuire (telefon pierdut sau furat)."""
+    now = request.app.state.clock()
+    if not door.retire(db):
+        raise HTTPException(status_code=404, detail="Nu există un Ecran de la ușă activ")
+    journal.write_admin_action(db, now, admin, "door.retire", "Ecranul de la ușă scos din uz")
+    db.commit()
+    return Response(status_code=204)

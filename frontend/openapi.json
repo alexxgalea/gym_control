@@ -1182,6 +1182,39 @@
       }
     },
     "/api/admin/door-screen": {
+      "delete": {
+        "description": "Scoate din uz Ecranul de la ușă fără înlocuire (telefon pierdut sau furat).",
+        "operationId": "retire_door_screen_api_admin_door_screen_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "summary": "Retire Door Screen",
+        "tags": [
+          "admin"
+        ]
+      },
       "get": {
         "operationId": "door_screen_status_api_admin_door_screen_get",
         "responses": {
