@@ -66,6 +66,13 @@ Ecranul Anomalii (`/admin/anomalies`) este în SPA: lista Anomaliilor nerezolvat
 ecranul HTML al Sesiunii manuale, încă nemigrat) pentru Sesiunile deschise și „Marchează verificată” (cu confirmare)
 doar pentru `outside_hours`; închiderea apare în Jurnal cu autorul. API: `GET /api/admin/anomalies`,
 `POST /api/admin/anomalies/{id}/dismiss` (204; 404 dacă nu există, e deja rezolvată sau nu e `outside_hours`).
+## Raport de prezență (SPA)
+
+Ecranul Rapoarte (`/admin/reports`) generează Raportul pe un interval orar; varianta tipărită e ruta SPA
+`/admin/reports/print?from=..&to=..` (fără navigare laterală, `print:` ascunde butoanele). API (`report_api.py`):
+`GET /api/admin/reports?from=..&to=..` (rânduri, textul de neacceptare și textul „deschisă”, trimise de server;
+interval invalid: 400 `{detail}`) și `GET /api/admin/reports.csv?from=..&to=..` (descărcare, același CSV).
+Generarea (și afișarea tipărită) și exportul intră în Jurnal cu autorul.
 
 ## Import Angajați (CSV)
 

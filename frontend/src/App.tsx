@@ -7,6 +7,7 @@ import { Employees } from "@/screens/Employees";
 import { Anomalies } from "@/screens/Anomalies";
 import { Incidents } from "@/screens/Incidents";
 import { Settings } from "@/screens/Settings";
+import { PrintReport, Reports } from "@/screens/Reports";
 
 /**
  * Rutele aplicației (fără router propriu: `main.tsx` pune BrowserRouter cu basename `/admin`).
@@ -23,10 +24,13 @@ export function AppRoutes() {
           <Route path="anomalies" element={<Anomalies />} />
           <Route path="incidents" element={<Incidents />} />
           <Route path="settings" element={<Settings />} />
-          {SCREENS.filter((screen) => !["employees", "anomalies", "incidents", "settings"].includes(screen.path)).map((screen) => (
+          <Route path="reports" element={<Reports />} />
+          {SCREENS.filter((screen) => !["employees", "anomalies", "incidents", "settings", "reports"].includes(screen.path)).map((screen) => (
             <Route key={screen.path} path={screen.path} element={<Placeholder title={screen.label} />} />
           ))}
         </Route>
+        {/* varianta tipărită stă în afara Shell-ului: fără navigare laterală */}
+        <Route path="reports/print" element={<PrintReport />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

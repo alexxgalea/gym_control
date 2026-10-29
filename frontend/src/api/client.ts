@@ -12,6 +12,7 @@ export type HallSettings = components["schemas"]["SettingsOut"];
 export type HallSettingsInput = components["schemas"]["SettingsIn"];
 export type SettingsFieldError = components["schemas"]["SettingsFieldError"];
 export type ImportReport = components["schemas"]["ImportReport"];
+export type Report = components["schemas"]["ReportOut"];
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
 export class ApiError extends Error {
@@ -50,6 +51,9 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }
 
+/** Parametrii intervalului unui Raport, ca în adresa API-ului și a variantei tipărite. */
+export const reportQuery = (from: string, to: string) => new URLSearchParams({ from, to }).toString();
+
 export const adminApi = {
   login: (body: LoginRequest) => api<AdminAccount>("/api/admin/login", { method: "POST", body }),
   logout: () => api<void>("/api/admin/logout", { method: "POST" }),
@@ -76,6 +80,10 @@ export const adminApi = {
   settings: {
     get: () => api<HallSettings>("/api/admin/settings"),
     save: (body: HallSettingsInput) => api<HallSettings>("/api/admin/settings", { method: "PUT", body }),
+  },
+  reports: {
+    /** Generează (și înscrie în Jurnal) Raportul pe intervalul dat, în ora locală (`YYYY-MM-DDTHH:MM`). */
+    generate: (from: string, to: string) => api<Report>(`/api/admin/reports?${reportQuery(from, to)}`),
   },
   /** Contul curent, sau `null` dacă nu există sesiune (401). */
   me: async (): Promise<AdminAccount | null> => {

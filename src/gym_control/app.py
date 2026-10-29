@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, admin_api, auth, db, door, enrollment, manual_sessions, network, presence, report_screens, scheduler, spa, totp
+from gym_control import admin, admin_api, auth, db, door, enrollment, manual_sessions, network, presence, report_api, scheduler, spa, totp
 from gym_control import admin_settings_api
 from gym_control import db as db_module
 from gym_control.settings import Settings
@@ -56,7 +56,7 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app.include_router(admin_api.router)
     app.include_router(admin_settings_api.router)
     app.include_router(admin.router)
-    app.include_router(report_screens.router)
+    app.include_router(report_api.router)
     app.include_router(manual_sessions.router)
     app.include_router(enrollment.router)
     app.include_router(presence.router)
