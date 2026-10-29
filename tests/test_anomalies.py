@@ -1,5 +1,6 @@
 """Anomalii la eveniment. Ceasul de test: 08:12 UTC = 10:12 local (program implicit 06:00-22:00)."""
 
+import re
 from datetime import datetime, timezone
 
 
@@ -109,3 +110,36 @@ def test_exit_on_old_open_session_is_rejected_and_flags_missing_exit(harness):
     assert phone.post("/me/exit", data=totp(harness)).status_code == 409
     assert phone.post("/me/entry", data=totp(harness)).status_code == 200
     assert _anomalies(harness).count("Ieșire lipsă") == 1
+
+
+def _outside_hours_session(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    harness.clock.set(datetime(2026, 1, 5, 21, 30, tzinfo=timezone.utc))  # 23:30 local
+    assert phone.post("/me/entry", data=totp(harness)).status_code == 200
+    return phone
+
+
+def test_outside_hours_can_be_dismissed_by_admin_and_is_journaled(harness):
+    _outside_hours_session(harness)
+    admin = harness.admin_client()
+    page = admin.get("/admin/anomalies").text
+    m = re.search(r"/admin/anomalies/(\d+)/dismiss", page)
+    assert m, page
+    r = admin.post(m.group(0), follow_redirects=False)
+    assert r.status_code == 303
+    assert "Nu există Anomalii" in admin.get("/admin/anomalies").text
+    assert "Anomalie verificată" in admin.get("/admin/jurnal").text
+    # rămâne vizibilă în Raport
+    rep = admin.get("/admin/reports?from=2026-01-05T23:00&to=2026-01-06T00:00").text
+    assert "Intrare în afara programului" in rep
+
+
+def test_only_outside_hours_anomalies_can_be_dismissed(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    phone.post("/me/entry", data=totp(harness))
+    harness.clock.advance(days=1)
+    phone.post("/me/entry", data=totp(harness))
+    admin = harness.admin_client()
+    page = admin.get("/admin/anomalies").text
+    assert "/dismiss" not in page
+    assert admin.post("/admin/anomalies/1/dismiss").status_code == 404

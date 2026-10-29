@@ -101,7 +101,7 @@ def query(db: sqlite3.Connection, tz: str, closing_time: time,
         labels = []
         if manual:
             labels.append(MANUAL_LABEL + (f" ({r['manual_reason']})" if r["manual_reason"] else ""))
-        labels += [anomalies.LABELS.get(c, c) for c in anomalies.codes_for(db, r["id"])]
+        labels += [anomalies.LABELS.get(c, c) for c in anomalies.report_codes(db, r["id"])]
         methods = [_method(r["entry_method"])]
         if r["exit_method"]:
             methods.append(_method(r["exit_method"]))

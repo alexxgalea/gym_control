@@ -284,6 +284,27 @@ def anomalies_page(
     )
 
 
+@router.post("/anomalies/{anomaly_id}/dismiss")
+def dismiss_anomaly(
+    request: Request,
+    anomaly_id: int,
+    admin: Admin = Depends(require_admin),
+    db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    row = anomalies.dismiss(db, anomaly_id, now)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Anomalie inexistentă sau deja rezolvată")
+    journal.write_admin_action(
+        db, now, admin, "anomaly.dismiss",
+        f"Anomalie verificată ({anomalies.LABELS[anomalies.OUTSIDE_HOURS]}): {row['employee_name']}",
+        employee_id=row["employee_id"],
+        detail={"session_id": row["session_id"], "anomalies": [anomalies.OUTSIDE_HOURS]},
+    )
+    db.commit()
+    return RedirectResponse("/admin/anomalies", status_code=303)
+
+
 def _incidents_response(request, admin, db, status_code=200, **extra):
     context = {"admin": admin, "nav": "incidents", "rows": incidents.list_all(db),
                "tz": request.app.state.settings.timezone, "form": {}, **extra}

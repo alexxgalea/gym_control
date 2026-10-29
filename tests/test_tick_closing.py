@@ -70,3 +70,12 @@ def test_old_session_flagged_missing_exit_is_also_flagged_at_closing(harness):
     harness.clock.set(datetime(2026, 1, 6, 20, 0, tzinfo=timezone.utc))
     harness.tick()
     assert _page(harness).count(LABEL) == 2
+
+
+def test_normal_exit_resolves_open_at_closing(harness):
+    phone = _enter(harness)
+    harness.clock.set(datetime(2026, 1, 5, 20, 0, tzinfo=timezone.utc))
+    harness.tick()
+    assert LABEL in _page(harness)
+    assert phone.post("/me/exit", data=totp(harness)).status_code == 200
+    assert "Nu există Anomalii" in _page(harness)
