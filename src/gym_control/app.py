@@ -1,14 +1,15 @@
-import ipaddress
+import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from gym_control import admin, auth, db, door, enrollment, presence, totp
+from gym_control import admin, auth, db, door, enrollment, network, presence, totp
+from gym_control import db as db_module
 from gym_control.settings import Settings
 from gym_control.templates import templates as _templates
 
@@ -39,24 +40,17 @@ def create_app(settings: Settings | None = None, clock: Clock = utc_now) -> Fast
     app.include_router(door.router)
     app.add_exception_handler(enrollment.EnrollmentRequired, enrollment.enrollment_required_handler)
 
+    app.add_exception_handler(network.NotInHallNetwork, network.not_in_hall_handler)
+
     @app.get("/status", response_class=HTMLResponse)
-    def status(request: Request):
-        source_ip = request.client.host if request.client else ""
-        in_hall = _in_subnet(source_ip, settings.hall_subnet)
+    def status(request: Request, db: sqlite3.Connection = Depends(db_module.get_db)):
         return _templates.TemplateResponse(
             request,
             "status.html",
-            {"now": clock().isoformat(), "in_hall": in_hall},
+            {"now": clock().isoformat(), "in_hall": network.in_hall(request, db)},
         )
 
     return app
-
-
-def _in_subnet(ip: str, subnet: str) -> bool:
-    try:
-        return ipaddress.ip_address(ip) in ipaddress.ip_network(subnet)
-    except ValueError:
-        return False
 
 
 def app_from_env() -> FastAPI:

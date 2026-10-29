@@ -18,6 +18,7 @@ from gym_control import journal, totp
 from gym_control.clocktime import local_day, local_hm
 from gym_control.db import get_db
 from gym_control.enrollment import Employee, require_employee
+from gym_control.network import require_hall_network
 from gym_control.templates import templates
 
 router = APIRouter()
@@ -120,13 +121,13 @@ def _event(request, db, employee, record, label, code):
     return _page(request, db, employee, done=f"{label} înregistrată la {local_hm(now, tz)}", totp_code=code)
 
 
-@router.post("/me/entry", response_class=HTMLResponse)
-def entry(request: Request, code: str = Form("", alias="totp"), employee: Employee = Depends(require_employee),
-          db: sqlite3.Connection = Depends(get_db)):
+@router.post("/me/entry", response_class=HTMLResponse, dependencies=[Depends(require_hall_network)])
+def entry(request: Request, code: str = Form("", alias="totp"),
+          employee: Employee = Depends(require_employee), db: sqlite3.Connection = Depends(get_db)):
     return _event(request, db, employee, record_entry, "Intrare", code)
 
 
-@router.post("/me/exit", response_class=HTMLResponse)
-def exit_(request: Request, code: str = Form("", alias="totp"), employee: Employee = Depends(require_employee),
-          db: sqlite3.Connection = Depends(get_db)):
+@router.post("/me/exit", response_class=HTMLResponse, dependencies=[Depends(require_hall_network)])
+def exit_(request: Request, code: str = Form("", alias="totp"),
+          employee: Employee = Depends(require_employee), db: sqlite3.Connection = Depends(get_db)):
     return _event(request, db, employee, record_exit, "Ieșire", code)

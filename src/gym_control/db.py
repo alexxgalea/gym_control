@@ -72,6 +72,11 @@ CREATE TABLE IF NOT EXISTS journal (
     employee_id INTEGER REFERENCES employees(id),
     detail TEXT                    -- JSON opțional
 );
+-- Setările editabile de Admin la runtime (#7); valorile lipsă cad pe configurația din mediu.
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS journal_at ON journal(at);
 CREATE INDEX IF NOT EXISTS journal_employee ON journal(employee_id, at);
 """
