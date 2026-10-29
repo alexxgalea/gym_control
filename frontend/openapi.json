@@ -134,32 +134,6 @@
         "title": "Body_exit__me_exit_post",
         "type": "object"
       },
-      "Body_save_settings_admin_settings_post": {
-        "properties": {
-          "closing_time": {
-            "default": "",
-            "title": "Closing Time",
-            "type": "string"
-          },
-          "hall_subnet": {
-            "default": "",
-            "title": "Hall Subnet",
-            "type": "string"
-          },
-          "opening_time": {
-            "default": "",
-            "title": "Opening Time",
-            "type": "string"
-          },
-          "retention_months": {
-            "default": "\u0000keep",
-            "title": "Retention Months",
-            "type": "string"
-          }
-        },
-        "title": "Body_save_settings_admin_settings_post",
-        "type": "object"
-      },
       "EmployeeIn": {
         "properties": {
           "email": {
@@ -379,6 +353,112 @@
           }
         },
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "SettingsErrorResponse": {
+        "description": "Toate erorile de validare, lângă câmpul vizat; `detail`/`field` repetă prima eroare.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/SettingsFieldError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "field",
+          "errors"
+        ],
+        "title": "SettingsErrorResponse",
+        "type": "object"
+      },
+      "SettingsFieldError": {
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "detail"
+        ],
+        "title": "SettingsFieldError",
+        "type": "object"
+      },
+      "SettingsIn": {
+        "description": "Valori brute din formular (text); validarea o face serverul. Retenția lipsă rămâne neschimbată.",
+        "properties": {
+          "closing_time": {
+            "default": "",
+            "title": "Closing Time",
+            "type": "string"
+          },
+          "hall_subnet": {
+            "default": "",
+            "title": "Hall Subnet",
+            "type": "string"
+          },
+          "opening_time": {
+            "default": "",
+            "title": "Opening Time",
+            "type": "string"
+          },
+          "retention_months": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Months"
+          }
+        },
+        "title": "SettingsIn",
+        "type": "object"
+      },
+      "SettingsOut": {
+        "properties": {
+          "closing_time": {
+            "title": "Closing Time",
+            "type": "string"
+          },
+          "hall_subnet": {
+            "title": "Hall Subnet",
+            "type": "string"
+          },
+          "opening_time": {
+            "title": "Opening Time",
+            "type": "string"
+          },
+          "retention_months": {
+            "title": "Retention Months",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hall_subnet",
+          "opening_time",
+          "closing_time",
+          "retention_months"
+        ],
+        "title": "SettingsOut",
         "type": "object"
       },
       "ValidationError": {
@@ -807,57 +887,6 @@
           }
         },
         "summary": "Correct"
-      }
-    },
-    "/admin/settings": {
-      "get": {
-        "operationId": "settings_page_admin_settings_get",
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Settings Page"
-      },
-      "post": {
-        "operationId": "save_settings_admin_settings_post",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_save_settings_admin_settings_post"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Save Settings"
       }
     },
     "/api/admin/anomalies": {
@@ -1418,6 +1447,96 @@
           }
         },
         "summary": "Me",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "operationId": "get_settings_api_admin_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          }
+        },
+        "summary": "Get Settings",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "save_settings_api_admin_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Settings",
         "tags": [
           "admin"
         ]

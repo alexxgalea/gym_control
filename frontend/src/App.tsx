@@ -6,6 +6,7 @@ import { Login } from "@/screens/Login";
 import { Employees } from "@/screens/Employees";
 import { Anomalies } from "@/screens/Anomalies";
 import { Incidents } from "@/screens/Incidents";
+import { Settings } from "@/screens/Settings";
 
 /**
  * Rutele aplicației (fără router propriu: `main.tsx` pune BrowserRouter cu basename `/admin`).
@@ -21,7 +22,8 @@ export function AppRoutes() {
           <Route path="employees" element={<Employees />} />
           <Route path="anomalies" element={<Anomalies />} />
           <Route path="incidents" element={<Incidents />} />
-          {SCREENS.filter((screen) => !["employees", "anomalies", "incidents"].includes(screen.path)).map((screen) => (
+          <Route path="settings" element={<Settings />} />
+          {SCREENS.filter((screen) => !["employees", "anomalies", "incidents", "settings"].includes(screen.path)).map((screen) => (
             <Route key={screen.path} path={screen.path} element={<Placeholder title={screen.label} />} />
           ))}
         </Route>
