@@ -95,11 +95,12 @@ class Harness:
         return "/enroll/" + r.json()["link"].rsplit("/enroll/", 1)[1]
 
     def enroll(self, link: str, ip: str = HALL_IP) -> TestClient:
-        """Deschide linkul pe un client nou (telefonul Angajatului) și confirmă înrolarea."""
+        """Deschide linkul pe un client nou (telefonul Angajatului) și activează telefonul (API JSON)."""
         c = self.client(ip)
-        assert c.get(link).status_code == 200
-        r = c.post(link, follow_redirects=False)
-        assert r.status_code == 303, r.text
+        api = "/api/employee" + link
+        assert c.get(api).status_code == 200
+        r = c.post(api)
+        assert r.status_code == 200, r.text
         return c
 
     def enrolled_client(self, name: str = "Ana Pop", email: str | None = None,

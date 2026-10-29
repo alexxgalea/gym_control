@@ -8,6 +8,8 @@ export type ConnectionStatus = components["schemas"]["ConnectionStatus"];
 export type MeState = components["schemas"]["MeState"];
 export type EventResult = components["schemas"]["EventResult"];
 
+export type Enrollment = components["schemas"]["EnrollmentOut"];
+
 export const GENERIC_ERROR = "A apărut o eroare. Încearcă din nou.";
 
 export class EmployeeApiError extends Error {
@@ -38,7 +40,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 const get = <T>(path: string) => request<T>(path);
-const post = <T>(path: string, body: unknown) =>
+const post = <T>(path: string, body: unknown = {}) =>
   request<T>(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 export const employeeApi = {
@@ -46,4 +48,6 @@ export const employeeApi = {
   entry: (totp: string) => post<EventResult>("/api/employee/entry", { totp }),
   exit: (totp: string) => post<EventResult>("/api/employee/exit", { totp }),
   status: () => get<ConnectionStatus>("/api/employee/status"),
+  enrollmentLink: (token: string) => get<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),
+  activatePhone: (token: string) => post<Enrollment>(`/api/employee/enroll/${encodeURIComponent(token)}`),
 };

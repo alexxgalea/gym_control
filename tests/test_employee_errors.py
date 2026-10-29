@@ -38,6 +38,6 @@ def test_phone_not_activated_is_json_401_with_reason(harness):
 
 
 def test_legacy_pages_still_answer_in_html(harness):
-    r = harness.client(OUTSIDE_IP).post("/enroll/abc")
+    r = harness.client(OUTSIDE_IP).get("/door")
     assert r.status_code == 403
     assert "text/html" in r.headers["content-type"]

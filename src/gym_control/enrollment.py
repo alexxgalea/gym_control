@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from gym_control import employee_errors, journal
 from gym_control.db import get_db
@@ -95,24 +96,27 @@ def enrollment_required_handler(request: Request, exc: EnrollmentRequired):
     return templates.TemplateResponse(request, "enroll_required.html", {}, status_code=401)
 
 
-def _invalid(request):
-    return templates.TemplateResponse(request, "enroll_invalid.html", {}, status_code=410)
+class EnrollmentOut(BaseModel):
+    name: str
 
 
-@router.get("/enroll/{token}", response_class=HTMLResponse)
-def enroll_page(request: Request, token: str, db: sqlite3.Connection = Depends(get_db)):
+@router.get("/api/employee/enroll/{token}", response_model=EnrollmentOut, responses={410: {"description": "link_invalid"}})
+def read_link(request: Request, token: str, db: sqlite3.Connection = Depends(get_db)):
+    """Numele Angajatului din link (nu consumă linkul). Nu cere rețeaua Sălii."""
     link = _open_link(db, request.app.state.clock(), token)
     if link is None:
-        return _invalid(request)
-    return templates.TemplateResponse(request, "enroll_confirm.html", {"name": link["name"]})
+        return employee_errors.link_invalid_response()
+    return EnrollmentOut(name=link["name"])
 
 
-@router.post("/enroll/{token}", dependencies=[Depends(require_hall_network)])
+@router.post("/api/employee/enroll/{token}", response_model=EnrollmentOut,
+             dependencies=[Depends(require_hall_network)],
+             responses={403: {"description": "not_in_hall_network"}, 410: {"description": "link_invalid"}})
 def enroll(request: Request, token: str, db: sqlite3.Connection = Depends(get_db)):
     now = request.app.state.clock()
     link = _open_link(db, now, token)
     if link is None:
-        return _invalid(request)
+        return employee_errors.link_invalid_response()
     employee_id = link["employee_id"]
     device_token = secrets.token_urlsafe(32)
     db.execute("UPDATE enroll_links SET used_at = ? WHERE token_hash = ?", (now.isoformat(), _digest(token)))
@@ -123,10 +127,9 @@ def enroll(request: Request, token: str, db: sqlite3.Connection = Depends(get_db
     )
     journal.write(
         db, now, kind="enrollment", action="enroll.device",
-        summary=f"Dispozitiv înrolat: {link['name']}", employee_id=employee_id,
+        summary=f"Telefon activat: {link['name']}", employee_id=employee_id,
     )
     db.commit()
-    response = RedirectResponse("/me", status_code=303)
+    response = JSONResponse({"name": link["name"]})
     response.set_cookie(COOKIE, device_token, httponly=True, samesite="lax", max_age=COOKIE_MAX_AGE)
     return response
-

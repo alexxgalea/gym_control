@@ -22,9 +22,9 @@ def test_entry_from_inside_subnet_is_accepted(harness):
 def test_enrollment_post_outside_subnet_is_rejected_and_link_stays_usable(harness):
     link = harness.issue_enroll_link(harness.create_employee("Ana Pop"))
     outside = harness.client(OUTSIDE_IP)
-    r = outside.post(link, follow_redirects=False)
+    r = outside.post("/api/employee" + link)
     assert r.status_code == 403
-    assert "rețeaua Sălii" in r.text
+    assert r.json()["reason"] == "not_in_hall_network"
     assert "gc_device" not in outside.cookies
     assert harness.enroll(link).post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 200
 

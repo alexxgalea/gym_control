@@ -8,9 +8,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 
-# Adresele publice servite de punctul de intrare Angajat. `/enroll/{token}` și `/door` rămân pe paginile
-# vechi până la tichetele lor; fiecare tichet își adaugă adresa aici.
-EMPLOYEE_PAGES = ("/status", "/me")
+# Adresele publice servite de punctul de intrare Angajat. `/door` rămâne pe pagina
+# veche până la tichetul său; fiecare tichet își adaugă adresa aici.
+EMPLOYEE_PAGES = ("/status", "/me", "/enroll/{token}")
 
 
 def mount(app: FastAPI, dist: str) -> None:
@@ -20,8 +20,11 @@ def mount(app: FastAPI, dist: str) -> None:
 
     employee_page = root / "employee.html"
     if employee_page.is_file():
+        def employee_entry():
+            return FileResponse(employee_page)
+
         for route in EMPLOYEE_PAGES:
-            app.get(route, include_in_schema=False)(lambda: FileResponse(employee_page))
+            app.get(route, include_in_schema=False)(employee_entry)
 
     @app.get("/admin", include_in_schema=False)
     @app.get("/admin/{path:path}", include_in_schema=False)
