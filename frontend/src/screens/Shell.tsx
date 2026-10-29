@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { adminApi } from "@/api/client";
 import { ME_KEY, useMe } from "@/auth";
+import { ToastProvider } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -52,7 +53,9 @@ export function Shell() {
         </div>
       </aside>
       <main className="min-w-0 flex-1 p-8">
-        <Outlet />
+        <ToastProvider>
+          <Outlet />
+        </ToastProvider>
       </main>
     </div>
   );

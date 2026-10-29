@@ -57,12 +57,12 @@ def test_session_expires_with_the_clock(harness):
 
 
 def test_old_html_screens_still_redirect_to_login_without_session(harness):
-    r = harness.client().get("/admin/employees", follow_redirects=False)
+    r = harness.client().get("/admin/jurnal", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/admin/login"
 
 
 def test_session_from_json_login_opens_old_html_screens(harness):
-    assert harness.admin_client().get("/admin/employees").status_code == 200
+    assert harness.admin_client().get("/admin/jurnal").status_code == 200
 
 
 def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path):
@@ -75,4 +75,4 @@ def test_spa_is_served_under_admin_with_fallback_to_index(make_harness, tmp_path
     assert c.get("/admin/assets/app.js").text == "console.log(1)"
     assert c.get("/admin/assets/lipsa.js").status_code == 404
     # ecranele HTML nemigrate au prioritate față de catch-all
-    assert "SPA" not in c.get("/admin/employees", follow_redirects=False).text
+    assert "SPA" not in c.get("/admin/jurnal", follow_redirects=False).text

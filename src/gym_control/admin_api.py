@@ -6,9 +6,10 @@ O cerere fără sesiune primește 401; SPA-ul duce atunci la login."""
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from gym_control import auth, journal, network
+from gym_control import auth, employees, enrollment, journal, network
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
 
@@ -74,3 +75,111 @@ def logout(request: Request, db: sqlite3.Connection = Depends(get_db)):
     response = Response(status_code=204)
     response.delete_cookie(auth.COOKIE)
     return response
+
+
+class EmployeeOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    enrolled: bool
+
+
+class EmployeeIn(BaseModel):
+    name: str = ""
+    email: str = ""
+
+
+class FieldErrorResponse(BaseModel):
+    """Eroare de validare în română; `field` indică câmpul din formular (`name` sau `email`)."""
+
+    detail: str
+    field: str | None = None
+
+
+class EnrollLink(BaseModel):
+    name: str
+    link: str
+    hours: int
+
+
+@router.get("/employees", response_model=list[EmployeeOut], responses={401: {"model": ErrorResponse}})
+def list_employees(admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db)):
+    enrolled = enrollment.enrolled_ids(db)
+    return [
+        EmployeeOut(id=e["id"], name=e["name"], email=e["email"], enrolled=e["id"] in enrolled)
+        for e in employees.list_all(db)
+    ]
+
+
+@router.post(
+    "/employees", status_code=201, response_model=EmployeeOut,
+    responses={400: {"model": FieldErrorResponse}, 401: {"model": ErrorResponse}},
+)
+def create_employee(
+    body: EmployeeIn, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    try:
+        employee_id = employees.add(db, now, body.name, body.email)
+    except employees.InvalidEmployee as exc:
+        db.rollback()
+        return JSONResponse(
+            status_code=400, content={"detail": str(exc).capitalize(), "field": exc.field},
+        )
+    journal.write_admin_action(
+        db, now, admin, "employee.create", f"Angajat creat: {' '.join(body.name.split())}",
+        employee_id=employee_id,
+    )
+    db.commit()
+    row = db.execute("SELECT id, name, email FROM employees WHERE id = ?", (employee_id,)).fetchone()
+    return EmployeeOut(id=row["id"], name=row["name"], email=row["email"], enrolled=False)
+
+
+def _employee_or_404(db: sqlite3.Connection, employee_id: int):
+    row = db.execute("SELECT id, name FROM employees WHERE id = ?", (employee_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Angajat inexistent")
+    return row
+
+
+@router.post(
+    "/employees/{employee_id}/enroll-link", response_model=EnrollLink,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def create_enroll_link(
+    employee_id: int, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    employee = _employee_or_404(db, employee_id)
+    token = enrollment.issue_link(db, now, employee_id)
+    journal.write_admin_action(
+        db, now, admin, "enroll.link",
+        f"Link de înrolare generat pentru {employee['name']}", employee_id=employee_id,
+    )
+    db.commit()
+    return EnrollLink(
+        name=employee["name"],
+        link=str(request.base_url).rstrip("/") + f"/enroll/{token}",
+        hours=int(enrollment.LINK_TTL.total_seconds() // 3600),
+    )
+
+
+@router.post(
+    "/employees/{employee_id}/revoke", status_code=204,
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+def revoke_device(
+    employee_id: int, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    employee = _employee_or_404(db, employee_id)
+    enrollment.revoke(db, employee_id)
+    journal.write_admin_action(
+        db, now, admin, "enroll.revoke",
+        f"Dispozitiv revocat pentru {employee['name']}", employee_id=employee_id,
+    )
+    db.commit()
+    return Response(status_code=204)

@@ -37,7 +37,6 @@ def test_new_session_screen_requires_admin_and_is_narrow_friendly(harness):
     page = harness.admin_client().get("/admin/sessions/new").text
     assert "Ana Pop" in page and 'name="reason"' in page
     assert "viewport" in page
-    assert "/admin/sessions/new" in harness.admin_client().get("/admin/employees").text
 
 
 def test_add_without_reason_is_refused_and_changes_nothing(harness):
@@ -93,7 +92,7 @@ def test_overlapping_manual_session_is_rejected(harness):
 def test_manual_session_does_not_block_or_open_presence(harness):
     phone = harness.enrolled_client("Ana Pop")
     admin = harness.admin_client()
-    eid = int(re.search(r'data-employee-id="(\d+)"', admin.get("/admin/employees").text).group(1))
+    eid = admin.get("/api/admin/employees").json()[0]["id"]
     assert _add(admin, eid, "2026-01-05T06:00", "2026-01-05T07:00").status_code == 303
     assert "în afara Sălii" in phone.get("/me").text
     assert phone.post("/me/entry", data=_totp(harness)).status_code == 200
