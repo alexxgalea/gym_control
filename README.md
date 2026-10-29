@@ -82,3 +82,73 @@ Joburile stau în registrul `scheduler.JOBS`, fiecare `def job(app, now)`, idemp
 Primul job: la/după ora de închidere (setare la runtime, ora locală), fiecare Sesiune deschisă din ziua locală
 curentă (Intrare înainte de închidere) și fiecare Sesiune veche deja marcată „Ieșire lipsă” primește Anomalia
 `open_at_closing`, plus o linie în Jurnal. Sesiunea rămâne deschisă, fără Ieșire inventată; rulările repetate nu dublează.
+
+## Instalare (rezumat)
+
+1. Pe laptop: Docker + Docker Compose. Clonează depozitul.
+2. Creează un `.env` lângă `docker-compose.yml`:
+
+   | Variabilă | Rol |
+   | --- | --- |
+   | `GYM_ADMIN_USER`, `GYM_ADMIN_PASSWORD` | primul Admin (vezi „Primul Admin”) |
+   | `GYM_KIOSK_TOKEN` | tokenul telefonului de la ușă (secret lung; fără el `/door` e refuzat) |
+   | `GYM_TOTP_SECRET` | secretul TOTP (opțional; altfel generat o dată și păstrat în baza de date) |
+   | `GYM_HALL_SUBNET` | subrețeaua Wi-Fi a Sălii (implicit `192.168.10.0/24`) |
+   | `GYM_BACKUP_PATH` | directorul de pe gazdă unde se scriu backup-urile (vezi „Backup”) |
+   | `GYM_BACKUP_KEEP_DAYS` | zile de păstrare a backup-urilor (implicit 30) |
+
+   Fusul orar, programul și retenția se pot seta și cu `GYM_TIMEZONE`, `GYM_OPENING_TIME`,
+   `GYM_CLOSING_TIME`, `GYM_RETENTION_MONTHS`.
+3. `docker compose up -d`, apoi verifică `http://<laptop>:8000/status`.
+
+Baza de date stă în volumul Docker `gym_data` (`/data/gym_control.db`).
+
+## Backup
+
+Zilnic, prin `tick`, aplicația face o copie consistentă a bazei (API-ul de backup SQLite, nu copiere
+brută) în `gym-control-AAAA-LL-ZZ.sqlite` (zi locală), cel mult un fișier pe zi. Apoi șterge
+backup-urile mai vechi de 30 de zile (doar fișierele cu acest nume; alte fișiere din director rămân).
+O eroare de backup este logată (`docker compose logs app`) și nu oprește celelalte joburi.
+
+- Locația: `GYM_BACKUP_PATH` pe gazdă este montat în container ca `/backup` (`GYM_BACKUP_DIR` în aplicație).
+  Alege o locație **separată de laptop**: un share de rețea montat pe gazdă (de ex. `/mnt/nas/sala`) sau un
+  stick USB montat permanent. Implicit `./backups` (pe același laptop, doar pentru probă).
+- Fără `GYM_BACKUP_DIR` setat (rulare fără compose) backup-ul este oprit.
+- Verifică periodic că fișierele apar și că locația nu s-a demontat.
+
+## Restaurare din backup
+
+1. Oprește aplicația: `docker compose down` (nu șterge volumele).
+2. Alege fișierul dorit din `GYM_BACKUP_PATH`, de ex. `gym-control-2026-01-05.sqlite`.
+3. Copiază-l peste baza din volum (și scoate fișierele WAL vechi, dacă există):
+   ```
+   docker compose run --rm --no-deps -v "$PWD/restore:/restore" --entrypoint sh app -c \
+     'rm -f /data/gym_control.db-wal /data/gym_control.db-shm && cp /restore/gym-control-2026-01-05.sqlite /data/gym_control.db'
+   ```
+   (pune întâi fișierul ales în `./restore/`).
+4. Pornește: `docker compose up -d`; verifică `/status` și ecranele Admin (Angajați, Jurnal).
+5. Datele de după momentul backup-ului se pierd; Angajații înrolați după el trebuie re-înrolați.
+
+## Setup fizic
+
+### Telefonul-kiosk (ușa)
+- Folosește un telefon vechi **fără baterie umflată**; o baterie umflată este un risc de incendiu, nu-l lăsa la încărcat permanent.
+- Încărcător permanent, cablu bun; Setări > Opțiuni dezvoltator > **Stay awake** (ecran aprins la încărcare).
+- Luminozitate fixă (auto-brightness oprit), notificările oprite, blocarea ecranului dezactivată.
+- Browser în mod kiosk / ecran complet (de ex. Chrome „Adaugă pe ecranul principal” sau o aplicație de kiosk).
+- O singură dată, deschide `http://<laptop>:8000/door?k=<GYM_KIOSK_TOKEN>`; tokenul se păstrează în cookie
+  și apoi poți folosi `http://<laptop>:8000/door`. Telefonul trebuie să fie pe Wi-Fi-ul Sălii.
+
+### Laptopul
+- Dezactivează suspendarea la închiderea capacului (ex. `HandleLidSwitch=ignore` în `/etc/systemd/logind.conf`) și suspendarea automată.
+- IP static: rezervare DHCP în router (după MAC) sau un hostname local stabil; telefoanele folosesc această adresă.
+- Pornire automată după pană de curent: setarea BIOS „AC power loss / Restore on AC” = Power On; Docker pornit la boot
+  (`systemctl enable docker`); serviciul are `restart: unless-stopped`.
+- Opțional, un UPS mic pentru întreruperi scurte.
+
+## Verificări manuale (neacoperite de teste automate)
+
+- Randare responsivă: deschide `/me` și ecranele Admin pe un telefon real și verifică lizibilitatea.
+- Pagina kiosk în browser real: `/door` afișează QR-ul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon înrolat.
+- Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
+- Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.

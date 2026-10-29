@@ -10,8 +10,14 @@ services:
       GYM_TOTP_SECRET: ${GYM_TOTP_SECRET:-}
       GYM_ADMIN_USER: ${GYM_ADMIN_USER:-}
       GYM_ADMIN_PASSWORD: ${GYM_ADMIN_PASSWORD:-}
+      # Backup zilnic (#14): în container scrie mereu în /backup; locația reală este GYM_BACKUP_PATH.
+      GYM_BACKUP_DIR: /backup
+      GYM_BACKUP_KEEP_DAYS: ${GYM_BACKUP_KEEP_DAYS:-30}
     volumes:
       - gym_data:/data
+      # Locația backup-urilor, separată de laptop: share de rețea montat pe gazdă sau stick USB
+      # (de ex. GYM_BACKUP_PATH=/mnt/backup-sala în .env). Implicit ./backups (doar pentru probă).
+      - ${GYM_BACKUP_PATH:-./backups}:/backup
 
 volumes:
   gym_data:
