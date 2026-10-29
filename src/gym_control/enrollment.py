@@ -127,7 +127,3 @@ def enroll(request: Request, token: str, db: sqlite3.Connection = Depends(get_db
     response.set_cookie(COOKIE, device_token, httponly=True, samesite="lax", max_age=COOKIE_MAX_AGE)
     return response
 
-
-@router.get("/me", response_class=HTMLResponse)
-def me(request: Request, employee: Employee = Depends(require_employee)):
-    return templates.TemplateResponse(request, "me.html", {"employee": employee})

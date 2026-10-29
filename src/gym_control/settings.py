@@ -12,6 +12,8 @@ class Settings:
     opening_time: time = time(6, 0)
     closing_time: time = time(22, 0)
     retention_months: int = 12
+    # Fusul orar de afișare; în baza de date orele sunt mereu UTC.
+    timezone: str = "Europe/Bucharest"
     # Primul Admin: creat la pornire dacă nu există (vezi README).
     bootstrap_admin_username: str = ""
     bootstrap_admin_password: str = ""
@@ -25,6 +27,7 @@ class Settings:
             opening_time=time.fromisoformat(env.get("GYM_OPENING_TIME", "06:00")),
             closing_time=time.fromisoformat(env.get("GYM_CLOSING_TIME", "22:00")),
             retention_months=int(env.get("GYM_RETENTION_MONTHS", "12")),
+            timezone=env.get("GYM_TIMEZONE", cls.timezone),
             bootstrap_admin_username=env.get("GYM_ADMIN_USER", ""),
             bootstrap_admin_password=env.get("GYM_ADMIN_PASSWORD", ""),
         )

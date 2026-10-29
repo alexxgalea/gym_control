@@ -51,3 +51,8 @@ fixture-uri: `harness.clock.advance(...)`, `harness.client(ip)`,
 personal și confirmă; telefonul primește un cookie de lungă durată. Un singur telefon este activ:
 re-înrolarea sau „Revocă” invalidează telefonul vechi. Fără înrolare, `/me` afișează
 mesajul că trebuie să te înrolezi. În teste: `harness.enrolled_client("Ana Pop")`.
+
+## Intrare/Ieșire (pas intermediar)
+
+Angajatul înrolat deschide `/me`: vede starea („în Sală din 10:12” / „în afara Sălii”) și doar butonul valid.
+Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Europe/Bucharest`). Încă fără QR/validare de rețea.

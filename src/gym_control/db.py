@@ -38,6 +38,27 @@ CREATE TABLE IF NOT EXISTS devices (
     employee_id INTEGER NOT NULL UNIQUE REFERENCES employees(id),
     enrolled_at TEXT NOT NULL
 );
+-- Sesiunea: o Intrare și (opțional) Ieșirea ei. Deschisă = exit_at IS NULL.
+-- Orele sunt UTC (ISO 8601, aceeași formă ca în Jurnal).
+-- Un Angajat are cel mult o Sesiune deschisă (index unic parțial).
+-- Tichetele următoare adaugă coloane/tabele (Anomalii pe Sesiune, ș.a.).
+-- Raportul de prezență: suprapunere = entry_at < Y AND (exit_at IS NULL OR exit_at > X).
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id),
+    entry_at TEXT NOT NULL,
+    exit_at TEXT,
+    entry_method TEXT NOT NULL,    -- metoda de validare: 'none' (#5), 'qr_totp' (#6/#7), 'manual' (#12)
+    exit_method TEXT,
+    is_manual INTEGER NOT NULL DEFAULT 0,   -- Sesiune manuală (#12)
+    manual_reason TEXT,
+    entry_journal_id INTEGER REFERENCES journal(id),
+    exit_journal_id INTEGER REFERENCES journal(id)
+);
+CREATE INDEX IF NOT EXISTS sessions_employee ON sessions(employee_id, entry_at);
+CREATE INDEX IF NOT EXISTS sessions_entry ON sessions(entry_at);
+CREATE UNIQUE INDEX IF NOT EXISTS sessions_one_open
+    ON sessions(employee_id) WHERE exit_at IS NULL;
 -- Jurnalul: un singur tabel pentru Intrări, Ieșiri, Anomalii și acțiuni Admin.
 -- kind: 'admin_action' | 'entry' | 'exit' | 'anomaly' | ... (tichetele următoare)
 CREATE TABLE IF NOT EXISTS journal (

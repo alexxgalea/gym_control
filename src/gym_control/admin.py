@@ -187,5 +187,6 @@ def journal_page(
     db: sqlite3.Connection = Depends(get_db),
 ):
     return templates.TemplateResponse(
-        request, "journal.html", {"admin": admin, "entries": journal.recent(db), "nav": "journal"}
+        request, "journal.html", {"admin": admin, "entries": journal.recent(db), "nav": "journal",
+         "tz": request.app.state.settings.timezone}
     )

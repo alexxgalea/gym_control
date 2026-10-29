@@ -2,5 +2,15 @@
 {% block title %}Eu{% endblock %}
 {% block content %}
 <h1>{{ employee.name }}</h1>
-<p class="muted">Acest telefon este înrolat.</p>
+{% if done %}<p class="alert alert-ok" role="status">{{ done }}</p>{% endif %}
+{% if error %}<p class="alert alert-error" role="alert">{{ error }}</p>{% endif %}
+<section class="card state">
+  {% if inside_since %}
+  <p class="state-line"><strong>în Sală din {{ inside_since }}</strong></p>
+  <form method="post" action="/me/exit"><button type="submit" class="btn btn-big">Ieșire</button></form>
+  {% else %}
+  <p class="state-line"><strong>în afara Sălii</strong></p>
+  <form method="post" action="/me/entry"><button type="submit" class="btn btn-big">Intrare</button></form>
+  {% endif %}
+</section>
 {% endblock %}
