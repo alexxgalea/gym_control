@@ -4,6 +4,7 @@ export type AdminAccount = components["schemas"]["AdminAccount"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type Employee = components["schemas"]["EmployeeOut"];
 export type EmployeeInput = components["schemas"]["EmployeeIn"];
+export type Anomaly = components["schemas"]["AnomalyOut"];
 export type EnrollLink = components["schemas"]["EnrollLink"];
 
 /** Eroare a API-ului; `detail` este mesajul în română generat de server, `field` câmpul vizat (dacă e cazul). */
@@ -47,6 +48,10 @@ export const adminApi = {
     create: (body: EmployeeInput) => api<Employee>("/api/admin/employees", { method: "POST", body }),
     enrollLink: (id: number) => api<EnrollLink>(`/api/admin/employees/${id}/enroll-link`, { method: "POST" }),
     revoke: (id: number) => api<void>(`/api/admin/employees/${id}/revoke`, { method: "POST" }),
+  },
+  anomalies: {
+    list: () => api<Anomaly[]>("/api/admin/anomalies"),
+    dismiss: (id: number) => api<void>(`/api/admin/anomalies/${id}/dismiss`, { method: "POST" }),
   },
   /** Contul curent, sau `null` dacă nu există sesiune (401). */
   me: async (): Promise<AdminAccount | null> => {
