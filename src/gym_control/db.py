@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS employees (
     email TEXT NOT NULL UNIQUE,   -- normalizat: litere mici
     created_at TEXT NOT NULL
 );
--- Înrolarea: un link cu folosire unică per emitere; un singur dispozitiv activ per Angajat.
+-- Activarea telefonului: un link cu folosire unică per emitere; un singur telefon activ per Angajat.
 -- Se păstrează doar hash-ul tokenurilor.
 CREATE TABLE IF NOT EXISTS enroll_links (
     token_hash TEXT PRIMARY KEY,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS enroll_links (
     used_at TEXT                   -- NULL = încă nefolosit
 );
 CREATE TABLE IF NOT EXISTS devices (
-    token_hash TEXT PRIMARY KEY,   -- hash-ul cookie-ului de dispozitiv
+    token_hash TEXT PRIMARY KEY,   -- hash-ul cookie-ului telefonului
     employee_id INTEGER NOT NULL UNIQUE REFERENCES employees(id),
     enrolled_at TEXT NOT NULL
 );

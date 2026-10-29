@@ -186,7 +186,7 @@ def create_enroll_link(
     token = enrollment.issue_link(db, now, employee_id)
     journal.write_admin_action(
         db, now, admin, "enroll.link",
-        f"Link de înrolare generat pentru {employee['name']}", employee_id=employee_id,
+        f"Activare telefon: link generat pentru {employee['name']}", employee_id=employee_id,
     )
     db.commit()
     link = str(request.base_url).rstrip("/") + f"/enroll/{token}"
@@ -211,7 +211,7 @@ def revoke_device(
     enrollment.revoke(db, employee_id)
     journal.write_admin_action(
         db, now, admin, "enroll.revoke",
-        f"Dispozitiv revocat pentru {employee['name']}", employee_id=employee_id,
+        f"Telefon scos din uz: {employee['name']}", employee_id=employee_id,
     )
     db.commit()
     return Response(status_code=204)

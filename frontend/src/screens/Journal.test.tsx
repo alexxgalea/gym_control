@@ -153,7 +153,7 @@ describe("ecranul Jurnal", () => {
     );
     renderApp("/journal");
     const manual = await rowOf(/Telefon stricat/);
-    expect(manual.getAllByText("Sesiune manuală")).toHaveLength(2); // tipul și metoda
+    expect(manual.getAllByText("Sesiune manuală")).toHaveLength(1); // doar tipul; metoda identică nu se repetă
     expect(manual.getByText("Făcut de admin")).toBeInTheDocument();
     expect(manual.getByTestId("manual-mark")).toBeInTheDocument();
     expect((await rowOf(/Intrare: Ana Pop/)).queryByTestId("manual-mark")).not.toBeInTheDocument();

@@ -1,6 +1,6 @@
-"""Înrolarea dispozitivului: link cu folosire unică -> cookie de lungă durată.
+"""Activarea telefonului: link cu folosire unică -> cookie de lungă durată.
 
-Identitatea Angajatului vine EXCLUSIV din cookie-ul de dispozitiv (token opac,
+Identitatea Angajatului vine EXCLUSIV din cookie-ul telefonului (token opac,
 păstrat hash-uit). Tichetele următoare folosesc `require_employee`.
 """
 
@@ -32,7 +32,7 @@ class Employee:
 
 
 class EnrollmentRequired(Exception):
-    """Cererea nu vine de la un dispozitiv înrolat."""
+    """Cererea nu vine de la un telefon activat."""
 
 
 def _digest(token: str) -> str:
@@ -52,7 +52,7 @@ def issue_link(db: sqlite3.Connection, now: datetime, employee_id: int) -> str:
 
 
 def revoke(db: sqlite3.Connection, employee_id: int) -> None:
-    """Revocă dispozitivul și linkurile nefolosite (fără commit)."""
+    """Scoate din uz telefonul și linkurile nefolosite (fără commit)."""
     db.execute("DELETE FROM devices WHERE employee_id = ?", (employee_id,))
     db.execute("DELETE FROM enroll_links WHERE employee_id = ? AND used_at IS NULL", (employee_id,))
 
@@ -83,7 +83,7 @@ def current_employee(request: Request, db: sqlite3.Connection = Depends(get_db))
 
 
 def require_employee(employee: Employee | None = Depends(current_employee)) -> Employee:
-    """Dependență pentru ecranele Angajatului: fără dispozitiv înrolat se afișează mesajul de înrolare."""
+    """Dependență pentru ecranele Angajatului: fără telefon activat se afișează mesajul de Activare telefon."""
     if employee is None:
         raise EnrollmentRequired()
     return employee

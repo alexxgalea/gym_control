@@ -149,7 +149,7 @@ function SettingsForm({ saved }: { saved: HallSettings }) {
         description="Sesiunile și rândurile din Jurnal mai vechi de atât se șterg automat, în afara celor din Incidentele deschise."
       >
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="setting-retention_months">Păstrează datele</Label>
+          <Label htmlFor="setting-retention_months">Perioadă de păstrare</Label>
           <div className="flex items-center gap-2">
             <Input
               id="setting-retention_months"
