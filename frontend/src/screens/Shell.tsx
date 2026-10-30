@@ -22,6 +22,8 @@ import { Button } from "@/design/button";
 import { Logo } from "@/design/Logo";
 import { ThemeSwitch } from "@/design/ThemeSwitch";
 import { cn } from "@/lib/utils";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/prototype/PrototypeSwitcher";
+import { SHELL_VARIANTS, ShellVariantA, ShellVariantB, ShellVariantC } from "@/screens/Shell.prototype";
 
 /** „Acasă” duce la ruta de pornire: pagina de gestiune. */
 const HOME = { path: "", label: "Acasă", icon: House } as const;
@@ -37,7 +39,19 @@ export const SCREENS: readonly { path: string; label: string; icon: LucideIcon }
   { path: "settings", label: "Setări", icon: Settings },
 ];
 
+/** PROTOTIP: `?variant=A|B|C` alege meniul (0 = actual). */
 export function Shell() {
+  const variant = usePrototypeVariant("shell", SHELL_VARIANTS.map((v) => v.key));
+  const Variant = { A: ShellVariantA, B: ShellVariantB, C: ShellVariantC, "0": ShellCurrent }[variant] ?? ShellVariantA;
+  return (
+    <>
+      <Variant />
+      <PrototypeSwitcher scope="shell" variants={SHELL_VARIANTS} position="top" />
+    </>
+  );
+}
+
+function ShellCurrent() {
   const me = useMe();
   const queryClient = useQueryClient();
   const logout = useMutation({

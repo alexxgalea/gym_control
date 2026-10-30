@@ -2,6 +2,8 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import logoUrl from "@/design/logo.svg";
 import { EmployeeApiError, employeeApi, type DoorCode } from "@/employee/api";
 import "./door.css";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/prototype/PrototypeSwitcher";
+import { DOOR_VARIANTS, DoorVariantA, DoorVariantB, DoorVariantC } from "./Door.prototype";
 
 /*
  * Ecranul de la ușă. Rulează pe un telefon vechi, deci (ADR-0003, „Ținta de build”):
@@ -106,7 +108,10 @@ const RING_RADIUS = 104;
 
 /** `/door`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui; doar pentru telefonul activat. */
 export function Door() {
-  const { code, stale, blocked } = useDoorCode();
+  const { code, stale: realStale, blocked } = useDoorCode();
+  // PROTOTIP: `?variant=` alege varianta, `?stale=1` forțează avertismentul
+  const variant = usePrototypeVariant("door", DOOR_VARIANTS.map((v) => v.key));
+  const stale = realStale || new URLSearchParams(window.location.search).has("stale");
 
   if (blocked === "door_token_invalid") {
     return (
@@ -121,6 +126,17 @@ export function Door() {
         Acest telefon nu este activat ca Ecran de la ușă. Cere Adminului să activeze Ecranul de la ușă din aplicație și
         deschide linkul primit pe acest telefon.
       </Explanation>
+    );
+  }
+
+  const switcher = <PrototypeSwitcher scope="door" variants={DOOR_VARIANTS} />;
+  if (variant !== "0") {
+    const Variant = variant === "B" ? DoorVariantB : variant === "C" ? DoorVariantC : DoorVariantA;
+    return (
+      <>
+        <Variant code={code} stale={stale} />
+        {switcher}
+      </>
     );
   }
 
@@ -172,6 +188,7 @@ export function Door() {
       ) : (
         <p className="door-text">Codul se schimbă automat la 30 de secunde.</p>
       )}
+      {switcher}
     </Frame>
   );
 }

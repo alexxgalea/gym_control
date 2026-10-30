@@ -1,0 +1,138 @@
+/* PROTOTIP (ramura prototype/ecran-usa-si-meniu): animațiile variantelor Ecranului de la ușă. */
+
+@keyframes proto-drain {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+
+/* Conturul cardului se golește într-o perioadă a codului; ultimele 5 s se face portocaliu (din JS: data-urgent). */
+.proto-contour {
+  stroke-dasharray: 100 100;
+  animation-name: proto-drain;
+  animation-duration: var(--proto-duration, 30s);
+  animation-delay: var(--proto-delay, 0s);
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  transition: stroke 0.4s ease;
+}
+
+@keyframes proto-aurora-1 {
+  0%,
+  100% {
+    transform: translate(-20%, -10%) scale(1);
+  }
+  50% {
+    transform: translate(15%, 10%) scale(1.25);
+  }
+}
+@keyframes proto-aurora-2 {
+  0%,
+  100% {
+    transform: translate(20%, 15%) scale(1.1);
+  }
+  50% {
+    transform: translate(-15%, -5%) scale(0.9);
+  }
+}
+@keyframes proto-aurora-3 {
+  0%,
+  100% {
+    transform: translate(0, 20%) scale(0.9);
+  }
+  50% {
+    transform: translate(10%, -15%) scale(1.2);
+  }
+}
+.proto-aurora-1 {
+  animation: proto-aurora-1 26s ease-in-out infinite;
+}
+.proto-aurora-2 {
+  animation: proto-aurora-2 32s ease-in-out infinite;
+}
+.proto-aurora-3 {
+  animation: proto-aurora-3 38s ease-in-out infinite;
+}
+
+/* Varianta B: o rază de lumină care trece încet pe diagonală. */
+@keyframes proto-sheen {
+  from {
+    transform: translateX(-120%) rotate(20deg);
+  }
+  to {
+    transform: translateX(220%) rotate(20deg);
+  }
+}
+.proto-sheen {
+  animation: proto-sheen 14s linear infinite;
+}
+
+/* Varianta C: haloul conic care se rotește în spatele cardului. */
+@keyframes proto-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.proto-halo {
+  animation: proto-spin 18s linear infinite;
+}
+
+/* Varianta C: grila de puncte care alunecă lent (împotriva imaginii „arse” pe ecran). */
+@keyframes proto-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 48px 96px;
+  }
+}
+.proto-dots {
+  background-image: radial-gradient(rgb(255 255 255 / 0.09) 1px, transparent 1.5px);
+  background-size: 24px 24px;
+  animation: proto-drift 40s linear infinite;
+}
+
+@keyframes proto-qr-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+.proto-qr-in {
+  animation: proto-qr-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes proto-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.proto-pulse {
+  animation: proto-pulse 1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proto-aurora-1,
+  .proto-aurora-2,
+  .proto-aurora-3,
+  .proto-sheen,
+  .proto-halo,
+  .proto-dots,
+  .proto-qr-in,
+  .proto-pulse {
+    animation: none;
+  }
+}
