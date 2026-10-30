@@ -34,6 +34,7 @@ export function Employees() {
   const [issued, setIssued] = useState<EnrollLink | null>(null);
   const [replacing, setReplacing] = useState<Employee | null>(null);
   const [revoking, setRevoking] = useState<Employee | null>(null);
+  const [deleting, setDeleting] = useState<Employee | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: EMPLOYEES_KEY });
   const activate = useMutation({
@@ -44,6 +45,18 @@ export function Employees() {
     },
     onError: (error) => {
       setReplacing(null);
+      toast(errorText(error), "error");
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (employee: Employee) => adminApi.employees.remove(employee.id),
+    onSuccess: async () => {
+      setDeleting(null);
+      toast("Angajat șters");
+      await refresh();
+    },
+    onError: (error) => {
+      setDeleting(null);
       toast(errorText(error), "error");
     },
   });
@@ -113,6 +126,9 @@ export function Employees() {
                     Scoate telefonul din uz
                   </Button>
                 )}
+                <Button size="sm" variant="outline" onClick={() => setDeleting(employee)}>
+                  Șterge Angajatul
+                </Button>
               </div>
             </li>
           ))}
@@ -149,6 +165,16 @@ export function Employees() {
         destructive
         pending={revoke.isPending}
         onConfirm={() => revoking && revoke.mutate(revoking)}
+      />
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => !open && setDeleting(null)}
+        title="Ștergi Angajatul?"
+        description={`${deleting?.name} dispare din listă și nu mai poate face Intrare sau Ieșire. Istoricul lui (Sesiuni, Jurnal, Raport) rămâne.`}
+        confirmLabel="Șterge Angajatul"
+        destructive
+        pending={remove.isPending}
+        onConfirm={() => deleting && remove.mutate(deleting)}
       />
     </div>
   );

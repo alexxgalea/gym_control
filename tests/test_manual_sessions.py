@@ -120,6 +120,7 @@ def test_manual_session_does_not_block_or_open_presence(harness):
     assert _add(admin, eid, "2026-01-05T06:00", "2026-01-05T07:00").status_code == 201
     assert phone.get("/api/employee/me").json()["inside_since"] is None
     assert phone.post("/api/employee/entry", json=_totp(harness)).status_code == 200
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 200
 
 
@@ -130,8 +131,11 @@ def test_correct_forgotten_exit_closes_session_and_resolves_anomaly(harness):
     assert r.status_code == 204, r.text
     assert admin.get("/api/admin/anomalies").json() == []
     # Ana poate continua normal: Ieșire din Sesiunea curentă, apoi Intrare
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 200
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post("/api/employee/exit", json=_totp(harness)).status_code == 409  # cea veche nu se redeschide
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post("/api/employee/entry", json=_totp(harness)).status_code == 200
     [entry] = _manual_entries(admin)
     assert "Ieșire uitată" in entry["summary"]

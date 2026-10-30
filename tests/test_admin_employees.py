@@ -184,3 +184,69 @@ def test_csv_import_appears_in_jurnal_with_author(harness):
     assert "Import CSV: 1 importați, 1 respinse" in page
     assert page.count("admin") >= 2
     assert "2026-01-05T08:12:00+00:00" in page
+
+
+def test_delete_removes_employee_from_list_and_requires_login(harness):
+    eid = harness.create_employee("Ana Pop")
+    harness.create_employee("Ion Vasile")
+    assert harness.client().delete(f"/api/admin/employees/{eid}").status_code == 401
+    admin = harness.admin_client()
+    assert admin.delete(f"/api/admin/employees/{eid}").status_code == 204
+    assert [e["name"] for e in admin.get("/api/admin/employees").json()] == ["Ion Vasile"]
+
+
+def test_delete_unknown_or_already_deleted_employee_is_404(harness):
+    eid = harness.create_employee("Ana Pop")
+    admin = harness.admin_client()
+    assert admin.delete("/api/admin/employees/999").status_code == 404
+    admin.delete(f"/api/admin/employees/{eid}")
+    assert admin.delete(f"/api/admin/employees/{eid}").status_code == 404
+
+
+def test_deleted_employee_phone_stops_working(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    eid = harness.admin_client().get("/api/admin/employees").json()[0]["id"]
+    harness.admin_client().delete(f"/api/admin/employees/{eid}")
+    assert phone.get("/api/employee/me").status_code == 401
+    assert phone.post("/api/employee/entry", json={"totp": harness.current_totp()}).status_code == 401
+
+
+def test_cannot_delete_an_employee_who_is_in_the_hall(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    admin = harness.admin_client()
+    eid = admin.get("/api/admin/employees").json()[0]["id"]
+    phone.post("/api/employee/entry", json={"totp": harness.current_totp()})
+    r = admin.delete(f"/api/admin/employees/{eid}")
+    assert r.status_code == 409
+    assert "în Sală" in r.json()["detail"]
+    assert [e["name"] for e in admin.get("/api/admin/employees").json()] == ["Ana Pop"]
+
+
+def test_history_survives_deletion_and_deletion_is_journaled_with_author(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    admin = harness.admin_client()
+    eid = admin.get("/api/admin/employees").json()[0]["id"]
+    phone.post("/api/employee/entry", json={"totp": harness.current_totp()})
+    harness.clock.advance(seconds=30)
+    phone.post("/api/employee/exit", json={"totp": harness.current_totp()})
+    assert admin.delete(f"/api/admin/employees/{eid}").status_code == 204
+    entries = admin.get("/api/admin/journal").json()["entries"]
+    assert any(e["summary"] == "Intrare: Ana Pop" for e in entries)
+    deleted = [e for e in entries if e["summary"] == "Angajat șters: Ana Pop"]
+    assert len(deleted) == 1 and deleted[0]["author"] == "admin"
+
+
+def test_email_of_a_deleted_employee_can_be_used_again(harness):
+    admin = harness.admin_client()
+    first = create(admin, "Ana Pop", "ana@firma.ro").json()["id"]
+    admin.delete(f"/api/admin/employees/{first}")
+    assert create(admin, "Ana Pop", "ana@firma.ro").status_code == 201
+
+
+def test_no_manual_session_for_a_deleted_employee(harness):
+    eid = harness.create_employee("Ana Pop")
+    admin = harness.admin_client()
+    admin.delete(f"/api/admin/employees/{eid}")
+    r = admin.post("/api/admin/sessions", json={"employee_id": eid, "entry_at": "2026-01-05T06:00",
+                                                "exit_at": "2026-01-05T07:00", "reason": "test"})
+    assert r.status_code == 400

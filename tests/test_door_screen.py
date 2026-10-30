@@ -218,13 +218,6 @@ def test_two_employees_can_use_same_qr_in_same_window(harness):
     assert ion.post("/api/employee/entry", json={"totp": totp}).status_code == 200
 
 
-def test_same_employee_can_reuse_totp_for_exit(harness):
-    phone = harness.enrolled_client("Ana Pop")
-    totp = harness.current_totp()
-    phone.post("/api/employee/entry", json={"totp": totp})
-    assert phone.post("/api/employee/exit", json={"totp": totp}).status_code == 200
-
-
 def test_client_sent_timestamp_is_ignored(harness):
     phone = harness.enrolled_client("Ana Pop")
     totp = harness.current_totp()
@@ -337,3 +330,12 @@ def test_retiring_an_active_screen_cancels_outstanding_activation_links(harness)
     assert admin.delete("/api/admin/door-screen").status_code == 204
     assert harness.client().get(link).status_code == 410
     assert harness.client().post(link).status_code == 410
+
+
+def test_qr_svg_scales_to_its_box(harness):
+    # fără viewBox, CSS `width/height: 100%` nu scalează QR-ul: telefonul îl taie și codul nu se mai scanează
+    import re
+
+    svg = harness.door_client().get("/api/employee/door/qr").json()["svg"]
+    size = re.search(r'width="(\d+)" height="(\d+)"', svg)
+    assert f'viewBox="0 0 {size.group(1)} {size.group(2)}"' in svg

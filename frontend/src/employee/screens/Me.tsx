@@ -22,7 +22,8 @@ const toProblem = (error: unknown): Problem =>
 
 /** `/me?t=<cod>`: ecranul Angajatului, un inel cu un buton rotund mare (Intrare sau Ieșire). */
 export function Me() {
-  const code = useSearchParams()[0].get("t") ?? "";
+  const [params, setParams] = useSearchParams();
+  const code = params.get("t") ?? "";
   const queryClient = useQueryClient();
   const state = useQuery({ queryKey: ["employee", "me"], queryFn: employeeApi.me });
   const [success, setSuccess] = useState<EventResult | null>(null);
@@ -42,10 +43,12 @@ export function Me() {
     if (!success) return;
     const timer = setTimeout(() => {
       setSuccess(null);
+      // codul scanat e bun pentru o singură acțiune: următoarea Intrare sau Ieșire cere o nouă scanare
+      setParams({}, { replace: true });
       void queryClient.invalidateQueries({ queryKey: ["employee", "me"] });
     }, SUCCESS_MS);
     return () => clearTimeout(timer);
-  }, [success, queryClient]);
+  }, [success, queryClient, setParams]);
 
   const failure = problem ?? (state.error ? toProblem(state.error) : null);
 
@@ -125,7 +128,7 @@ function Main({
 function Ring({ progress, done, children }: { progress: number; done: boolean; children: React.ReactNode }) {
   return (
     <div className="relative flex size-64 items-center justify-center">
-      <svg viewBox="0 0 256 256" className="absolute inset-0 -rotate-90" aria-hidden>
+      <svg viewBox="0 0 256 256" className="pointer-events-none absolute inset-0 -rotate-90" aria-hidden>
         <circle cx="128" cy="128" r="108" fill="none" strokeWidth="12" className="stroke-muted" />
         <motion.circle
           cx="128"
