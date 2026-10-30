@@ -62,7 +62,7 @@ _Avoid_: Configurare kiosk, token de kiosk
 
 **Ecranul de la ușă**:
 Telefonul fix de lângă ușa Sălii care afișează codul QR scanat pentru Intrare și Ieșire.
-_Avoid_: Kiosk, terminal
+_Avoid_: Kiosk, terminal, pagina de intrare
 
 **Perioadă de păstrare**:
 Numărul de luni după care Sesiunile și rândurile din Jurnal se șterg automat, cu excepția celor care se suprapun cu un Incident deschis.
