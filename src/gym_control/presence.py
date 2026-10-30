@@ -36,6 +36,16 @@ def open_session(db: sqlite3.Connection, employee_id: int) -> OpenSession | None
     return OpenSession(row["id"], datetime.fromisoformat(row["entry_at"])) if row else None
 
 
+def last_event_at(db: sqlite3.Connection, employee_id: int) -> datetime | None:
+    """Momentul ultimei Intrări sau Ieșiri a Angajatului (cel mai recent dintre ele)."""
+    row = db.execute(
+        "SELECT MAX(entry_at) AS entry_at, MAX(exit_at) AS exit_at FROM sessions WHERE employee_id = ?",
+        (employee_id,),
+    ).fetchone()
+    moments = [datetime.fromisoformat(v) for v in (row["entry_at"], row["exit_at"]) if v]
+    return max(moments) if moments else None
+
+
 @dataclass(frozen=True)
 class Inside:
     session_id: int

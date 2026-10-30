@@ -115,6 +115,7 @@ def test_open_incidents_are_listed_before_closed_ones_newest_first(harness):
 def test_tick_deletes_data_older_than_retention(harness):
     harness.clock.set(datetime(2026, 1, 5, 3, 0, tzinfo=timezone.utc))  # 05:00 local: în afara programului
     phone = _enter(harness)
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     _exit(harness, phone)
     assert "Intrare: Ana Pop" in _journal(harness)
     assert "Intrare în afara programului" in _anomalies(harness)

@@ -79,7 +79,9 @@ def add_session(db, now, tz, admin: Admin, employee_id: int | None, raw_entry: s
     reason = _reason(raw_reason)
     if employee_id is None:
         raise InvalidManualSession("Alege un Angajat.", "employee_id")
-    employee = db.execute("SELECT id, name FROM employees WHERE id = ?", (employee_id,)).fetchone()
+    employee = db.execute(
+        "SELECT id, name FROM employees WHERE id = ? AND deleted_at IS NULL", (employee_id,)
+    ).fetchone()
     if employee is None:
         raise InvalidManualSession("Angajatul ales nu există.", "employee_id")
     entry = _parse(raw_entry, "Intrare", tz, "entry_at")

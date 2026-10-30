@@ -33,7 +33,7 @@ describe("Ecranul Angajatului (/me)", () => {
     expect(screen.queryByRole("button", { name: "Intrare" })).not.toBeInTheDocument();
   });
 
-  it("succes: trimite codul, arată confirmarea, apoi starea se schimbă", async () => {
+  it("succes: trimite codul, arată confirmarea, apoi codul dispare și trebuie scanat din nou", async () => {
     let sent: unknown = null;
     let inside: string | null = null;
     server.use(
@@ -50,8 +50,10 @@ describe("Ecranul Angajatului (/me)", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Intrare înregistrată la 17:42");
     expect(sent).toEqual({ totp: "12345678" });
-    // după ~2 secunde starea se schimbă
-    expect(await screen.findByRole("button", { name: "Ieșire" }, { timeout: 4000 })).toBeInTheDocument();
+    // după ~2 secunde codul scanat se șterge: nicio Ieșire fără o nouă scanare
+    expect(await screen.findByText(/Scanează codul de la ușă/, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ieșire" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Intrare" })).not.toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 

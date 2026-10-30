@@ -46,6 +46,7 @@ def test_entry_row_has_employee_utc_moment_type_and_method(harness):
 def test_exit_and_admin_action_with_author(harness):
     phone = harness.enrolled_client("Ana Pop")
     _event(harness, phone, "entry")
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     _event(harness, phone, "exit")
     rows = _journal(harness.admin_client())["entries"]
     assert any(e["kind_label"] == "Ieșire" for e in rows)
@@ -75,6 +76,7 @@ def test_filter_by_employee(harness):
 def test_filter_by_kind(harness):
     phone = harness.enrolled_client("Ana Pop")
     _event(harness, phone, "entry")
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     _event(harness, phone, "exit")
     admin = harness.admin_client()
     assert _summaries(admin, "kind=exit") == ["Ieșire: Ana Pop"]
@@ -89,6 +91,7 @@ def test_unknown_kind_is_rejected(harness):
 def test_filters_combine(harness):
     ana = harness.enrolled_client("Ana Pop")
     _event(harness, ana, "entry")
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     _event(harness, ana, "exit")
     _event(harness, harness.enrolled_client("Ion Vasile"), "entry")
     harness.clock.advance(days=1)

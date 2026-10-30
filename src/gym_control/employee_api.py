@@ -73,6 +73,12 @@ def _event(request, db, employee, record, label, reason, body: EventRequest | No
     check = totp.check(request.app.state.totp_secret, now, body.totp if body else "")  # doar ceasul serverului
     if check != totp.OK:
         return employee_errors.employee_error(403, employee_errors.CODE_INVALID, totp.reject_message(check))
+    # un cod scanat dovedește prezența la ușă pentru o singură acțiune: următoarea cere un cod dintr-o fereastră nouă
+    last = presence.last_event_at(db, employee.id)
+    used = totp.accepted_window(request.app.state.totp_secret, now, body.totp if body else "")
+    if last is not None and used is not None and used <= totp.window_of(last):
+        return employee_errors.employee_error(
+            403, employee_errors.CODE_INVALID, "Codul QR a fost deja folosit. Scanează din nou QR-ul de la ușă.")
     error = record(db, now, tz, employee, request.app.state.settings, presence.METHOD_QR_TOTP)
     if error:
         return employee_errors.employee_error(409, reason, error)

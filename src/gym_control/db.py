@@ -125,6 +125,10 @@ def connect(path: str) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
+    # Ștergerea Angajatului e „ușoară” (istoricul rămâne): coloană adăugată și în bazele de date existente.
+    if "deleted_at" not in {r["name"] for r in conn.execute("PRAGMA table_info(employees)")}:
+        conn.execute("ALTER TABLE employees ADD COLUMN deleted_at TEXT")
+        conn.commit()
     return conn
 
 

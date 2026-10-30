@@ -41,7 +41,9 @@ def test_exit_closes_session_and_confirms(harness):
 def test_can_enter_again_after_exit(harness):
     phone = harness.enrolled_client("Ana Pop")
     phone.post(ENTRY, json=totp(harness))
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     phone.post(EXIT, json=totp(harness))
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post(ENTRY, json=totp(harness)).status_code == 200
 
 
@@ -65,7 +67,9 @@ def test_exit_without_session_is_rejected(harness):
 def test_stale_exit_after_state_change_is_rejected(harness):
     phone = harness.enrolled_client("Ana Pop")
     phone.post(ENTRY, json=totp(harness))
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     phone.post(EXIT, json=totp(harness))
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     r = phone.post(EXIT, json=totp(harness))
     assert r.status_code == 409
     assert r.json()["reason"] == "no_open_entry"
@@ -130,3 +134,29 @@ def test_display_timezone_is_a_setting(make_harness):
     h = make_harness(timezone="UTC")
     phone = h.enrolled_client("Ana Pop")
     assert phone.post(ENTRY, json=totp(h)).json()["message"] == "Intrare înregistrată la 08:12"
+
+
+def test_a_scanned_code_cannot_be_reused_for_the_next_action(harness):
+    # ADR-0001: scanarea dovedește prezența la ușă; o Ieșire cere o scanare nouă, nu același cod
+    phone = harness.enrolled_client("Ana Pop")
+    code = totp(harness)
+    assert phone.post(ENTRY, json=code).status_code == 200
+    r = phone.post(EXIT, json=code)
+    assert r.status_code == 403
+    assert r.json()["reason"] == "code_invalid"
+    assert "deja folosit" in r.json()["detail"]
+    assert phone.get(ME).json()["inside_since"] is not None  # Ieșirea nu s-a înregistrat
+
+
+def test_a_fresh_scan_allows_the_next_action(harness):
+    phone = harness.enrolled_client("Ana Pop")
+    phone.post(ENTRY, json=totp(harness))
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat
+    assert phone.post(EXIT, json=totp(harness)).status_code == 200
+
+
+def test_used_code_is_per_employee(harness):
+    ana, dan = harness.enrolled_client("Ana Pop"), harness.enrolled_client("Dan Marica")
+    code = totp(harness)
+    assert ana.post(ENTRY, json=code).status_code == 200
+    assert dan.post(ENTRY, json=code).status_code == 200
