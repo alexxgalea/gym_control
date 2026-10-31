@@ -7,13 +7,18 @@ import { useEffect, useSyncExternalStore } from "react";
 
 const EVENT = "prototype-variant";
 
+/** `door`/`shell` folosesc `?variant=`; orice alt comutator, `?<scope>=` (ex. `?bg=`), ca să nu se calce pe picioare. */
+function param(scope: string) {
+  return scope === "door" || scope === "shell" ? "variant" : scope;
+}
+
 function storageKey(scope: string) {
   return `prototype-variant:${scope}`;
 }
 
 function read(scope: string, keys: readonly string[]): string {
   if (import.meta.env.MODE === "test") return "0"; // testele existente verifică ecranul actual
-  const fromUrl = new URLSearchParams(window.location.search).get("variant");
+  const fromUrl = new URLSearchParams(window.location.search).get(param(scope));
   if (fromUrl && keys.includes(fromUrl)) {
     try {
       sessionStorage.setItem(storageKey(scope), fromUrl);
@@ -33,7 +38,7 @@ function read(scope: string, keys: readonly string[]): string {
 
 function write(scope: string, value: string) {
   const url = new URL(window.location.href);
-  url.searchParams.set("variant", value);
+  url.searchParams.set(param(scope), value);
   window.history.replaceState(window.history.state, "", url);
   try {
     sessionStorage.setItem(storageKey(scope), value);
@@ -61,10 +66,12 @@ export function PrototypeSwitcher({
   scope,
   variants,
   position = "bottom",
+  offset = 12,
 }: {
   scope: string;
   variants: readonly { key: string; name: string }[];
   position?: "bottom" | "top";
+  offset?: number;
 }) {
   const keys = variants.map((variant) => variant.key);
   const current = usePrototypeVariant(scope, keys);
@@ -101,7 +108,7 @@ export function PrototypeSwitcher({
         position: "fixed",
         left: "50%",
         transform: "translateX(-50%)",
-        [position]: 12,
+        [position]: offset,
         zIndex: 2147483647,
         display: "flex",
         alignItems: "center",

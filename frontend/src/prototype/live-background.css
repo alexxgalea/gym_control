@@ -5,6 +5,8 @@
   --live-bubble: color-mix(in oklab, var(--primary) 45%, transparent);
   --live-wash-a: color-mix(in oklab, var(--primary) 20%, transparent);
   --live-wash-b: color-mix(in oklab, #22d3ee 14%, transparent);
+  --live-line: color-mix(in oklab, var(--primary) 22%, transparent);
+  --live-grid: color-mix(in oklab, var(--primary) 45%, transparent);
   position: fixed;
   inset: 0;
   z-index: -10;
@@ -12,16 +14,19 @@
   pointer-events: none;
 }
 
-/* Ecranul de la ușă: pe fundal închis, particule albe-albăstrui; stă în <main>, sub conținut. */
+/* Ecranul de la ușă: pe fundal închis, tonuri albe-albăstrui; stă în <main>, sub conținut. */
 .live-bg--door {
   --live-dot: #bae6fd;
   --live-bubble: rgb(96 165 250 / 0.55);
   --live-wash-a: rgb(37 99 235 / 0.35);
   --live-wash-b: rgb(34 211 238 / 0.18);
+  --live-line: rgb(186 230 253 / 0.16);
+  --live-grid: rgb(186 230 253 / 0.45);
   position: absolute;
   z-index: 0;
 }
 
+/* ── degradeul care „respiră” (în toate modurile) ── */
 .live-bg__wash {
   position: absolute;
   inset: -15%;
@@ -31,6 +36,96 @@
   animation: live-breathe 26s ease-in-out infinite alternate;
 }
 
+/* ── aurora: două pete mari care se plimbă foarte lent ── */
+.live-bg__wash--aurora {
+  opacity: 0.6;
+}
+.live-bg__blob {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.55;
+  will-change: transform;
+}
+.live-bg__blob--1 {
+  top: -30vmax;
+  right: -25vmax;
+  background: radial-gradient(circle, var(--live-wash-a), transparent 65%);
+  animation: live-drift-1 34s ease-in-out infinite alternate;
+}
+.live-bg__blob--2 {
+  bottom: -35vmax;
+  left: -30vmax;
+  background: radial-gradient(circle, var(--live-wash-b), transparent 65%);
+  animation: live-drift-2 42s ease-in-out infinite alternate;
+}
+@keyframes live-drift-1 {
+  to {
+    transform: translate3d(-18vmax, 22vmax, 0) scale(1.15);
+  }
+}
+@keyframes live-drift-2 {
+  to {
+    transform: translate3d(20vmax, -18vmax, 0) scale(0.9);
+  }
+}
+
+/* ── puncte: grilă fină, vizibilă doar sub un „reflector” moale care se plimbă ── */
+.live-bg__grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--live-grid) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(closest-side, black, transparent);
+  mask-image: radial-gradient(closest-side, black, transparent);
+  -webkit-mask-size: 90vmax 90vmax;
+  mask-size: 90vmax 90vmax;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0.55;
+  animation: live-spotlight 30s ease-in-out infinite alternate;
+}
+@keyframes live-spotlight {
+  0% {
+    -webkit-mask-position: 90% 0%;
+    mask-position: 90% 0%;
+  }
+  50% {
+    -webkit-mask-position: 0% 55%;
+    mask-position: 0% 55%;
+  }
+  100% {
+    -webkit-mask-position: 80% 100%;
+    mask-position: 80% 100%;
+  }
+}
+
+/* ── linii: curbe subțiri care plutesc, fiecare în ritmul ei ── */
+.live-bg__lines {
+  position: absolute;
+  inset: -5%;
+  width: 110%;
+  height: 110%;
+}
+.live-bg__line {
+  fill: none;
+  stroke: var(--live-line);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  animation: live-float calc(18s + var(--i) * 5s) ease-in-out calc(var(--i) * -4s) infinite alternate;
+}
+@keyframes live-float {
+  from {
+    transform: translate3d(-12px, -10px, 0);
+  }
+  to {
+    transform: translate3d(14px, 12px, 0);
+  }
+}
+
+/* ── particule (rare / bule) ── */
 .live-bg__dot,
 .live-bg__bubble {
   position: absolute;
@@ -39,19 +134,16 @@
   will-change: transform, opacity;
   animation: live-rise var(--d) linear var(--delay) infinite;
 }
-
 .live-bg__dot {
   bottom: -12px;
   width: 6px;
   height: 6px;
   background: var(--live-dot);
 }
-
 .live-bg__bubble {
   bottom: -180px;
   background: radial-gradient(circle at 32% 30%, rgb(255 255 255 / 0.55), var(--live-bubble) 45%, transparent 72%);
 }
-
 @keyframes live-rise {
   0% {
     transform: translate3d(0, 0, 0) scale(var(--s, 1));
@@ -79,7 +171,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .live-bg__wash {
+  .live-bg__wash,
+  .live-bg__blob,
+  .live-bg__grid,
+  .live-bg__line {
     animation: none;
   }
   .live-bg__dot,

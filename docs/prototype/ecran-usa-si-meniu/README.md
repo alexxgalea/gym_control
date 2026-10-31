@@ -50,3 +50,18 @@ un link de Activare pentru Ecranul de la ușă. Capturile din acest folder sunt 
 - **Depășiri pe lățime găsite la 360 px** (existau și în aplicația actuală): grila de pe Acasă (`grid-cols-1`) și
   butonul lung din Setări (acum se rupe pe două rânduri). Pagina nu mai trage lateral pe niciun ecran.
 - Capturi: `C-*.png`; mișcarea: `C-fundal-viu.webm` / `.gif`.
+
+## Runda 3: fundaluri mai fine (`?bg=`)
+
+Bulele au fost prea mult. A doua bară roz (sau `?bg=`) comută între:
+
+| `?bg=` | Efect |
+| --- | --- |
+| `aurora` | două pete mari de culoare care se mută foarte lent; nimic altceva |
+| `puncte` | grilă fină de puncte, vizibilă doar sub un „reflector” moale care se plimbă |
+| `linii` | patru linii subțiri, ondulate, care plutesc (ca liniile de nivel de pe o hartă) |
+| `rare` | 8 particule mici și palide, foarte lente |
+| `bule` / `fara` | runda 2 / fără fundal, pentru comparație |
+
+Comparații: `fundal-admin.gif`, `fundal-door.gif` (accelerate de 3×), `fundal-admin.png`, `fundal-door.png`.
+Corectat: fiecare comutator are propriul parametru (`?variant=` pentru ecran, `?bg=` pentru fundal).

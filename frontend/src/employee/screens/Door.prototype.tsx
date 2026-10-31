@@ -235,7 +235,6 @@ export function DoorVariantC({ code, stale }: DoorVariantProps) {
   const urgent = !stale && !!code && remaining <= URGENT_SECONDS;
   return (
     <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-[#03060f] pt-[max(2rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] font-sans text-white">
-      <div aria-hidden className="proto-dots pointer-events-none absolute inset-0" />
       <LiveBackground tone="door" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-[radial-gradient(ellipse_at_top,rgb(37_99_235/0.25),transparent_70%)]" />
 
