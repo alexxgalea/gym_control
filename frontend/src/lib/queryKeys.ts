@@ -6,3 +6,5 @@ export const ANOMALIES_KEY = ["admin", "anomalies"] as const;
 export const INCIDENTS_KEY = ["admin", "incidents"] as const;
 /** Cheia listei „Acum în Sală”. */
 export const IN_HALL_KEY = ["admin", "in-hall"] as const;
+/** Cheia listei Angajaților (ecranul Angajați, filtrul din Jurnal, căutarea rapidă). */
+export const EMPLOYEES_KEY = ["admin", "employees"] as const;

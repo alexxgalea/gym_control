@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/server";
@@ -33,8 +33,15 @@ describe("ecranul de login", () => {
     await fillAndSubmit(user, "admin", "parola-buna");
 
     await screen.findByRole("heading", { name: "Acasă" }); // după redirecționarea către ruta de pornire
-    await user.click(await screen.findByRole("button", { name: "Meniu" }));
-    expect(screen.getByText("admin")).toBeInTheDocument();
+    const sidebar = await screen.findByRole("complementary", { name: "Bara laterală" });
+    expect(within(sidebar).getByText("admin")).toBeInTheDocument();
+  });
+
+  it("are fundalul viu, în varianta pentru fundal închis", async () => {
+    server.use(noSession);
+    renderApp("/login");
+
+    expect(await screen.findByTestId("live-background")).toHaveClass("live-bg--dark");
   });
 
   it("arată identitatea GymCtrl și câmpuri numite clar", async () => {

@@ -75,7 +75,8 @@ def qr_url(request: Request) -> str:
 def qr_svg(text: str) -> str:
     """Codul QR al unui text, ca SVG (folosit și la Activare telefon). Negru pe alb, cu margine liniștită."""
     buf = io.BytesIO()
-    segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True)
+    # `omitsize`: doar `viewBox`, fără `width`/`height`, ca imaginea să umple cât spațiu primește
+    segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True, omitsize=True)
     return buf.getvalue().decode()
 
 

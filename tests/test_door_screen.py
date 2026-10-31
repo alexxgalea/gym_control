@@ -1,5 +1,6 @@
 """Ecranul de la ușă: Activare din aplicație și QR TOTP. Ceasul de test: 08:12:00 UTC."""
 
+from gym_control import door
 from tests.conftest import HALL_IP, OUTSIDE_IP
 
 
@@ -149,6 +150,14 @@ def test_door_screen_stays_active_after_a_server_restart(make_harness, tmp_path)
     c.cookies.set("gc_door", cookie)
     assert c.get("/api/employee/door/qr").status_code == 200
     assert second.admin_client().get("/api/admin/door-screen").json()["active"] is True
+
+
+def test_qr_svg_scales_to_its_container():
+    # cu `viewBox` și fără `width`/`height`, SVG-ul umple cât spațiu îi dă ecranul (cardul QR, imaginea din Admin)
+    svg = door.qr_svg("http://sala/me?t=123456")
+    root = svg[: svg.index(">")]
+    assert 'viewBox="0 0 ' in root
+    assert "width=" not in root and "height=" not in root
 
 
 def test_door_qr_returns_svg_period_and_seconds_remaining(harness):

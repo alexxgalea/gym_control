@@ -29,7 +29,7 @@ export function Home() {
     <div className="flex flex-col gap-6">
       <ScreenHeader title="Acasă" description="Cine e acum în Sală și ce ai de verificat." />
       <DoorScreenWarning />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <InHallTile />
         <ToCheckTile />
         <IncidentsTile />
@@ -37,7 +37,7 @@ export function Home() {
           <h2 id="actiuni-rapide" className="text-lg font-semibold">
             Acțiuni rapide
           </h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <QuickAction icon={FileText} to="/reports">
               Generează un Raport de prezență
             </QuickAction>

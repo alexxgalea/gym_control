@@ -5,6 +5,7 @@ import { ApiError, GENERIC_ERROR, adminApi } from "@/api/client";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { ME_KEY, useMe } from "@/auth";
 import { Button } from "@/design/button";
+import { LiveBackground } from "@/design/LiveBackground";
 import { Logo } from "@/design/Logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,10 +30,11 @@ export function Login() {
   const error = login.error instanceof ApiError ? login.error.detail : login.error ? GENERIC_ERROR : null;
 
   return (
-    <main className="bg-gradient-brand flex min-h-screen flex-col items-center justify-center gap-6 p-4">
-      <Logo size={72} wordmark={false} />
-      <h1 className="text-3xl font-semibold tracking-tight text-white">GymCtrl</h1>
-      <Card className="w-full max-w-sm text-foreground">
+    <main className="bg-gradient-brand relative flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))]">
+      <LiveBackground tone="dark" />
+      <Logo size={72} wordmark={false} className="relative" />
+      <h1 className="relative text-3xl font-semibold tracking-tight text-white">GymCtrl</h1>
+      <Card className="relative w-full max-w-sm text-foreground">
         <CardHeader>
           <CardTitle>Intră în contul de Admin</CardTitle>
         </CardHeader>

@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { formatDateTime } from "@/lib/format";
-import { JOURNAL_KEY } from "@/lib/queryKeys";
+import { EMPLOYEES_KEY, JOURNAL_KEY } from "@/lib/queryKeys";
 import { AddSessionDialog } from "@/screens/ManualSession";
 
 export { JOURNAL_KEY };
@@ -62,7 +62,7 @@ export function Journal() {
     queryFn: () => adminApi.journal.list(filters),
     placeholderData: keepPreviousData,
   });
-  const employees = useQuery({ queryKey: ["admin", "employees"], queryFn: adminApi.employees.list });
+  const employees = useQuery({ queryKey: EMPLOYEES_KEY, queryFn: adminApi.employees.list });
   const kinds = useQuery({ queryKey: [...JOURNAL_KEY, "kinds"], queryFn: adminApi.journal.kinds, staleTime: Infinity });
 
   const [adding, setAdding] = useState(false);

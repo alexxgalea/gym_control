@@ -26,7 +26,7 @@ apoi imaginea finală doar cu Python). Pagina de stare: `http://<laptop>:8000/st
 
 ## Primul Admin
 
-Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`; butonul „Deconectare” din meniu). Contul se creează în unul din două moduri:
+Ecranele Admin sunt la `/admin/` (login la `/admin/login`; `POST /api/admin/login`, `/logout`, `GET /api/admin/me`; butonul „Deconectare” din cardul contului). Contul se creează în unul din două moduri:
 
 - **Bootstrap din mediu**: setează `GYM_ADMIN_USER` și `GYM_ADMIN_PASSWORD`
   (de ex. într-un `.env` lângă `docker-compose.yml`); la pornire contul este creat
@@ -47,7 +47,7 @@ Protecții pe ecranele Admin:
 
 Toate ecranele sunt React 19 + Vite + TypeScript strict (ADR 0002, 0003), construite în Dockerfile (multi-stage;
 imaginea finală are doar Python, fără Node). Structura `frontend/src/`: `design/` (sistemul de design comun), `screens/` și
-`components/` (Admin), `employee/` (Angajat), `api/` (client și tipuri generate din OpenAPI). Telefonul de la ușă e vechi: build-ul Vite țintește Chrome 64 / Safari 11 (vezi ADR 0003, „Ținta de build”).
+`components/` (Admin), `employee/` (Angajat), `api/` (client și tipuri generate din OpenAPI). Build-ul Vite folosește ținta implicită (browsere moderne): și telefonul de la ușă e unul nou (ADR 0005).
 Aplicația servește `frontend/dist` (cu fallback la `index.html`) doar dacă `GYM_FRONTEND_DIST` indică un build;
 în imaginea Docker este setat deja.
 
@@ -55,6 +55,13 @@ Ecrane Admin: pagina de gestiune (Acasă), Angajați (adăugare, Activare telefo
 `?employee=&from=&to=&kind=&page=`), Anomalii, Incidente, Raport de prezență (ecran, CSV, variantă tipărită la
 `/admin/reports/print`), Setări (inclusiv Perioada de păstrare), plus dialogurile Sesiune manuală (adăugare, corectare). Fiecare acțiune a Adminului
 intră în Jurnal cu autorul.
+
+Meniul Adminului: pe telefon, sus o căutare și jetoanele cu starea Sălii (câți sunt în Sală, Anomalii, Incidente deschise,
+ușa), jos bara Acasă · Anomalii · ＋ (acțiuni rapide: Sesiune manuală, Angajat nou, Incident nou, Raport de prezență) ·
+Jurnal · Mai mult; pe desktop, o bară laterală cu cardul „Acum în Sală” și meniul grupat (Operare, De verificat,
+Administrare), cu cifre la ce e de verificat. Căutarea rapidă (`Ctrl+K`) duce la un ecran, o acțiune sau Jurnalul unui
+Angajat. Fundalul tuturor ecranelor (și al login-ului) e o grilă fină de puncte sub un reflector care se plimbă încet;
+se oprește la „Reduce motion”.
 
 API-ul este JSON sub `/api/admin/...`, cu modele Pydantic de răspuns (în `admin_api.py`, `admin_settings_api.py`,
 `journal_api.py`, `report_api.py`, `manual_sessions.py`). Fără sesiune răspunsul este 401, iar SPA-ul duce la login.
@@ -135,11 +142,11 @@ Orele se stochează în UTC și se afișează în `GYM_TIMEZONE` (implicit `Euro
 Ecranul de la ușă se activează din aplicație (ADR 0004), fără variabile de mediu: în meniul „Ecranul de la ușă” Adminul
 vede starea (neactivat / activ din data X) și apasă „Activează”. Aplicația emite un link cu QR, de unică folosință,
 valabil 48 de ore (`/door/activate/<token>`). Pe telefonul de la ușă linkul arată „Activezi acest telefon ca Ecran de la
-ușă?” și nu se consumă până la apăsarea butonului; apoi telefonul trece la `/door`, care afișează un QR mare, negru pe alb,
-cu un inel-cronometru (SVG generat pe server, fără CDN; codul vine din `GET /api/employee/door/qr`, doar pentru telefonul
-activat). Activarea cere rețeaua Sălii și intră în Jurnal cu autorul; o nouă Activare scoate din uz telefonul anterior, iar
+ușă?” și nu se consumă până la apăsarea butonului; apoi telefonul trece la `/door`, care afișează pe fundal închis un QR mare, negru pe alb,
+pe un card al cărui contur e cronometrul, cu secundele rămase dedesubt (SVG generat pe server, fără CDN; codul vine din
+`GET /api/employee/door/qr`, doar pentru telefonul activat). Activarea cere rețeaua Sălii și intră în Jurnal cu autorul; o nouă Activare scoate din uz telefonul anterior, iar
 starea stă în baza de date (rămâne după repornire). Un telefon neactivat primește o pagină explicativă. Dacă reîmprospătarea
-eșuează mai mult de 30 s, inelul se oprește și apare „Codul nu se mai actualizează. Verifică Wi-Fi-ul telefonului.”
+eșuează mai mult de 30 s, conturul se oprește și apare „Codul nu se mai actualizează. Verifică Wi-Fi-ul telefonului.”
 
 - `GYM_TOTP_SECRET`: secretul TOTP; dacă lipsește, se generează o dată și se păstrează în baza de date.
 
@@ -260,6 +267,6 @@ O eroare de backup este logată (`docker compose logs app`) și nu oprește cele
 
 - Randare responsivă: deschide `/me` și `/admin/` pe un telefon real și verifică lizibilitatea, temele luminoasă/întunecată
   și instalarea pe ecranul telefonului.
-- **Ecranul de la ușă pe telefonul real de la ușă** (browserul lui e vechi; ADR 0003, „Ținta de build”): `/door` afișează QR-ul și inelul, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon activat. Oprește Wi-Fi-ul telefonului ~40 s și verifică avertismentul, apoi repornește-l. Dacă pagina rămâne albă, notează versiunea din `chrome://version` și coboară ținta de build.
+- **Ecranul de la ușă pe telefonul real de la ușă** (ADR 0005: trebuie Chrome 111+, verifică în `chrome://version`): `/door` afișează QR-ul și conturul-cronometru, se reînnoiește la 30 s, ecranul rămâne aprins; scanează-l cu un telefon activat. Oprește Wi-Fi-ul telefonului ~40 s și verifică avertismentul, apoi repornește-l. Dacă pagina rămâne albă, telefonul e prea vechi pentru ADR 0005.
 - Docker: `docker compose up -d` pe laptop curat; repornește laptopul și verifică că serviciul revine; oprește containerul și vezi că repornește.
 - Backup: după prima zi, există `gym-control-*.sqlite` în `GYM_BACKUP_PATH`; încearcă o restaurare pe o copie de probă.

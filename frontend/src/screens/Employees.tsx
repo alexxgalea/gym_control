@@ -13,11 +13,11 @@ import { ScreenHeader } from "@/design/ScreenHeader";
 import { Sheet } from "@/design/Sheet";
 import { Skeleton } from "@/design/Skeleton";
 import { StatusBadge } from "@/design/StatusBadge";
+import { EMPLOYEES_KEY } from "@/lib/queryKeys";
 import { AddSessionDialog } from "@/screens/ManualSession";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const EMPLOYEES_KEY = ["admin", "employees"] as const;
 
 export function Employees() {
   const toast = useToast();

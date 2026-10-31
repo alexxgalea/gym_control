@@ -1,0 +1,81 @@
+/*
+ * Fundalul „viu” (LiveBackground.tsx). Se animă doar `transform` și `mask-position`, ca să rămână ușor pe telefon.
+ * Culorile vin din tokenii temei (theme.css); varianta `--dark` are valorile ei, pentru fundalurile închise.
+ */
+
+.live-bg {
+  --live-wash-a: color-mix(in oklab, var(--primary) 20%, transparent);
+  --live-wash-b: color-mix(in oklab, #22d3ee 14%, transparent);
+  --live-grid: color-mix(in oklab, var(--primary) 45%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.live-bg--dark {
+  --live-wash-a: rgb(37 99 235 / 0.35);
+  --live-wash-b: rgb(34 211 238 / 0.18);
+  --live-grid: rgb(186 230 253 / 0.45);
+  position: absolute;
+  z-index: 0;
+}
+
+/* degradeul care „respiră”: se mărește și se mută foarte încet */
+.live-bg__wash {
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(45% 35% at 78% 12%, var(--live-wash-a), transparent 70%),
+    radial-gradient(40% 35% at 12% 78%, var(--live-wash-b), transparent 70%);
+  animation: live-breathe 26s ease-in-out infinite alternate;
+}
+
+/* grila de puncte, vizibilă doar sub reflector (o mască rotundă și moale care se plimbă) */
+.live-bg__grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--live-grid) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(closest-side, black, transparent);
+  mask-image: radial-gradient(closest-side, black, transparent);
+  -webkit-mask-size: 90vmax 90vmax;
+  mask-size: 90vmax 90vmax;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0.55;
+  animation: live-spotlight 30s ease-in-out infinite alternate;
+}
+
+@keyframes live-breathe {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-2%, -3%, 0);
+  }
+}
+
+@keyframes live-spotlight {
+  0% {
+    -webkit-mask-position: 90% 0%;
+    mask-position: 90% 0%;
+  }
+  50% {
+    -webkit-mask-position: 0% 55%;
+    mask-position: 0% 55%;
+  }
+  100% {
+    -webkit-mask-position: 80% 100%;
+    mask-position: 80% 100%;
+  }
+}
+
+/* „Reduce motion”: fundalul rămâne, dar stă pe loc */
+@media (prefers-reduced-motion: reduce) {
+  .live-bg__wash,
+  .live-bg__grid {
+    animation: none;
+  }
+}

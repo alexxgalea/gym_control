@@ -10,9 +10,8 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "/admin/",
   build: {
-    // Telefonul de la ușă e vechi, cu versiune de browser necunoscută (ADR-0003, „Ținta de build”): ținta e coborâtă
-    // pentru tot build-ul (Vite nu are ținte pe punct de intrare). esbuild coboară sintaxa (`?.`, `??`, câmpuri de clasă...).
-    target: ["chrome64", "safari11", "firefox78"],
+    // Ținta implicită din Vite (browsere moderne): și telefonul de la ușă e unul nou (ADR-0005, înlocuiește ținta
+    // coborâtă din ADR-0003). Tailwind 4 cere oricum Chrome 111+.
     manifest: true, // folosit de `scripts/check-entries.mjs`
     rollupOptions: { input: { admin: path.resolve(__dirname, "index.html"), employee: path.resolve(__dirname, "employee.html") } },
   },
