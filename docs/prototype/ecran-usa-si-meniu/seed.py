@@ -43,3 +43,13 @@ for sid in [r[0] for r in db.execute("SELECT id FROM sessions ORDER BY id LIMIT 
 db.commit()
 print("anomalies", len(admin.get("/api/admin/anomalies").json()), "in hall", len(admin.get("/api/admin/in-hall").json()["people"]))
 json.dump({"door": door_cookies, "admin": dict(admin.cookies)}, open(sys.argv[2], "w"))
+
+# Al treilea argument: rețeaua Sălii de după populare (ex. Wi-Fi-ul de acasă, ca să deschizi ușa de pe telefon).
+if len(sys.argv) > 3 and sys.argv[3]:
+    current = admin.get("/api/admin/settings").json()
+    body = {k: str(current[k]) for k in ("opening_time", "closing_time", "retention_months")}
+    admin.put("/api/admin/settings", json={**body, "hall_subnet": sys.argv[3]}).raise_for_status()
+    print("rețeaua Sălii:", sys.argv[3])
+
+# Un link nou de Activare pentru browserul tău (cel de mai sus a activat un client de test). Merge o singură dată.
+print("LINK_USA=" + admin.post("/api/admin/door-screen/activation-link").json()["link"])

@@ -23,16 +23,15 @@ activată) și căutare rapidă `Ctrl+K`. Bara roz de comutare (← →, și să
 
 ## Pornire
 
+O singură comandă, din rădăcina repo-ului (cere `uv` și Node 22+):
+
 ```
-cd frontend && npm ci && npm run build && cd ..
-GYM_DATABASE=/tmp/proto.db GYM_SCHEDULER=0 GYM_ADMIN_USER=admin GYM_ADMIN_PASSWORD=parola-de-test \
-  GYM_FRONTEND_DIST=frontend/dist GYM_HALL_SUBNET=127.0.0.0/8 GYM_OPENING_TIME=00:00 GYM_CLOSING_TIME=23:59 \
-  uv run uvicorn gym_control.app:app_from_env --factory
-uv run python docs/prototype/ecran-usa-si-meniu/seed.py /tmp/proto.db /tmp/cookies.json   # date de test
+scripts/prototip.sh                                   # doar de pe laptop
+HOST=0.0.0.0 SUBNET=192.168.0.0/24 scripts/prototip.sh   # și de pe telefon, din aceeași rețea Wi-Fi
 ```
 
-Admin: `http://localhost:8000/admin/?variant=A`. Ușa: activează Ecranul de la ușă din Admin, apoi
-`http://localhost:8000/door?variant=A`. Capturile din acest folder sunt făcute cu `shoot.cjs` (Playwright).
+Scriptul face build-ul, pornește serverul cu o bază de test nouă, pune date demo și afișează adresele, inclusiv
+un link de Activare pentru Ecranul de la ușă. Capturile din acest folder sunt făcute cu `shoot.cjs` (Playwright).
 
 ## Observații pentru implementare
 
