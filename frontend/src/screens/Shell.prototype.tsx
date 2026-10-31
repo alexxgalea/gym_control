@@ -36,6 +36,7 @@ import { Logo } from "@/design/Logo";
 import { ThemeSwitch } from "@/design/ThemeSwitch";
 import { ANOMALIES_KEY, INCIDENTS_KEY, IN_HALL_KEY } from "@/lib/queryKeys";
 import { cn } from "@/lib/utils";
+import { LiveBackground } from "@/prototype/LiveBackground";
 import { AddSessionDialog } from "@/screens/ManualSession";
 
 export const SHELL_VARIANTS = [
@@ -735,7 +736,7 @@ export function ShellVariantC() {
 
   return (
     <div className="min-h-screen">
-      <Glow />
+      <LiveBackground />
       {/* ── desktop: bara laterală cu starea Sălii ── */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[288px] flex-col gap-4 border-r border-border bg-card/80 p-4 backdrop-blur-xl lg:flex">
         <Logo size={30} className="px-2 pt-1" />
@@ -782,16 +783,16 @@ export function ShellVariantC() {
       </aside>
 
       {/* ── telefon: căutarea și jetoanele ── */}
-      <header className="sticky top-0 z-30 bg-background/80 px-4 pt-3 pb-3 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] backdrop-blur-xl lg:hidden">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => st.setSearchOpen(true)} className="flex h-11 flex-1 cursor-pointer items-center gap-2.5 rounded-2xl bg-card px-4 text-[15px] text-muted-foreground shadow-card ring-1 ring-border">
-            <Search className="size-[18px]" /> Caută Angajat, ecran, acțiune…
+          <button type="button" onClick={() => st.setSearchOpen(true)} className="flex h-11 min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-2xl bg-card px-4 text-[15px] text-muted-foreground shadow-card ring-1 ring-border">
+            <Search className="size-[18px] shrink-0" /> <span className="truncate">Caută Angajat, ecran, acțiune…</span>
           </button>
           <button type="button" onClick={() => st.setMoreOpen(true)} className="cursor-pointer rounded-full" aria-label="Contul meu">
             <Avatar name={useAccount().username} size={40} />
           </button>
         </div>
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none]">
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-0.5 [mask-image:linear-gradient(to_right,black_85%,transparent)] [scrollbar-width:none]">
           {chips.map((chip) => (
             <button key={chip.to} type="button" onClick={() => navigate(chip.to)} className={cn("flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold", chip.tone)}>
               <span className={cn("size-1.5 rounded-full", chip.dot)} />
@@ -801,10 +802,10 @@ export function ShellVariantC() {
         </div>
       </header>
 
-      <Main className="pb-28 lg:ml-[288px] lg:max-w-none lg:pb-8 xl:px-12" />
+      <Main className="pr-[max(1rem,env(safe-area-inset-right))] pb-[calc(6rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] lg:ml-[288px] lg:max-w-none lg:pb-8 xl:px-12" />
 
       {/* ── telefon: bara de jos, simplă ── */}
-      <nav aria-label="Meniu principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+      <nav aria-label="Meniu principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/85 pr-[env(safe-area-inset-right)] pb-[max(0.25rem,env(safe-area-inset-bottom))] pl-[env(safe-area-inset-left)] backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid h-[62px] max-w-md grid-cols-5 items-stretch px-2">
           {([I.home, I.anomalies] as Item[]).map((item) => <TabC key={item.path} item={item} st={st} />)}
           <div className="grid place-items-center">

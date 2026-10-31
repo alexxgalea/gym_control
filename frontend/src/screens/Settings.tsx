@@ -180,7 +180,7 @@ function SettingsForm({ saved }: { saved: HallSettings }) {
           <FieldError name="hall_subnet" message={errors.hall_subnet} />
         </div>
         <div className="flex flex-col items-start gap-2">
-          <Button type="button" variant="outline" disabled={suggest.isPending} onClick={() => suggest.mutate()}>
+          <Button type="button" variant="outline" className="h-auto min-h-10 py-2 whitespace-normal" disabled={suggest.isPending} onClick={() => suggest.mutate()}>
             <Wifi className="size-4" aria-hidden /> Folosește rețeaua la care sunt conectat acum
           </Button>
           {suggestionNote && (

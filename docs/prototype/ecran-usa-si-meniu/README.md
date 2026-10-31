@@ -39,3 +39,14 @@ un link de Activare pentru Ecranul de la ușă. Capturile din acest folder sunt 
   `omitsize=True` în `segno` (prototipul îl rescrie în browser).
 - `/incidents?nou` deschide direct foaia „Incident nou” (ca `/employees?nou`), pentru acțiunea rapidă.
 - Textul „Codul se schimbă automat la 30 de secunde” trebuie să vină din `period_seconds`.
+
+## Runda 2: alegerea C peste tot
+
+- **Fundal „viu”** (`frontend/src/prototype/LiveBackground.tsx`), după busteniultrarace.ro/inscriere: ~26 de particule
+  mici care urcă lent și se sting, 7 bule mari și moi, un degradeu care „respiră”. Doar `transform`/`opacity`,
+  oprit la „reduce motion”. În Admin (C) în spatele conținutului; pe ușă (C) în tonuri albe-albăstrui.
+- **Marginile telefonului:** `viewport-fit=cover` în `index.html`/`employee.html`, ca `env(safe-area-inset-*)` să
+  funcționeze (zona camerei, bara de gesturi); antetul, conținutul și bara de jos din C le respectă.
+- **Depășiri pe lățime găsite la 360 px** (existau și în aplicația actuală): grila de pe Acasă (`grid-cols-1`) și
+  butonul lung din Setări (acum se rupe pe două rânduri). Pagina nu mai trage lateral pe niciun ecran.
+- Capturi: `C-*.png`; mișcarea: `C-fundal-viu.webm` / `.gif`.

@@ -1,0 +1,89 @@
+/* PROTOTIP: fundalul „viu” (vezi LiveBackground.tsx). */
+
+.live-bg {
+  --live-dot: var(--primary);
+  --live-bubble: color-mix(in oklab, var(--primary) 45%, transparent);
+  --live-wash-a: color-mix(in oklab, var(--primary) 20%, transparent);
+  --live-wash-b: color-mix(in oklab, #22d3ee 14%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Ecranul de la ușă: pe fundal închis, particule albe-albăstrui; stă în <main>, sub conținut. */
+.live-bg--door {
+  --live-dot: #bae6fd;
+  --live-bubble: rgb(96 165 250 / 0.55);
+  --live-wash-a: rgb(37 99 235 / 0.35);
+  --live-wash-b: rgb(34 211 238 / 0.18);
+  position: absolute;
+  z-index: 0;
+}
+
+.live-bg__wash {
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(45% 35% at 78% 12%, var(--live-wash-a), transparent 70%),
+    radial-gradient(40% 35% at 12% 78%, var(--live-wash-b), transparent 70%);
+  animation: live-breathe 26s ease-in-out infinite alternate;
+}
+
+.live-bg__dot,
+.live-bg__bubble {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: live-rise var(--d) linear var(--delay) infinite;
+}
+
+.live-bg__dot {
+  bottom: -12px;
+  width: 6px;
+  height: 6px;
+  background: var(--live-dot);
+}
+
+.live-bg__bubble {
+  bottom: -180px;
+  background: radial-gradient(circle at 32% 30%, rgb(255 255 255 / 0.55), var(--live-bubble) 45%, transparent 72%);
+}
+
+@keyframes live-rise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(var(--s, 1));
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--o, 0.6);
+  }
+  80% {
+    opacity: var(--o, 0.6);
+  }
+  100% {
+    transform: translate3d(var(--sway, 0), -110vh, 0) scale(var(--s, 1));
+    opacity: 0;
+  }
+}
+
+@keyframes live-breathe {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-2%, -3%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-bg__wash {
+    animation: none;
+  }
+  .live-bg__dot,
+  .live-bg__bubble {
+    display: none;
+  }
+}

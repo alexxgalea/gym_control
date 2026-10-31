@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import logoUrl from "@/design/logo.svg";
 import type { DoorCode } from "@/employee/api";
 import { cn } from "@/lib/utils";
+import { LiveBackground } from "@/prototype/LiveBackground";
 
 export const DOOR_VARIANTS = [
   { key: "A", name: "Aurora" },
@@ -233,8 +234,9 @@ export function DoorVariantC({ code, stale }: DoorVariantProps) {
   const { remaining } = useCountdown(code);
   const urgent = !stale && !!code && remaining <= URGENT_SECONDS;
   return (
-    <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-[#03060f] px-5 py-10 font-sans text-white">
+    <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-[#03060f] pt-[max(2rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] font-sans text-white">
       <div aria-hidden className="proto-dots pointer-events-none absolute inset-0" />
+      <LiveBackground tone="door" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-[radial-gradient(ellipse_at_top,rgb(37_99_235/0.25),transparent_70%)]" />
 
       <h1 className="relative text-center text-[26px] leading-snug font-semibold text-white/90">
@@ -242,8 +244,8 @@ export function DoorVariantC({ code, stale }: DoorVariantProps) {
         <span className="block text-[17px] font-normal text-white/55">pentru Intrare sau Ieșire</span>
       </h1>
 
-      <div className="relative aspect-square w-[min(90vw,60vh)]">
-        <div aria-hidden className="absolute -inset-[12%] grid place-items-center">
+      <div className="relative aspect-square w-[min(84vw,56dvh)]">
+        <div aria-hidden className="absolute -inset-[8%] grid place-items-center">
           <div
             className={cn(
               "proto-halo size-full rounded-full opacity-90 blur-3xl",
