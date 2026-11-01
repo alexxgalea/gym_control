@@ -83,6 +83,7 @@ export const adminApi = {
       return api<ImportReport>("/api/admin/employees/import", { method: "POST", body });
     },
     enrollLink: (id: number) => api<EnrollLink>(`/api/admin/employees/${id}/enroll-link`, { method: "POST" }),
+    remove: (id: number) => api<void>(`/api/admin/employees/${id}`, { method: "DELETE" }),
     revoke: (id: number) => api<void>(`/api/admin/employees/${id}/revoke`, { method: "POST" }),
   },
   journal: {

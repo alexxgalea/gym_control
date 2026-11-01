@@ -51,6 +51,7 @@ def test_old_session_is_not_closed_and_exit_closes_the_new_one(harness):
     harness.clock.advance(hours=1)
     assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 200
     assert phone.get("/api/employee/me").json()["inside_since"] is None
+    harness.clock.advance(seconds=30)  # codul de la ușă s-a schimbat: o nouă scanare
     assert phone.post("/api/employee/exit", json=totp(harness)).status_code == 409
     assert "Ieșire lipsă" in _anomalies(harness)
 

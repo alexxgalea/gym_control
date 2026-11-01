@@ -25,7 +25,23 @@ class ImportResult:
 
 
 def list_all(db: sqlite3.Connection) -> list[sqlite3.Row]:
-    return db.execute("SELECT id, name, email FROM employees ORDER BY name, id").fetchall()
+    return db.execute("SELECT id, name, email FROM employees WHERE deleted_at IS NULL ORDER BY name, id").fetchall()
+
+
+def get(db: sqlite3.Connection, employee_id: int) -> sqlite3.Row | None:
+    """Angajatul nesters cu acest id sau None."""
+    return db.execute(
+        "SELECT id, name FROM employees WHERE id = ? AND deleted_at IS NULL", (employee_id,)
+    ).fetchone()
+
+
+def soft_delete(db: sqlite3.Connection, now: datetime, employee_id: int) -> None:
+    """Marchează Angajatul ca șters (fără commit). Istoricul (Sesiuni, Jurnal) rămâne sub numele lui.
+    Emailul primește un sufix, ca adresa să poată fi folosită din nou pentru un Angajat nou."""
+    db.execute(
+        "UPDATE employees SET deleted_at = ?, email = email || '#șters-' || id WHERE id = ?",
+        (now.isoformat(), employee_id),
+    )
 
 
 def add(db: sqlite3.Connection, now: datetime, name: str, email: str) -> int:

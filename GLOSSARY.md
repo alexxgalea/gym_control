@@ -5,7 +5,7 @@
 ## Language
 
 **Angajat**:
-Persoana care folosește sala și face Intrare/Ieșire. Singurul tip de persoană urmărită.
+Persoana care folosește sala și face Intrare/Ieșire. Singurul tip de persoană urmărită. Un Angajat șters dispare din listă și își pierde telefonul, dar Sesiunile și Jurnalul lui rămân sub numele lui (până la Păstrarea datelor); nu poate fi șters cât e în Sală.
 _Avoid_: Membru, client, utilizator
 
 **Sală**:

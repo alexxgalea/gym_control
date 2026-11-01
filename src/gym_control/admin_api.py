@@ -9,7 +9,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel
 
-from gym_control import anomalies, auth, clocktime, door, employees, enrollment, incidents, journal, network
+from gym_control import anomalies, auth, clocktime, door, employees, enrollment, incidents, journal, network, presence
 from gym_control.admin_common import UNAUTHORIZED, ErrorResponse, FieldErrorResponse, field_error
 from gym_control.auth import Admin, require_admin_api
 from gym_control.db import get_db
@@ -167,7 +167,7 @@ async def import_employees(
 
 
 def _employee_or_404(db: sqlite3.Connection, employee_id: int):
-    row = db.execute("SELECT id, name FROM employees WHERE id = ?", (employee_id,)).fetchone()
+    row = employees.get(db, employee_id)
     if row is None:
         raise HTTPException(status_code=404, detail="Angajat inexistent")
     return row
@@ -212,6 +212,30 @@ def revoke_device(
     journal.write_admin_action(
         db, now, admin, "enroll.revoke",
         f"Telefon scos din uz: {employee['name']}", employee_id=employee_id,
+    )
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.delete(
+    "/employees/{employee_id}", status_code=204,
+    responses={**UNAUTHORIZED, 404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}},
+)
+def delete_employee(
+    employee_id: int, request: Request,
+    admin: Admin = Depends(require_admin_api), db: sqlite3.Connection = Depends(get_db),
+):
+    now = request.app.state.clock()
+    employee = _employee_or_404(db, employee_id)
+    if presence.open_session(db, employee_id) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{employee['name']} este în Sală acum. Corectează întâi Sesiunea deschisă, apoi șterge Angajatul.",
+        )
+    enrollment.revoke(db, employee_id)
+    employees.soft_delete(db, now, employee_id)
+    journal.write_admin_action(
+        db, now, admin, "employee.delete", f"Angajat șters: {employee['name']}", employee_id=employee_id,
     )
     db.commit()
     return Response(status_code=204)

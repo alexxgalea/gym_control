@@ -10,6 +10,7 @@ telefonul activat. `qr_url` construiește URL-ul din QR (`/me?t=<TOTP>`).
 import hashlib
 import hmac
 import io
+import re
 import secrets
 import sqlite3
 from datetime import datetime, timedelta
@@ -75,9 +76,11 @@ def qr_url(request: Request) -> str:
 def qr_svg(text: str) -> str:
     """Codul QR al unui text, ca SVG (folosit și la Activare telefon). Negru pe alb, cu margine liniștită."""
     buf = io.BytesIO()
-    # `omitsize`: doar `viewBox`, fără `width`/`height`, ca imaginea să umple cât spațiu primește
-    segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True, omitsize=True)
-    return buf.getvalue().decode()
+    segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, xmldecl=False, svgns=True)
+    svg = buf.getvalue().decode()
+    # fără viewBox, `width/height: 100%` din CSS nu scalează conținutul și QR-ul apare tăiat
+    size = re.search(r'width="(\d+)" height="(\d+)"', svg)
+    return svg.replace("<svg ", f'<svg viewBox="0 0 {size.group(1)} {size.group(2)}" ', 1)
 
 
 @router.get("/door", include_in_schema=False)

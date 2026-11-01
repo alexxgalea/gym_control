@@ -52,6 +52,20 @@ def check(secret: str, now: datetime, code: str | None) -> str:
     return INVALID
 
 
+def accepted_window(secret: str, now: datetime, code: str | None) -> int | None:
+    """Fereastra de 30 s căreia îi aparține codul acceptat (curentă sau anterioară), altfel None."""
+    candidate = (code or "").strip().encode()
+    w = _window(now)
+    for i in range(ACCEPTED_WINDOWS_BACK + 1):
+        if hmac.compare_digest(candidate, _code(secret, w - i).encode()):
+            return w - i
+    return None
+
+
+def window_of(moment: datetime) -> int:
+    return _window(moment)
+
+
 def reject_message(result: str) -> str:
     if result == EXPIRED:
         return "Codul QR a expirat. Scanează din nou QR-ul de la ușă."

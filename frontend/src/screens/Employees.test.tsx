@@ -7,7 +7,7 @@ import { renderApp } from "@/test/render";
 type Row = { id: number; name: string; email: string; enrolled: boolean };
 
 /** API-ul Angajaților simulat, cu stare, la granița HTTP. */
-function mockApi(initial: Row[] = [], options: { listDelay?: number } = {}) {
+function mockApi(initial: Row[] = [], options: { listDelay?: number; deleteError?: string } = {}) {
   const rows = [...initial];
   const calls: { method: string; path: string; body?: unknown }[] = [];
   server.use(
@@ -30,6 +30,12 @@ function mockApi(initial: Row[] = [], options: { listDelay?: number } = {}) {
       const row = rows.find((r) => r.id === Number(params.id));
       if (!row) return HttpResponse.json({ detail: "Angajat inexistent" }, { status: 404 });
       return HttpResponse.json({ name: row.name, link: "http://localhost/enroll/tok123", qr_svg: "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>", hours: 48 });
+    }),
+    http.delete("/api/admin/employees/:id", ({ params }) => {
+      calls.push({ method: "DELETE", path: `/api/admin/employees/${params.id}` });
+      if (options.deleteError) return HttpResponse.json({ detail: options.deleteError }, { status: 409 });
+      rows.splice(rows.findIndex((r) => r.id === Number(params.id)), 1);
+      return new HttpResponse(null, { status: 204 });
     }),
     http.post("/api/admin/employees/:id/revoke", ({ params }) => {
       calls.push({ method: "POST", path: `/api/admin/employees/${params.id}/revoke` });
@@ -204,5 +210,39 @@ describe("ecranul Angajați", () => {
     await waitFor(async () => expect((await rowOf("Ana Pop")).getByText("Telefon neactivat")).toBeInTheDocument());
     expect(calls).toEqual([{ method: "POST", path: "/api/admin/employees/1/revoke" }]);
     expect(screen.getByRole("status")).toHaveTextContent("Telefon scos din uz");
+  });
+
+  it("șterge un Angajat doar după confirmare; anularea nu face nimic", async () => {
+    const calls = mockApi([ana, ion]);
+    const user = userEvent.setup();
+    renderApp("/employees");
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Șterge Angajatul" }));
+
+    let dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Ana Pop");
+    expect(dialog).toHaveTextContent(/istoricul/i);
+    await user.click(within(dialog).getByRole("button", { name: "Anulează" }));
+    expect(calls).toEqual([]);
+
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Șterge Angajatul" }));
+    dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Șterge Angajatul" }));
+
+    await waitFor(() => expect(screen.queryByText("Ana Pop")).not.toBeInTheDocument());
+    expect(screen.getByText("Ion Vasile")).toBeInTheDocument();
+    expect(calls).toEqual([{ method: "DELETE", path: "/api/admin/employees/1" }]);
+    expect(screen.getByRole("status")).toHaveTextContent("Angajat șters");
+  });
+
+  it("arată mesajul serverului când Angajatul nu poate fi șters (e în Sală)", async () => {
+    mockApi([ana], { deleteError: "Ana Pop este în Sală acum. Corectează întâi Sesiunea deschisă." });
+    const user = userEvent.setup();
+    renderApp("/employees");
+    await user.click((await rowOf("Ana Pop")).getByRole("button", { name: "Șterge Angajatul" }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Șterge Angajatul" }));
+
+    expect(await screen.findByText(/este în Sală acum/)).toBeInTheDocument();
+    expect(screen.getByText("Ana Pop")).toBeInTheDocument();
   });
 });

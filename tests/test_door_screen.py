@@ -1,6 +1,5 @@
 """Ecranul de la ușă: Activare din aplicație și QR TOTP. Ceasul de test: 08:12:00 UTC."""
 
-from gym_control import door
 from tests.conftest import HALL_IP, OUTSIDE_IP
 
 
@@ -152,14 +151,6 @@ def test_door_screen_stays_active_after_a_server_restart(make_harness, tmp_path)
     assert second.admin_client().get("/api/admin/door-screen").json()["active"] is True
 
 
-def test_qr_svg_scales_to_its_container():
-    # cu `viewBox` și fără `width`/`height`, SVG-ul umple cât spațiu îi dă ecranul (cardul QR, imaginea din Admin)
-    svg = door.qr_svg("http://sala/me?t=123456")
-    root = svg[: svg.index(">")]
-    assert 'viewBox="0 0 ' in root
-    assert "width=" not in root and "height=" not in root
-
-
 def test_door_qr_returns_svg_period_and_seconds_remaining(harness):
     # ceasul de test e 08:12:00 UTC: fereastra de 30 s abia a început
     body = harness.door_client().get("/api/employee/door/qr").json()
@@ -225,13 +216,6 @@ def test_two_employees_can_use_same_qr_in_same_window(harness):
     totp = harness.current_totp()
     assert ana.post("/api/employee/entry", json={"totp": totp}).status_code == 200
     assert ion.post("/api/employee/entry", json={"totp": totp}).status_code == 200
-
-
-def test_same_employee_can_reuse_totp_for_exit(harness):
-    phone = harness.enrolled_client("Ana Pop")
-    totp = harness.current_totp()
-    phone.post("/api/employee/entry", json={"totp": totp})
-    assert phone.post("/api/employee/exit", json={"totp": totp}).status_code == 200
 
 
 def test_client_sent_timestamp_is_ignored(harness):
@@ -346,3 +330,12 @@ def test_retiring_an_active_screen_cancels_outstanding_activation_links(harness)
     assert admin.delete("/api/admin/door-screen").status_code == 204
     assert harness.client().get(link).status_code == 410
     assert harness.client().post(link).status_code == 410
+
+
+def test_qr_svg_scales_to_its_box(harness):
+    # fără viewBox, CSS `width/height: 100%` nu scalează QR-ul: telefonul îl taie și codul nu se mai scanează
+    import re
+
+    svg = harness.door_client().get("/api/employee/door/qr").json()["svg"]
+    size = re.search(r'width="(\d+)" height="(\d+)"', svg)
+    assert f'viewBox="0 0 {size.group(1)} {size.group(2)}"' in svg
