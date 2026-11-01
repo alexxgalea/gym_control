@@ -12,6 +12,8 @@ Testele pentru `/me`, `/enroll`, `/door` și `/status` se rescriu (HTML → JSON
 
 ## Ținta de build (Ecranul de la ușă)
 
+_Înlocuită de ADR-0005: telefonul de la ușă e acum unul nou._
+
 Versiunea browserului de pe telefonul de la ușă nu se cunoaște, dar telefonul e vechi. În loc să o măsurăm, am coborât ținta de build Vite, conservator: `build.target = ["chrome64", "safari11", "firefox78"]` pentru tot build-ul (Vite nu are ținte pe punct de intrare, iar un al doilea build ar dubla configurația; Adminul rămâne neschimbat pe browsere moderne, doar JS-ul iese ceva mai lung).
 
 - **De ce Chrome 64:** e cea mai joasă țintă la care cele trei lucruri de care depinde pagina există fără polyfill-uri: scripturi `type="module"` (61), `import()` dinamic (63) și animațiile CSS pe SVG. Sub Chrome 63 ar fi nevoie de `@vitejs/plugin-legacy` (pachet separat, fără module), iar asta nu merită până nu se dovedește că telefonul e atât de vechi.

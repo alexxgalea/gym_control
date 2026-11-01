@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, ShieldCheck } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError, adminApi, type Incident } from "@/api/client";
 import { errorText, isShownError } from "@/lib/errors";
 import { formatLocalDateTime } from "@/lib/format";
@@ -22,7 +23,12 @@ export function Incidents() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const incidents = useQuery({ queryKey: INCIDENTS_KEY, queryFn: adminApi.incidents.list });
-  const [opening, setOpening] = useState(false);
+  // „Incident nou” din acțiunile rapide deschide direct foaia (`/incidents?nou`)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [opening, setOpening] = useState(searchParams.has("nou"));
+  useEffect(() => {
+    if (searchParams.has("nou")) setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
   const [closing, setClosing] = useState<Incident | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });

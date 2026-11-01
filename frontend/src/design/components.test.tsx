@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/design/button";
 import { ConfirmDialog } from "@/design/ConfirmDialog";
 import { EmptyState } from "@/design/EmptyState";
+import { LiveBackground } from "@/design/LiveBackground";
 import { ScreenHeader } from "@/design/ScreenHeader";
 import { Sheet } from "@/design/Sheet";
 import { Skeleton } from "@/design/Skeleton";
@@ -106,5 +107,24 @@ describe("piesele de ecran", () => {
   it("eticheta de stare arată textul stării", () => {
     render(<StatusBadge tone="success">Telefon activat</StatusBadge>);
     expect(screen.getByText("Telefon activat")).toBeInTheDocument();
+  });
+});
+
+describe("fundalul viu", () => {
+  it("e pur decorativ: ascuns de cititoarele de ecran și fără conținut", () => {
+    render(
+      <main>
+        <LiveBackground />
+        <h1>Acasă</h1>
+      </main>,
+    );
+    const background = screen.getByTestId("live-background");
+    expect(background).toHaveAttribute("aria-hidden", "true");
+    expect(background).toHaveTextContent("");
+  });
+
+  it("are o variantă pentru fundaluri închise (ușa, login), care stă în ecran, nu fix pe pagină", () => {
+    render(<LiveBackground tone="dark" />);
+    expect(screen.getByTestId("live-background")).toHaveClass("live-bg", "live-bg--dark");
   });
 });

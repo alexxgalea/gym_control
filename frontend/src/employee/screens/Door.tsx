@@ -1,14 +1,18 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import logoUrl from "@/design/logo.svg";
+import { LiveBackground } from "@/design/LiveBackground";
 import { EmployeeApiError, employeeApi, type DoorCode } from "@/employee/api";
+import { cn } from "@/lib/utils";
 import "./door.css";
 
 /*
- * Ecranul de la ușă. Rulează pe un telefon vechi, deci (ADR-0003, „Ținta de build”):
- * - fără biblioteca de animații și fără componentele din sistemul de design care o folosesc;
- * - inelul-cronometru e o animație CSS, pornită „în urmă” cu secundele deja trecute (vezi `door.css`);
- * - fără react-query și fără router: doar `fetch` și temporizatoare (`doorMain.tsx` o montează direct). Pe un
- *   browser vechi, orice modul în plus încărcat la pornire e un risc (de ex. react-query citește `globalThis`).
+ * Ecranul de la ușă: telefonul fix, montat vertical, care arată QR-ul pentru Intrare și Ieșire. Rulează pe un telefon
+ * nou (ADR-0005), deci folosește sistemul de design comun; pachetul `/door` rămâne totuși mic: fără react-query și
+ * fără router, doar `fetch` și temporizatoare (`doorMain.tsx` îl montează direct).
+ *
+ * Aspect: fundal închis cu fundalul viu, QR-ul pe un card alb, un halou care se rotește încet în spate, iar
+ * conturul cardului e cronometrul: se golește într-o perioadă a codului (animație CSS pornită „în urmă” cu secundele
+ * deja trecute, vezi `door.css`), cu secundele rămase într-o insignă pe marginea de jos.
  */
 
 /** Cât de des se cere codul când mai e mult până la schimbare; aproape de schimbare se cere chiar atunci. */
@@ -81,14 +85,40 @@ function useDoorCode() {
   return { code, stale, blocked };
 }
 
+/** În ultimele secunde conturul și insigna se fac portocalii: codul e pe cale să se schimbe. */
+const URGENT_SECONDS = 5;
+
+/** Secundele rămase din codul curent, numărate local de la primirea lui (serverul dă `remaining_seconds`). */
+function useSecondsLeft(code: DoorCode | null) {
+  const [receivedAt, setReceivedAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const at = Date.now();
+    setReceivedAt(at);
+    setNow(at);
+  }, [code]);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, []);
+  if (!code) return 0;
+  return Math.max(0, Math.ceil(code.remaining_seconds - (now - receivedAt) / 1000));
+}
+
+/** Cadrul comun: fundalul închis și viu, marginile sigure ale telefonului, logoul jos. */
 function Frame({ children }: { children: ReactNode }) {
   return (
-    <main className="door-screen">
-      <div className="door-brand">
-        <img src={logoUrl} alt="GymCtrl" width={36} height={36} />
-        <span>GymCtrl</span>
-      </div>
+    <main className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden bg-[#03060f] pt-[max(2rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] text-center font-sans text-white [color-scheme:dark]">
+      <LiveBackground tone="dark" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-[radial-gradient(ellipse_at_top,rgb(37_99_235/0.25),transparent_70%)]"
+      />
       {children}
+      <div className="relative flex items-center gap-2 text-[15px] font-medium text-white/45">
+        <img src={logoUrl} alt="GymCtrl" width={22} height={22} className="opacity-80" />
+        <span aria-hidden>GymCtrl</span>
+      </div>
     </main>
   );
 }
@@ -96,17 +126,18 @@ function Frame({ children }: { children: ReactNode }) {
 function Explanation({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Frame>
-      <h1 className="door-title">{title}</h1>
-      <p className="door-text">{children}</p>
+      <div className="relative my-auto flex max-w-md flex-col gap-3">
+        <h1 className="text-[26px] leading-snug font-semibold">{title}</h1>
+        <p className="text-[17px] leading-relaxed text-white/70">{children}</p>
+      </div>
     </Frame>
   );
 }
 
-const RING_RADIUS = 104;
-
-/** `/door`: QR mare, negru pe alb, cu un inel-cronometru în jurul lui; doar pentru telefonul activat. */
+/** `/door`: QR mare, negru pe alb, cu conturul-cronometru; doar pentru telefonul activat. */
 export function Door() {
   const { code, stale, blocked } = useDoorCode();
+  const secondsLeft = useSecondsLeft(code);
 
   if (blocked === "door_token_invalid") {
     return (
@@ -124,53 +155,73 @@ export function Door() {
     );
   }
 
+  const running = !!code && !stale;
+  const urgent = running && secondsLeft <= URGENT_SECONDS;
   const elapsed = code ? code.period_seconds - code.remaining_seconds : 0;
   return (
     <Frame>
-      <h1 className="door-title">Scanează pentru Intrare / Ieșire</h1>
-      {/* variabilele CSS leagă inelul de secundele rămase; `data-state` îl oprește când reîmprospătarea pică */}
+      <h1 className="relative text-[26px] leading-snug font-semibold text-white/90">
+        Scanează codul
+        <span className="block text-[17px] font-normal text-white/55">pentru Intrare sau Ieșire</span>
+      </h1>
+
+      {/* variabilele CSS leagă conturul de secundele rămase; `data-state` îl oprește când reîmprospătarea pică */}
       <div
         role="timer"
         aria-label="Timp rămas până la schimbarea codului"
-        className="door-ring-box"
-        data-state={code && !stale ? "running" : "stopped"}
+        data-state={running ? "running" : "stopped"}
+        data-urgent={urgent || undefined}
+        className="door-timer relative aspect-square w-[min(84vw,56dvh)]"
         style={
           {
-            "--door-ring-duration": `${code ? code.period_seconds : 30}s`,
-            "--door-ring-delay": `-${elapsed}s`,
+            "--door-contour-duration": `${code ? code.period_seconds : 30}s`,
+            "--door-contour-delay": `-${elapsed}s`,
           } as CSSProperties
         }
       >
-        <svg className="door-ring" viewBox="0 0 220 220" aria-hidden="true" focusable="false">
-          <circle className="door-ring-track" cx="110" cy="110" r={RING_RADIUS} />
-          {code && (
-            // `key`: la un cod nou, animația pornește din nou
-            <circle
-              key={code.url}
-              className="door-ring-progress"
-              cx="110"
-              cy="110"
-              r={RING_RADIUS}
-              transform="rotate(-90 110 110)"
-            />
-          )}
-        </svg>
-        {code && (
-          <div
-            key={code.url}
-            role="img"
-            aria-label="Cod QR pentru Intrare sau Ieșire"
-            className={stale ? "door-qr door-qr-stale" : "door-qr"}
-            dangerouslySetInnerHTML={{ __html: code.svg }}
-          />
+        <div aria-hidden className="absolute -inset-[8%] grid place-items-center">
+          <div className={cn("door-halo size-full rounded-full opacity-90 blur-3xl", !running && "opacity-20 grayscale")} />
+        </div>
+        <div className="relative size-full p-[10px]">
+          <svg className="pointer-events-none absolute inset-0 size-full overflow-visible" aria-hidden focusable="false">
+            <rect className="door-contour-track" x="3.5" y="3.5" rx="36" />
+            {code && (
+              // `key`: la un cod nou, animația pornește din nou
+              <rect key={code.url} className="door-contour" x="3.5" y="3.5" rx="36" pathLength={100} />
+            )}
+          </svg>
+          <div className="size-full rounded-[28px] bg-white p-4 shadow-[0_30px_80px_rgb(0_0_0/0.6)]">
+            {code ? (
+              <div
+                key={code.url}
+                role="img"
+                aria-label="Cod QR pentru Intrare sau Ieșire"
+                className={cn("door-qr size-full [&_svg]:block [&_svg]:size-full", stale && "opacity-15")}
+                dangerouslySetInnerHTML={{ __html: code.svg }}
+              />
+            ) : (
+              <div className="size-full animate-pulse rounded-xl bg-neutral-200" />
+            )}
+          </div>
+        </div>
+        {running && (
+          <div className="door-seconds absolute -bottom-5 left-1/2 flex -translate-x-1/2 items-baseline gap-1 rounded-full bg-[#03060f] px-4 py-1.5 ring-2">
+            <span className="text-[22px] font-bold tabular-nums">{secondsLeft}</span>
+            <span className="text-[13px] text-white/60">s</span>
+          </div>
         )}
       </div>
+
       {stale ? (
-        <p role="alert" className="door-warning">
+        <p
+          role="alert"
+          className="relative max-w-md rounded-2xl bg-red-500/15 px-5 py-3.5 text-[17px] font-semibold text-red-200 ring-1 ring-red-400/30"
+        >
           {WARNING}
         </p>
       ) : (
-        <p className="door-text">Codul se schimbă automat la 30 de secunde.</p>
+        // ține locul avertismentului, ca QR-ul să nu sară când apare
+        <span aria-hidden className="h-0" />
       )}
     </Frame>
   );

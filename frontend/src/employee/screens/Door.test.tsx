@@ -23,21 +23,24 @@ beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setI
 afterEach(() => vi.useRealTimers());
 
 describe("Ecranul de la ușă (/door)", () => {
-  it("arată QR-ul și un inel pornit, sincronizat cu secundele rămase de la server", async () => {
+  it("arată QR-ul și conturul-cronometru pornit, sincronizat cu secundele rămase de la server", async () => {
     server.use(qr(() => HttpResponse.json(code(1, 18))));
     renderEmployee("/door");
     await tick(0);
 
     expect(screen.getByRole("img", { name: /cod qr/i })).toHaveTextContent("cod-1");
-    const ring = screen.getByRole("timer");
-    expect(ring).toHaveAttribute("data-state", "running");
+    const timer = screen.getByRole("timer");
+    expect(timer).toHaveAttribute("data-state", "running");
     // 30 s în total, 18 rămase: animația pornește „în urmă” cu 12 s
-    expect(ring.style.getPropertyValue("--door-ring-duration")).toBe("30s");
-    expect(ring.style.getPropertyValue("--door-ring-delay")).toBe("-12s");
+    expect(timer.style.getPropertyValue("--door-contour-duration")).toBe("30s");
+    expect(timer.style.getPropertyValue("--door-contour-delay")).toBe("-12s");
+    // secundele rămase stau în insigna de pe contur
+    expect(timer).toHaveTextContent("18s");
+    expect(timer).not.toHaveAttribute("data-urgent");
     expect(screen.queryByText(WARNING)).not.toBeInTheDocument();
   });
 
-  it("se reîmprospătează singur: la schimbarea codului apare QR-ul nou și inelul pornește de la capăt", async () => {
+  it("se reîmprospătează singur: la schimbarea codului apare QR-ul nou și conturul pornește de la capăt", async () => {
     let current = code(1, 5);
     server.use(qr(() => HttpResponse.json(current)));
     renderEmployee("/door");
@@ -48,10 +51,10 @@ describe("Ecranul de la ușă (/door)", () => {
     await tick(6000);
 
     expect(screen.getByRole("img", { name: /cod qr/i })).toHaveTextContent("cod-2");
-    expect(screen.getByRole("timer").style.getPropertyValue("--door-ring-delay")).toBe("-0s");
+    expect(screen.getByRole("timer").style.getPropertyValue("--door-contour-delay")).toBe("-0s");
   });
 
-  it("dacă reîmprospătarea eșuează peste 30 s: inelul se oprește și apare avertismentul", async () => {
+  it("dacă reîmprospătarea eșuează peste 30 s: conturul se oprește, secundele dispar și apare avertismentul", async () => {
     let up = true;
     server.use(qr(() => (up ? HttpResponse.json(code(1, 30)) : HttpResponse.error())));
     renderEmployee("/door");
@@ -65,6 +68,7 @@ describe("Ecranul de la ușă (/door)", () => {
     await tick(10_000);
     expect(screen.getByRole("alert")).toHaveTextContent(WARNING);
     expect(screen.getByRole("timer")).toHaveAttribute("data-state", "stopped");
+    expect(screen.getByRole("timer")).not.toHaveTextContent(/\d+s/);
   });
 
   it("revine singur când reîmprospătarea merge din nou", async () => {
@@ -114,11 +118,21 @@ describe("Ecranul de la ușă (/door)", () => {
     expect(screen.queryByText(/alt telefon/)).not.toBeInTheDocument();
   });
 
-  it("are logoul GymCtrl", async () => {
+  it("în ultimele secunde marchează codul ca pe cale să se schimbe", async () => {
+    server.use(qr(() => HttpResponse.json(code(1, 4))));
+    renderEmployee("/door");
+    await tick(0);
+
+    expect(screen.getByRole("timer")).toHaveAttribute("data-urgent", "true");
+    expect(screen.getByRole("timer")).toHaveTextContent("4s");
+  });
+
+  it("are logoul GymCtrl și fundalul viu", async () => {
     server.use(qr(() => HttpResponse.json(code(1))));
     renderEmployee("/door");
     await tick(0);
 
     expect(screen.getByAltText("GymCtrl")).toBeInTheDocument();
+    expect(screen.getByTestId("live-background")).toHaveClass("live-bg--dark");
   });
 });

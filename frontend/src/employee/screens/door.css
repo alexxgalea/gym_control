@@ -1,171 +1,91 @@
 /*
- * Ecranul de la ușă: CSS simplu, scris pentru un telefon vechi (ADR-0003, „Ținta de build”).
- * Reguli: fără `gap` pe flex, `inset`, `aspect-ratio`, `min()`/`clamp()`, `:is()`, imbricare, `dvh`, `oklch`;
- * dimensiuni în `vmin`, culori hex în variabile CSS (`var()`, Chrome 49+) definite mai jos, animații doar cu `transform`/`opacity`/`stroke-dashoffset`.
- * Tema e fixă și luminoasă, indiferent de sistem; QR-ul e negru pe alb. Nu depinde de Tailwind (care cere un
- * browser modern): își face singur resetările și acoperă tot ecranul.
+ * Ecranul de la ușă: animațiile care nu se pot scrie comod în Tailwind. Restul aspectului e în `Door.tsx`.
+ * Se animă doar `stroke-dashoffset`, `transform` și `opacity`.
  */
 
-.door-screen {
-  /* Valori aliniate cu design/theme.css (tema luminoasă); scrise de mână, fără import. */
-  --door-surface: #ffffff;
-  --door-fg: #0f1222;
-  --door-brand: #0b1f4d;
-  --door-muted: #4a4d5c;
-  --door-track: #e1e4ee;
-  --door-accent: #2563eb;
-  --door-stopped: #b3b6c4;
-  --door-warning-bg: #fdecea;
-  --door-warning-fg: #b00020;
-}
-
-.door-screen,
-.door-screen * {
-  box-sizing: border-box;
-}
-
-.door-screen {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  margin: 0;
-  background: var(--door-surface);
-  color: var(--door-fg);
-  color-scheme: light;
-  text-align: center;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-variant-numeric: tabular-nums;
-}
-
-.door-brand {
-  display: flex;
-  align-items: center;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--door-brand);
-}
-
-.door-brand img {
-  display: block;
-  margin-right: 10px;
-}
-
-.door-title {
-  margin: 16px 0 12px;
-  font-size: 26px;
-  line-height: 1.2;
-  font-weight: 700;
-}
-
-.door-text {
-  margin: 12px 0 0;
-  max-width: 460px;
-  font-size: 17px;
-  line-height: 1.45;
-  color: var(--door-muted);
-}
-
-/* Inelul-cronometru: un cerc SVG ale cărui margini se „golesc” într-o perioadă a codului. */
-.door-ring-box {
-  position: relative;
-  width: 74vmin;
-  height: 74vmin;
-  max-width: 560px;
-  max-height: 560px;
-}
-
-.door-ring {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.door-ring circle {
+/* Conturul-cronometru: un dreptunghi rotunjit cât cardul, care se golește într-o perioadă a codului. */
+.door-contour-track,
+.door-contour {
+  width: calc(100% - 7px);
+  height: calc(100% - 7px);
   fill: none;
-  stroke-width: 9;
+  stroke-width: 7;
 }
 
-.door-ring-track {
-  stroke: var(--door-track);
+.door-contour-track {
+  stroke: rgb(255 255 255 / 0.18);
 }
 
-.door-ring-progress {
-  stroke: var(--door-accent);
+.door-contour {
+  stroke: #ffffff;
   stroke-linecap: round;
-  stroke-dasharray: 653.45; /* 2 * pi * 104 */
+  stroke-dasharray: 100 100; /* `pathLength=100`: lungimea conturului e 100, oricât de mare e cardul */
   stroke-dashoffset: 0;
   /* Durata și întârzierea vin din secundele rămase de la server: întârziere negativă = animația pornește „în urmă”. */
-  animation-name: door-ring-drain;
-  animation-duration: var(--door-ring-duration, 30s);
-  animation-delay: var(--door-ring-delay, 0s);
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-  animation-iteration-count: 1;
+  animation: door-contour-drain var(--door-contour-duration, 30s) linear var(--door-contour-delay, 0s) 1 forwards;
+  transition: stroke 0.4s ease;
 }
 
-/* Reîmprospătarea pică: inelul stă pe loc și se face gri. */
-.door-ring-box[data-state="stopped"] .door-ring-progress {
+/* Ultimele secunde: portocaliu, pe contur și pe insigna cu secundele. */
+.door-timer[data-urgent] .door-contour {
+  stroke: #fb923c;
+}
+.door-seconds {
+  --tw-ring-color: rgb(255 255 255 / 0.8);
+  transition: color 0.4s ease;
+}
+.door-timer[data-urgent] .door-seconds {
+  --tw-ring-color: #fb923c;
+  color: #fdba74;
+}
+
+/* Reîmprospătarea pică: conturul stă pe loc și se face gri. */
+.door-timer[data-state="stopped"] .door-contour {
   animation-play-state: paused;
-  stroke: var(--door-stopped);
+  stroke: #6b7280;
 }
 
-@keyframes door-ring-drain {
+@keyframes door-contour-drain {
   from {
     stroke-dashoffset: 0;
   }
   to {
-    stroke-dashoffset: 653.45;
+    stroke-dashoffset: 100;
   }
 }
 
-/* QR-ul: negru pe alb, în interiorul inelului. La un cod nou apare cu o scurtă tranziție. */
+/* Haloul colorat din spatele cardului, care se rotește încet. */
+.door-halo {
+  background: conic-gradient(from 0deg, #2563eb, #22d3ee, #a855f7, #2563eb, #22d3ee, #2563eb);
+  animation: door-spin 18s linear infinite;
+}
+
+@keyframes door-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* La un cod nou, QR-ul apare cu o scurtă tranziție. */
 .door-qr {
-  position: absolute;
-  top: 9%;
-  left: 9%;
-  width: 82%;
-  height: 82%;
-  background: var(--door-surface);
-  animation: door-qr-in 0.35s ease-out;
-}
-
-.door-qr svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.door-qr-stale {
-  opacity: 0.2;
+  animation: door-qr-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @keyframes door-qr-in {
   from {
     opacity: 0;
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
-.door-warning {
-  margin: 14px 0 0;
-  max-width: 520px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  background: var(--door-warning-bg);
-  color: var(--door-warning-fg);
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.35;
+/* „Reduce motion”: haloul și tranziția QR stau pe loc; conturul rămâne, pentru că el e cronometrul. */
+@media (prefers-reduced-motion: reduce) {
+  .door-halo,
+  .door-qr {
+    animation: none;
+  }
 }
